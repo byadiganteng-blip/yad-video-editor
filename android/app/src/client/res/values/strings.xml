@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AI TXT to Video + Editor</string>
+    <string name="app_tagline">Ubah cerita jadi video otomatis</string>
+    <string name="credit_text">Created by KARYADI, Coding by KARYADI</string>
+    <string name="banner_welcome">Selamat datang di AI TXT to Video!</string>
+</resources>
