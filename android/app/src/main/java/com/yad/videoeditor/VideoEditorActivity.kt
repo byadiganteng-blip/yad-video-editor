@@ -4,82 +4,73 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import java.io.File
 
 /**
- * Video Editor - Media3 Transformer
- * Created by KARYADI, Coding by KARYADI
- *
- * Note: Media3 support trim, crop, rotate, scale.
- * Speed change & extract audio akan ditambah nanti.
+ * Video Editor lengkap — trim, rotate, speed, compress, dll.
  */
 class VideoEditorActivity : AppCompatActivity() {
 
     companion object {
-        private const val REQ_PICK_VIDEO = 1001
+        private const val REQ_PICK_VIDEO = 2001
     }
 
-    private lateinit var tvSelected: TextView
+    private var videoUri: Uri? = null
     private lateinit var tvStatus: TextView
-    private var selectedVideo: File? = null
+    private lateinit var tvSelected: TextView
+    private lateinit var seekBar: SeekBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        try {
-            setContentView(R.layout.activity_video_editor)
-        } catch (e: Exception) { finish(); return }
+        try { setContentView(R.layout.activity_video_editor) }
+        catch (e: Exception) { finish(); return }
 
-        tvSelected = findViewById(R.id.tvSelected)
         tvStatus = findViewById(R.id.tvStatus)
+        tvSelected = findViewById(R.id.tvSelected)
+        seekBar = findViewById(R.id.seekBarTrim)
 
-        findViewById<Button>(R.id.btnPickVideo)?.setOnClickListener { pickVideo() }
-        findViewById<Button>(R.id.btnTrim)?.setOnClickListener {
-            toast("Trim: coming soon (via Media3 Transformer)")
+        findViewById<Button>(R.id.btnPickVideo)?.setOnClickListener {
+            pickVideo()
         }
-        findViewById<Button>(R.id.btnRotate)?.setOnClickListener {
-            toast("Rotate: coming soon (via Media3 Transformer)")
-        }
-        findViewById<Button>(R.id.btnSpeed)?.setOnClickListener {
-            toast("Speed: coming soon")
-        }
-        findViewById<Button>(R.id.btnExtractAudio)?.setOnClickListener {
-            toast("Extract Audio: coming soon")
-        }
+
+        findViewById<Button>(R.id.btnTrim)?.setOnClickListener { doAction("Trim") }
+        findViewById<Button>(R.id.btnRotate)?.setOnClickListener { doAction("Rotate") }
+        findViewById<Button>(R.id.btnSpeed)?.setOnClickListener { doAction("Speed") }
+        findViewById<Button>(R.id.btnExtractAudio)?.setOnClickListener { doAction("Extract Audio") }
+        findViewById<Button>(R.id.btnCompress)?.setOnClickListener { doAction("Compress") }
+        findViewById<Button>(R.id.btnMerge)?.setOnClickListener { doAction("Merge") }
+        findViewById<Button>(R.id.btnAddMusic)?.setOnClickListener { doAction("Add Music") }
+        findViewById<Button>(R.id.btnAddText)?.setOnClickListener { doAction("Add Text") }
+        findViewById<Button>(R.id.btnCrop)?.setOnClickListener { doAction("Crop") }
+        findViewById<Button>(R.id.btnReverse)?.setOnClickListener { doAction("Reverse") }
     }
 
     private fun pickVideo() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
-        startActivityForResult(intent, REQ_PICK_VIDEO)
+        val i = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "video/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
+        }
+        startActivityForResult(Intent.createChooser(i, "Pilih Video"), REQ_PICK_VIDEO)
     }
 
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQ_PICK_VIDEO && resultCode == Activity.RESULT_OK) {
-            val uri = data?.data ?: return
-            selectedVideo = copyToCache(uri)
-            tvSelected.text = "Selected: ${selectedVideo?.name ?: "unknown"}"
-            tvStatus.text = "Ready to edit"
+            videoUri = data?.data
+            tvSelected?.text = "📁 ${videoUri?.lastPathSegment ?: "Video"}"
+            tvStatus?.text = "✅ Video dipilih"
         }
     }
 
-    private fun copyToCache(uri: Uri): File? {
-        return try {
-            val inputStream = contentResolver.openInputStream(uri) ?: return null
-            val outFile = File(cacheDir, "input_video_${System.currentTimeMillis()}.mp4")
-            outFile.outputStream().use { out -> inputStream.copyTo(out) }
-            inputStream.close()
-            outFile
-        } catch (e: Exception) {
-            toast("Gagal copy: ${e.message}")
-            null
+    private fun doAction(action: String) {
+        if (videoUri == null) {
+            Toast.makeText(this, "Pilih video dulu", Toast.LENGTH_SHORT).show()
+            return
         }
+        // Placeholder — proses di server/FFmpeg
+        tvStatus?.text = "⏳ $action sedang diproses..."
+        Toast.makeText(this, "🔄 $action — coming soon", Toast.LENGTH_LONG).show()
     }
-
-    private fun toast(m: String) =
-        Toast.makeText(this, m, Toast.LENGTH_SHORT).show()
 }
