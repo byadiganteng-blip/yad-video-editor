@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_light"
@@ -10,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- HEADER dengan gradient -->
+        <!-- HEADER -->
         <LinearLayout
             android:id="@+id/headerLayout"
             android:orientation="vertical"
@@ -56,7 +57,6 @@
                 android:layout_height="wrap_content"/>
         </LinearLayout>
 
-        <!-- Menu utama -->
         <LinearLayout
             android:orientation="vertical"
             android:padding="16dp"
@@ -64,14 +64,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- VIDEO LIST -->
+            <!-- VIDEO SAYA -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/cardVideoList"
                 android:layout_marginBottom="12dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:orientation="horizontal"
@@ -111,8 +114,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:id="@+id/btnVideoList"
-                        android:text="›"
+                        android:text="&gt;"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
                         android:padding="8dp"
@@ -123,12 +125,15 @@
 
             <!-- VIDEO EDITOR -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/cardEditor"
                 android:layout_marginBottom="12dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:orientation="horizontal"
@@ -168,8 +173,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:id="@+id/btnEditor"
-                        android:text="›"
+                        android:text="&gt;"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
                         android:padding="8dp"
@@ -180,12 +184,15 @@
 
             <!-- FILES -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/cardFiles"
                 android:layout_marginBottom="12dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:orientation="horizontal"
@@ -225,8 +232,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:id="@+id/btnFiles"
-                        android:text="›"
+                        android:text="&gt;"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
                         android:padding="8dp"
@@ -235,14 +241,17 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- INSTRUCTIONS -->
+            <!-- PETUNJUK -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/cardInstructions"
                 android:layout_marginBottom="12dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:orientation="horizontal"
@@ -282,8 +291,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:id="@+id/btnInstructions"
-                        android:text="›"
+                        android:text="&gt;"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
                         android:padding="8dp"
@@ -294,12 +302,15 @@
 
             <!-- CREDIT -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/cardCredit"
                 android:layout_marginBottom="12dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:orientation="horizontal"
@@ -339,8 +350,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:id="@+id/btnCredit"
-                        android:text="›"
+                        android:text="&gt;"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
                         android:padding="8dp"
@@ -349,14 +359,17 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- STATISTICS -->
+            <!-- STATISTIK -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/cardStatistics"
                 android:layout_marginBottom="12dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:orientation="horizontal"
@@ -396,8 +409,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:id="@+id/btnStatistics"
-                        android:text="›"
+                        android:text="&gt;"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
                         android:padding="8dp"
@@ -406,14 +418,17 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- SETTINGS -->
+            <!-- PENGATURAN -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/cardSettings"
                 android:layout_marginBottom="12dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:orientation="horizontal"
@@ -453,8 +468,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:id="@+id/btnSettings"
-                        android:text="›"
+                        android:text="&gt;"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
                         android:padding="8dp"
@@ -463,16 +477,18 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- ADMIN PANEL (HIDDEN - hanya muncul kalau unlock) -->
+            <!-- ADMIN HIDDEN -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardAdminHidden"
                 android:visibility="gone"
                 android:layout_marginBottom="12dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:orientation="horizontal"
@@ -512,8 +528,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:id="@+id/btnAdmin"
-                        android:text="›"
+                        android:text="&gt;"
                         android:textSize="28sp"
                         android:textColor="@color/danger"
                         android:padding="8dp"
