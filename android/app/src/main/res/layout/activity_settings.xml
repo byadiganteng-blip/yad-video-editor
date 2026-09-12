@@ -1,22 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent">
-    <LinearLayout android:orientation="vertical" android:padding="16dp"
-        android:layout_width="match_parent" android:layout_height="wrap_content">
-        <TextView android:text="GitHub Token:" android:textStyle="bold"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <EditText android:id="@+id/etGithubToken" android:hint="ghp_..."
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_light">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="⚙️ PENGATURAN"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/primary"
+            android:layout_marginBottom="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:text="🔑 GitHub Token"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:text="Token disimpan lokal. Kosongkan jika admin sudah set token di server."
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginBottom="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <EditText
+            android:id="@+id/etGithubToken"
+            android:hint="ghp_xxxxxxxxxxxxxxxx"
             android:inputType="textPassword"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <Button android:id="@+id/btnSave" android:text="Save"
-            android:layout_marginTop="8dp"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <Button android:id="@+id/btnClear" android:text="Clear All Data"
-            android:backgroundTint="#F44336" android:textColor="#FFFFFF"
-            android:layout_marginTop="4dp"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <TextView android:id="@+id/tvInfo" android:paddingTop="16dp"
-            android:textSize="12sp" android:textColor="#757575"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            android:padding="12dp"
+            android:background="#FFFFFF"
+            android:layout_marginBottom="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <Button
+            android:id="@+id/btnSave"
+            android:text="💾 Simpan"
+            android:layout_marginBottom="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <Button
+            android:id="@+id/btnClear"
+            android:text="🗑️ Hapus Token"
+            android:backgroundTint="@color/danger"
+            android:textColor="@color/text_white"
+            android:layout_marginBottom="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:id="@+id/tvInfo"
+            android:text=""
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:padding="12dp"
+            android:background="#EEEEEE"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
     </LinearLayout>
 </ScrollView>
