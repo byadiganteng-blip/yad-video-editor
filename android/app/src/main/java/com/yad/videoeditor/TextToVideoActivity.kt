@@ -10,16 +10,20 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.*
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 
+/**
+ * AI Text to Video — dengan pilihan model AI
+ * Created by KARYADI, Coding by KARYADI
+ */
 class TextToVideoActivity : AppCompatActivity() {
     companion object { private const val REQ_PICK_TXT = 1001 }
 
     private lateinit var etStory: EditText
     private lateinit var etWatermark: EditText
     private lateinit var spModel: Spinner
+    private lateinit var tvModelInfo: TextView
     private lateinit var spVideoSize: Spinner
     private lateinit var spQuality: Spinner
     private lateinit var spVoice: Spinner
@@ -66,9 +70,11 @@ class TextToVideoActivity : AppCompatActivity() {
         try { setContentView(R.layout.activity_text_to_video) }
         catch (e: Exception) { finish(); return }
 
+        // Bind views
         etStory = findViewById(R.id.etStory)
         etWatermark = findViewById(R.id.etWatermark)
         spModel = findViewById(R.id.spModel)
+        tvModelInfo = findViewById(R.id.tvModelInfo)
         spVideoSize = findViewById(R.id.spVideoSize)
         spQuality = findViewById(R.id.spQuality)
         spVoice = findViewById(R.id.spVoice)
@@ -81,11 +87,20 @@ class TextToVideoActivity : AppCompatActivity() {
         progressContainer = findViewById(R.id.progressContainer)
         btnDownloadNow = findViewById(R.id.btnDownloadNow)
 
-        // Model AI spinner
+        // Spinner Model AI
         spModel.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
             ModelPresets.ALL.map { it.displayName })
 
+        spModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
+                val model = ModelPresets.ALL[pos]
+                tvModelInfo.text = model.description
+            }
+            override fun onNothingSelected(p: AdapterView<*>?) {}
+        }
+
+        // Spinner lain
         spVideoSize.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
             VideoSizePreset.ALL.map { "${it.displayName} (${it.aspectRatio})" })
@@ -99,15 +114,6 @@ class TextToVideoActivity : AppCompatActivity() {
         spSubtitleStyle.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
             SubtitleStyle.ALL.map { it.displayName })
-
-        // Tampilkan deskripsi model saat dipilih
-        spModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
-                val model = ModelPresets.ALL[pos]
-                tvStatus.text = "🎨 ${model.displayName}\n${model.description}"
-            }
-            override fun onNothingSelected(p: AdapterView<*>?) {}
-        }
 
         tvStatus.text = if (SecureConfig.hasGithubToken())
             "✅ Siap membuat video"
@@ -193,6 +199,7 @@ class TextToVideoActivity : AppCompatActivity() {
             return
         }
 
+        // Ambil model yang dipilih
         val model = ModelPresets.ALL[spModel.selectedItemPosition]
         val watermark = if (swShowWatermark.isChecked) etWatermark.text.toString().trim() else ""
         val voice = VoicePreset.ALL[spVoice.selectedItemPosition].id
@@ -212,7 +219,7 @@ class TextToVideoActivity : AppCompatActivity() {
             putExtra(VideoGeneratorService.EXTRA_WATERMARK, watermark)
             putExtra(VideoGeneratorService.EXTRA_SHOW_SUBTITLE, showSubtitle)
             putExtra(VideoGeneratorService.EXTRA_SUBTITLE_STYLE, subtitleStyle)
-            putExtra("model_id", model.id)
+            putExtra("model_id", model.id)  // ← Kirim model yang dipilih
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -222,7 +229,7 @@ class TextToVideoActivity : AppCompatActivity() {
         }
 
         Toast.makeText(this,
-            "🚀 Proses berjalan di background. Anda bisa keluar aplikasi.",
+            "🚀 Proses berjalan dengan ${model.displayName}",
             Toast.LENGTH_LONG).show()
     }
 }
