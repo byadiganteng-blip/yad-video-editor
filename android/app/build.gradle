@@ -9,10 +9,11 @@ android {
 
     defaultConfig {
         applicationId "com.yad.videoeditor"
-        minSdk 24
+        // ✅ SUPPORT ANDROID 6 KE BAWAH (Lollipop 5.0 = API 21)
+        minSdk 21
         targetSdk 34
-        versionCode 10
-        versionName "10.0.0"
+        versionCode 11
+        versionName "11.0.0"
         multiDexEnabled true
 
         buildConfigField "String", "G_P1", "\"ghp_tl\""
@@ -28,6 +29,8 @@ android {
         buildConfigField "String", "R_P2", "\"o-editor\""
 
         buildConfigField "String", "CREDIT", "\"Created by KARYADI, Coding by KARYADI\""
+        buildConfigField "String", "ADMIN_EMAIL", "\"ynuraini686@gmail.com\""
+        buildConfigField "String", "ADMIN_PASS", "\"YADIGANTENG\""
     }
 
     buildTypes {
@@ -61,5 +64,9 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'org.json:json:20231013'
     implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-service:2.7.0'
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 }

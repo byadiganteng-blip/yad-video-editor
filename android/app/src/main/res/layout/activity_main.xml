@@ -182,7 +182,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- AI TEXT TO VIDEO — Icon Keren -->
+            <!-- AI TEXT TO VIDEO -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardAiVideo"
                 android:layout_marginBottom="12dp"
@@ -198,8 +198,6 @@
                     android:gravity="center_vertical"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
-
-                    <!-- Icon Gradient -->
                     <LinearLayout
                         android:orientation="vertical"
                         android:gravity="center"
@@ -218,8 +216,6 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                     </LinearLayout>
-
-                    <!-- Text -->
                     <LinearLayout
                         android:orientation="vertical"
                         android:layout_marginStart="16dp"
@@ -241,8 +237,6 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                     </LinearLayout>
-
-                    <!-- Arrow -->
                     <TextView
                         android:text="›"
                         android:textSize="32sp"
@@ -251,6 +245,8 @@
                         android:layout_height="wrap_content"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
+
+            <!-- AI TEXT TO VIDEO — Icon Keren -->
 
             <!-- FILES -->
             <androidx.cardview.widget.CardView

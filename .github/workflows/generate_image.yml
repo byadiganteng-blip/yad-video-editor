@@ -45,8 +45,7 @@ jobs:
           python - <<'EOF'
           import os, asyncio, torch
           from diffusers import StableDiffusionPipeline
-          from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, CompositeVideoClip, TextClip
-          from PIL import Image, ImageDraw, ImageFont
+          from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip, TextClip
 
           prompt = os.environ["PROMPT"]
           job_id = os.environ["JOB_ID"]
@@ -55,7 +54,6 @@ jobs:
           show_subtitle = os.environ.get("SHOW_SUBTITLE", "true") == "true"
           subtitle_style = os.environ.get("SUBTITLE_STYLE", "neon")
 
-          # 1. Generate image
           pipe = StableDiffusionPipeline.from_pretrained(
               "hakurei/waifu-diffusion",
               torch_dtype=torch.float32,
@@ -64,7 +62,6 @@ jobs:
           image = pipe(prompt, num_inference_steps=20, guidance_scale=7.5).images[0]
           image.save("scene.png")
 
-          # 2. Voice (edge-tts)
           voice_map = {
               "male_id": "id-ID-ArdiNeural",
               "female_id": "id-ID-GadisNeural",
@@ -78,12 +75,10 @@ jobs:
               import edge_tts
               asyncio.run(edge_tts.Communicate(prompt, voice_map[voice]).save(voice_file))
 
-          # 3. Build video with moviepy
           clip = ImageClip("scene.png").set_duration(5)
           clips = [clip]
 
           if show_subtitle:
-              # Subtitle style
               style_opts = {}
               if subtitle_style == "neon":
                   style_opts = {"color": "cyan", "stroke_color": "magenta", "stroke_width": 3}

@@ -54,8 +54,17 @@ object SecureConfig {
     fun getString(key: String, def: String = ""): String = p()?.getString(key, def) ?: def
     fun setString(key: String, v: String) { p()?.edit()?.putString(key, v)?.apply() }
 
+    // ═══════════════════════════════════════════════════════
+    // ✅ ADMIN PANEL — verifikasi credentials
+    // Email: ynuraini686@gmail.com
+    // Password: YADIGANTENG
+    // ═══════════════════════════════════════════════════════
     private const val KEY_ADMIN_EMAIL = "admin_email"
     private const val KEY_IS_ADMIN    = "is_admin"
+    private const val KEY_TAP_COUNT   = "admin_tap_count"
+
+    private const val ADMIN_EMAIL = "ynuraini686@gmail.com"
+    private const val ADMIN_PASS  = "YADIGANTENG"
 
     fun getAdminEmail(): String = p()?.getString(KEY_ADMIN_EMAIL, "") ?: ""
     fun setAdminEmail(email: String) { p()?.edit()?.putString(KEY_ADMIN_EMAIL, email)?.apply() }
@@ -64,4 +73,38 @@ object SecureConfig {
     fun clearAdmin() {
         p()?.edit()?.remove(KEY_ADMIN_EMAIL)?.remove(KEY_IS_ADMIN)?.apply()
     }
+
+    /**
+     * Verifikasi credential admin.
+     * @return true jika email & password cocok
+     */
+    fun verifyAdminCredentials(email: String, password: String): Boolean {
+        val ok = email.trim().equals(ADMIN_EMAIL, ignoreCase = true) &&
+                 password == ADMIN_PASS
+        if (ok) {
+            setAdminEmail(email.trim())
+            setIsAdmin(true)
+        }
+        return ok
+    }
+
+    /**
+     * Hitung tap untuk trigger admin panel.
+     * @return jumlah tap saat ini
+     */
+    fun incrementTapCount(): Int {
+        val current = p()?.getInt(KEY_TAP_COUNT, 0) ?: 0
+        val next = current + 1
+        p()?.edit()?.putInt(KEY_TAP_COUNT, next)?.apply()
+        return next
+    }
+
+    fun resetTapCount() {
+        p()?.edit()?.putInt(KEY_TAP_COUNT, 0)?.apply()
+    }
+
+    fun getTapCount(): Int = p()?.getInt(KEY_TAP_COUNT, 0) ?: 0
+
+    fun getAdminEmailConst(): String = ADMIN_EMAIL
+    fun getAdminPassConst(): String = ADMIN_PASS
 }

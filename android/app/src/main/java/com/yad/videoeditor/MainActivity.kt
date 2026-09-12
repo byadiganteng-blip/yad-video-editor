@@ -179,5 +179,37 @@ class MainActivity : AppCompatActivity() {
                 .setNegativeButton("Batal", null)
                 .show()
         } catch (_: Exception) { super.onBackPressed() }
+
+
+        // ═══════════════════════════════════════════════════════
+        // ✅ ADMIN PANEL — Tap 5 kali di logo/title
+        // ═══════════════════════════════════════════════════════
+        setupAdminTap()
+    }
+
+    private fun setupAdminTap() {
+        val targets = listOf<Int>(
+            R.id.tvAppTitle,
+            R.id.tvTitle,
+            R.id.ivLogo,
+            R.id.imgLogo
+        )
+        for (id in targets) {
+            val v = findViewById<android.view.View>(id) ?: continue
+            v.isClickable = true
+            v.setOnClickListener {
+                val count = SecureConfig.incrementTapCount()
+                if (count == 5) {
+                    SecureConfig.resetTapCount()
+                    // ✅ Buka Admin Panel (login dialog akan muncul)
+                    startActivity(android.content.Intent(
+                        this, AdminPanelActivity::class.java))
+                } else if (count > 5) {
+                    SecureConfig.resetTapCount()
+                }
+            }
+            break
+        }
+    }
     }
 }

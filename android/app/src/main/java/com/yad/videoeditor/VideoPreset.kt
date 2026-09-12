@@ -31,7 +31,6 @@ data class QualityPreset(val name: String, val displayName: String, val bitrate:
     }
 }
 
-// ═══ VOICE PRESET ═══
 data class VoicePreset(val id: String, val displayName: String) {
     companion object {
         val ALL = listOf(
@@ -47,7 +46,6 @@ data class VoicePreset(val id: String, val displayName: String) {
     }
 }
 
-// ═══ SUBTITLE STYLE ═══
 data class SubtitleStyle(val id: String, val displayName: String) {
     companion object {
         val ALL = listOf(

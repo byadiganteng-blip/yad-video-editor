@@ -1,14 +1,17 @@
 package com.yad.videoeditor
 
 import android.app.Activity
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
+import androidx.core.content.ContextCompat
 
 class TextToVideoActivity : AppCompatActivity() {
     companion object { private const val REQ_PICK_TXT = 1001 }
@@ -25,6 +28,37 @@ class TextToVideoActivity : AppCompatActivity() {
     private lateinit var tvPercent: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var progressContainer: LinearLayout
+    private lateinit var btnDownloadNow: Button
+    private var lastVideoPath: String? = null
+
+    // ✅ Broadcast receiver untuk update progress dari service
+    private val progressReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                VideoGeneratorService.ACTION_PROGRESS -> {
+                    val pct = intent.getIntExtra(VideoGeneratorService.EXTRA_PERCENT, 0)
+                    val msg = intent.getStringExtra(VideoGeneratorService.EXTRA_MESSAGE) ?: ""
+                    updateProgress(pct, msg)
+                }
+                VideoGeneratorService.ACTION_DONE -> {
+                    val path = intent.getStringExtra(VideoGeneratorService.EXTRA_FILE_PATH)
+                    lastVideoPath = path
+                    progressBar.progress = 100
+                    tvPercent.text = "100%"
+                    tvStatus.text = "✅ Video selesai! Tap untuk preview"
+                    btnDownloadNow.visibility = View.VISIBLE
+                    Toast.makeText(this@TextToVideoActivity,
+                        "✅ Video selesai dibuat!", Toast.LENGTH_LONG).show()
+                }
+                VideoGeneratorService.ACTION_FAILED -> {
+                    val msg = intent.getStringExtra(VideoGeneratorService.EXTRA_MESSAGE) ?: "Gagal"
+                    tvStatus.text = "❌ $msg"
+                    Toast.makeText(this@TextToVideoActivity, "❌ $msg",
+                        Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,8 +77,8 @@ class TextToVideoActivity : AppCompatActivity() {
         tvPercent = findViewById(R.id.tvPercent)
         progressBar = findViewById(R.id.progressBar)
         progressContainer = findViewById(R.id.progressContainer)
+        btnDownloadNow = findViewById(R.id.btnDownloadNow)
 
-        // Setup spinners
         spVideoSize.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
             VideoSizePreset.ALL.map { "${it.displayName} (${it.aspectRatio})" })
         spQuality.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
@@ -62,6 +96,48 @@ class TextToVideoActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnGenerate).setOnClickListener { generate() }
         findViewById<Button>(R.id.btnUploadTxt).setOnClickListener { pickTxtFile() }
+
+        // ✅ Tombol download cepat dari progress
+        btnDownloadNow.setOnClickListener {
+            lastVideoPath?.let { path ->
+                val intent = Intent(this, VideoPreviewActivity::class.java)
+                intent.putExtra("video_path", path)
+                startActivity(intent)
+            } ?: Toast.makeText(this, "Video belum siap", Toast.LENGTH_SHORT).show()
+        }
+
+        // ✅ Jika service sedang berjalan, restore progress
+        if (VideoGeneratorService.isRunning) {
+            progressContainer.visibility = View.VISIBLE
+            tvStatus.text = "⏳ Proses sedang berjalan di background..."
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // ✅ Register broadcast receiver
+        val filter = IntentFilter().apply {
+            addAction(VideoGeneratorService.ACTION_PROGRESS)
+            addAction(VideoGeneratorService.ACTION_DONE)
+            addAction(VideoGeneratorService.ACTION_FAILED)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(progressReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(progressReceiver, filter)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try { unregisterReceiver(progressReceiver) } catch (_: Exception) {}
+    }
+
+    private fun updateProgress(pct: Int, msg: String) {
+        progressContainer.visibility = View.VISIBLE
+        progressBar.progress = pct
+        tvPercent.text = "$pct%"
+        tvStatus.text = msg
     }
 
     private fun pickTxtFile() {
@@ -109,32 +185,26 @@ class TextToVideoActivity : AppCompatActivity() {
         progressBar.progress = 0
         tvPercent.text = "0%"
         tvStatus.text = "Memulai..."
+        btnDownloadNow.visibility = View.GONE
+        lastVideoPath = null
 
-        lifecycleScope.launch {
-            try {
-                AiImageGenerator.generateVideo(
-                    this@TextToVideoActivity,
-                    story,
-                    voice,
-                    watermark,
-                    showSubtitle,
-                    subtitleStyle,
-                    AiImageGenerator.ProgressCallback { scene, total, stage, pct, msg ->
-                        runOnUiThread {
-                            progressBar.progress = pct
-                            tvPercent.text = "$pct%"
-                            tvStatus.text = msg
-                        }
-                    }
-                )
-                progressBar.progress = 100
-                tvPercent.text = "100%"
-                tvStatus.text = "✅ Video selesai dibuat!"
-                Toast.makeText(this@TextToVideoActivity,
-                    "Video selesai! Cek di folder Video Saya", Toast.LENGTH_LONG).show()
-            } catch (e: Exception) {
-                tvStatus.text = "❌ Error: ${e.message}"
-            }
+        // ✅ Jalankan foreground service — berjalan di background
+        val serviceIntent = Intent(this, VideoGeneratorService::class.java).apply {
+            putExtra(VideoGeneratorService.EXTRA_PROMPT, story)
+            putExtra(VideoGeneratorService.EXTRA_VOICE, voice)
+            putExtra(VideoGeneratorService.EXTRA_WATERMARK, watermark)
+            putExtra(VideoGeneratorService.EXTRA_SHOW_SUBTITLE, showSubtitle)
+            putExtra(VideoGeneratorService.EXTRA_SUBTITLE_STYLE, subtitleStyle)
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            ContextCompat.startForegroundService(this, serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+
+        Toast.makeText(this,
+            "🚀 Proses berjalan di background. Anda bisa keluar aplikasi.",
+            Toast.LENGTH_LONG).show()
     }
 }

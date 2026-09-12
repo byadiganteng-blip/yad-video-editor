@@ -4,14 +4,12 @@
     android:layout_height="match_parent"
     android:background="#F5F5F7"
     android:fillViewport="true">
-
     <LinearLayout
         android:orientation="vertical"
         android:padding="20dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- HEADER -->
         <TextView
             android:text="🎬 Buat Video dari Teks"
             android:textSize="24sp"
@@ -29,7 +27,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
-        <!-- STORY INPUT -->
         <TextView
             android:text="📝 Cerita"
             android:textStyle="bold"
@@ -58,7 +55,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
-        <!-- VIDEO SIZE -->
         <TextView
             android:text="📐 Ukuran Video"
             android:textStyle="bold"
@@ -67,14 +63,12 @@
             android:layout_marginBottom="4dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
-
         <Spinner
             android:id="@+id/spVideoSize"
             android:background="#FFFFFF"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
-        <!-- QUALITY -->
         <TextView
             android:text="🎞️ Kualitas"
             android:textStyle="bold"
@@ -83,14 +77,12 @@
             android:layout_marginBottom="4dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
-
         <Spinner
             android:id="@+id/spQuality"
             android:background="#FFFFFF"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
-        <!-- VOICE -->
         <TextView
             android:text="🎤 Suara Narasi"
             android:textStyle="bold"
@@ -99,14 +91,12 @@
             android:layout_marginBottom="4dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
-
         <Spinner
             android:id="@+id/spVoice"
             android:background="#FFFFFF"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
-        <!-- WATERMARK -->
         <LinearLayout
             android:orientation="horizontal"
             android:layout_marginTop="16dp"
@@ -136,7 +126,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
-        <!-- SUBTITLE -->
         <LinearLayout
             android:orientation="horizontal"
             android:layout_marginTop="16dp"
@@ -164,14 +153,12 @@
             android:layout_marginBottom="4dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
-
         <Spinner
             android:id="@+id/spSubtitleStyle"
             android:background="#FFFFFF"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
-        <!-- GENERATE BUTTON -->
         <Button
             android:id="@+id/btnGenerate"
             android:text="🎬 MEMBUAT VIDEO"
@@ -183,7 +170,6 @@
             android:layout_width="match_parent"
             android:layout_height="60dp"/>
 
-        <!-- PROGRESS CONTAINER -->
         <LinearLayout
             android:id="@+id/progressContainer"
             android:orientation="vertical"
@@ -224,9 +210,19 @@
                 android:layout_marginTop="8dp"
                 android:layout_width="match_parent"
                 android:layout_height="12dp"/>
+
+            <Button
+                android:id="@+id/btnDownloadNow"
+                android:text="⬇️ DOWNLOAD / PREVIEW VIDEO"
+                android:visibility="gone"
+                android:backgroundTint="#00B894"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:layout_marginTop="12dp"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"/>
         </LinearLayout>
 
-        <!-- STATUS -->
         <TextView
             android:id="@+id/tvStatus"
             android:text="Ready"
@@ -237,6 +233,5 @@
             android:layout_marginTop="12dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
-
     </LinearLayout>
 </ScrollView>
