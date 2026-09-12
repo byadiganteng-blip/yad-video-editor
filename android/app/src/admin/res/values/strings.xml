@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">YAD Admin</string>
+    <string name="app_tagline">Control Panel</string>
+    <string name="credit_text">Admin Panel - KARYADI</string>
+    <string name="banner_welcome">Admin Panel aktif</string>
+</resources>
