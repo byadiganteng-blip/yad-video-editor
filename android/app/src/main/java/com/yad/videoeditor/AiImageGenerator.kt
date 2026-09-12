@@ -29,15 +29,15 @@ object AiImageGenerator {
         watermark: String,
         showSubtitle: Boolean,
         subtitleStyle: String,
+        modelId: String = "waifu",
         callback: ProgressCallback?
     ): File? = withContext(Dispatchers.IO) {
         try {
             val jobId = UUID.randomUUID().toString().replace("-", "")
 
-            // 1. Trigger workflow
             callback?.onProgress(1, 1, "SENDING", 5, "Mengirim permintaan...")
             val ok = GitHubAiClient.dispatchVideo(
-                prompt, jobId, voice, watermark, showSubtitle, subtitleStyle
+                prompt, jobId, voice, watermark, showSubtitle, subtitleStyle, modelId
             )
             if (!ok) {
                 callback?.onProgress(1, 1, "FAILED", 0, "Gagal mengirim permintaan")
@@ -45,11 +45,10 @@ object AiImageGenerator {
             }
             callback?.onProgress(1, 1, "SENDING", 10, "Permintaan terkirim")
 
-            // 2. Poll status setiap 5 detik (max 10 menit)
             var url: String? = null
-            for (i in 0 until 120) {
+            for (i in 0 until 180) {
                 delay(5_000)
-                val pct = 10 + (i * 75 / 120)
+                val pct = 10 + (i * 75 / 180)
                 url = GitHubAiClient.checkResult(jobId)
                 if (url != null) break
                 callback?.onProgress(1, 1, "WAITING", pct,
@@ -60,7 +59,6 @@ object AiImageGenerator {
                 return@withContext null
             }
 
-            // 3. Download video
             callback?.onProgress(1, 1, "DOWNLOADING", 90, "Mengunduh hasil...")
             val request = Request.Builder().url(url).get().build()
             client.newCall(request).execute().use { response ->
@@ -83,16 +81,6 @@ object AiImageGenerator {
         } catch (e: Exception) {
             callback?.onProgress(1, 1, "FAILED", 0, "Error: ${e.message}")
             null
-        }
-    }
-
-    fun splitIntoScenes(story: String, maxScenes: Int = 8): List<String> {
-        val paragraphs = story.split("\n\n", "\n", ". ")
-            .map { it.trim() }.filter { it.isNotEmpty() }
-        return if (paragraphs.size <= maxScenes) paragraphs
-        else {
-            val chunkSize = (paragraphs.size + maxScenes - 1) / maxScenes
-            paragraphs.chunked(chunkSize).map { it.joinToString(". ") + "." }
         }
     }
 }
