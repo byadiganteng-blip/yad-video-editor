@@ -31,14 +31,14 @@ on:
         required: false
         default: 'cinematic'
       model_id:
-        description: 'ID model (waifu/sd15/anything/dreamshaper/sdxl/openjourney/dreamlike/trinart/realistic/majicmix)'
+        description: 'ID model'
         required: false
         default: 'waifu'
 
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     permissions:
       contents: write
     steps:
@@ -53,11 +53,19 @@ jobs:
       - name: Install system deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-dejavu fonts-noto
+          sudo apt-get install -y ffmpeg fonts-dejavu fonts-noto wget
       - name: Install Python deps
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Download Piper binary
+        run: |
+          mkdir -p piper_bin
+          cd piper_bin
+          wget -q https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz
+          tar -xzf piper_linux_x86_64.tar.gz
+          ls -la
+          echo "$PWD/piper" >> $GITHUB_PATH
       - name: Generate video
         env:
           PROMPT: ${{ github.event.inputs.prompt }}
@@ -78,6 +86,7 @@ jobs:
           name: Video ${{ github.run_id }}
           body: |
             Model: ${{ github.event.inputs.model_id }}
+            TTS: Piper (offline)
             Prompt: ${{ github.event.inputs.prompt }}
           files: |
             *.mp4
