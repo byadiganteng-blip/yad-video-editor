@@ -10,17 +10,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
 
-/**
- * ADMIN MENU — hanya untuk APK admin (com.yad.videoeditor.admin)
- * Fokus: control panel, lihat user, broadcast, setting.
- */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var tvStatus: TextView
-    private lateinit var tvStats: TextView
+    private lateinit var tvBanner: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,7 +22,6 @@ class MainActivity : AppCompatActivity() {
         try { setContentView(R.layout.activity_main) }
         catch (e: Exception) { finish(); return }
 
-        // Login admin
         if (!SecureConfig.isAdmin()) {
             showLoginDialog()
         } else {
@@ -75,40 +68,96 @@ class MainActivity : AppCompatActivity() {
 
     private fun showAdminMenu() {
         tvStatus = findViewById(R.id.tvStatus)
-        tvStats = findViewById(R.id.tvBanner)
+        tvBanner = findViewById(R.id.tvBanner)
 
-        // Sembunyikan card client yang tidak perlu
-        hideCard(R.id.cardVideoList)
-        hideCard(R.id.cardEditor)
-        hideCard(R.id.cardAiVideo)
-        hideCard(R.id.cardFiles)
-        hideCard(R.id.cardCredit)
+        findViewById<TextView>(R.id.tvCredit)?.text =
+            "Login: ${SecureConfig.getAdminEmail()}"
 
-        // Menu admin
-        clickCard(R.id.cardInstructions) { start(AdminUserListActivity::class.java) }
-        clickCard(R.id.cardStatistics) { start(AdminStatsActivity::class.java) }
+        // MANAJEMEN USER
+        clickCard(R.id.cardAdminUserList) { start(AdminUserListActivity::class.java) }
+        clickCard(R.id.cardAdminStats) { start(AdminStatsActivity::class.java) }
 
-        // Set judul
-        try {
-            findViewById<TextView>(R.id.tvAppTitle)?.text = "YAD Admin"
-            findViewById<TextView>(R.id.tvCredit)?.text =
-                "Login: ${SecureConfig.getAdminEmail()}"
-        } catch (_: Exception) {}
+        // KOMUNIKASI
+        clickCard(R.id.cardAdminBroadcast) { start(AdminBroadcastActivity::class.java) }
+        clickCard(R.id.cardAdminPushNotif) {
+            Toast.makeText(this, "Push Notif — coming soon", Toast.LENGTH_SHORT).show()
+        }
+
+        // KONTROL APK
+        clickCard(R.id.cardAdminForceUpdate) { toggleForceUpdate() }
+        clickCard(R.id.cardAdminMaintenance) { toggleMaintenance() }
+
+        // KONFIGURASI
+        clickCard(R.id.cardAdminToken) { start(AdminSettingsActivity::class.java) }
+        clickCard(R.id.cardAdminModels) {
+            Toast.makeText(this, "Manage Model — coming soon", Toast.LENGTH_SHORT).show()
+        }
+        clickCard(R.id.cardAdminConfig) { start(AdminSettingsActivity::class.java) }
+
+        // DATA & LOG
+        clickCard(R.id.cardAdminLogs) {
+            Toast.makeText(this, "Log — coming soon", Toast.LENGTH_SHORT).show()
+        }
+        clickCard(R.id.cardAdminBackup) {
+            Toast.makeText(this, "Backup — coming soon", Toast.LENGTH_SHORT).show()
+        }
+
+        // LAINNYA
+        clickCard(R.id.cardInstructions) { start(InstructionsActivity::class.java) }
+        clickCard(R.id.cardAdminLogout) {
+            SecureConfig.clearAdmin()
+            Toast.makeText(this, "Logout", Toast.LENGTH_SHORT).show()
+            finish()
+        }
 
         // Listen stats
         lifecycleScope.launch {
             FirebaseManager.statsFlow().collectLatest { stats ->
                 if (stats != null) {
-                    tvStats?.text = "📊 Users: ${stats["total_users"] ?: 0} | " +
-                                    "Videos: ${stats["total_videos"] ?: 0}"
-                    tvStats?.visibility = View.VISIBLE
+                    tvBanner?.text = "📊 Users: ${stats["total_users"] ?: 0} | " +
+                                     "Videos: ${stats["total_videos"] ?: 0} | " +
+                                     "Premium: ${stats["total_premium"] ?: 0}"
+                    tvBanner?.visibility = View.VISIBLE
                 }
+            }
+        }
+        lifecycleScope.launch {
+            FirebaseManager.configFlow().collectLatest { cfg ->
+                tvStatus?.text = "🔄 Force: ${cfg.forceUpdate} | " +
+                                 "🛠️ Maintenance: ${cfg.maintenanceMode} | " +
+                                 "📢 Ads: ${cfg.showAds}"
             }
         }
     }
 
-    private fun hideCard(id: Int) {
-        try { findViewById<View>(id)?.visibility = View.GONE } catch (_: Exception) {}
+    private fun toggleForceUpdate() {
+        lifecycleScope.launch {
+            try {
+                FirebaseManager.updateConfig("force_update", true) { ok ->
+                    Toast.makeText(this@MainActivity,
+                        if (ok) "✅ Force Update ON" else "❌ Gagal",
+                        Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Error: ${e.message}",
+                    Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun toggleMaintenance() {
+        AlertDialog.Builder(this)
+            .setTitle("Maintenance Mode")
+            .setMessage("Aktifkan mode maintenance? Client tidak bisa akses.")
+            .setPositiveButton("Aktifkan") { _, _ ->
+                FirebaseManager.updateConfig("maintenance_mode", true) { ok ->
+                    Toast.makeText(this@MainActivity,
+                        if (ok) "✅ Maintenance ON" else "❌ Gagal",
+                        Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Batal", null)
+            .show()
     }
 
     private fun clickCard(id: Int, action: () -> Unit) {
@@ -124,9 +173,4 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun start(cls: Class<*>) { startActivity(Intent(this, cls)) }
-
-    override fun onResume() {
-        super.onResume()
-        // Refresh stats
-    }
 }
