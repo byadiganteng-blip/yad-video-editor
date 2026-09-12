@@ -11,22 +11,24 @@ android {
         applicationId "com.yad.videoeditor"
         minSdk 21
         targetSdk 34
-        versionCode 12
-        versionName "12.0.0"
+        versionCode 13
+        versionName "13.0.0"
         multiDexEnabled true
 
-        // ✅ Update nama app
-        resValue "string", "app_name", "AI Txt to Video + Editor"
-        resValue "string", "app_name_short", "AI Txt to Video"
+        // ⚠️ TOKEN DI-EMBED DI SINI (ganti dengan token Anda)
+        buildConfigField "String", "GH_TOKEN",
+            "\"ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx\""
 
-        buildConfigField "String", "APP_DISPLAY_NAME", "\"AI Txt to Video + Editor\""
         buildConfigField "String", "U_P1", "\"byadigan\""
         buildConfigField "String", "U_P2", "\"teng-blip\""
         buildConfigField "String", "R_P1", "\"yad-vide\""
         buildConfigField "String", "R_P2", "\"o-editor\""
-        buildConfigField "String", "CREDIT", "\"Created by KARYADI, Coding by KARYADI\""
-        buildConfigField "String", "ADMIN_EMAIL", "\"ynuraini686@gmail.com\""
-        buildConfigField "String", "ADMIN_PASS", "\"YADIGANTENG\""
+        buildConfigField "String", "CREDIT",
+            "\"Created by KARYADI, Coding by KARYADI\""
+        buildConfigField "String", "ADMIN_EMAIL",
+            "\"ynuraini686@gmail.com\""
+        buildConfigField "String", "ADMIN_PASS",
+            "\"YADIGANTENG\""
     }
 
     buildTypes {
