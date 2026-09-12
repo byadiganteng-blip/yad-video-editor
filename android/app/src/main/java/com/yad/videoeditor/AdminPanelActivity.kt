@@ -1,101 +1,108 @@
 package com.yad.videoeditor
 
-import android.app.AlertDialog
 import android.os.Bundle
-import android.text.InputType
-import android.view.View
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
+/**
+ * Admin Panel — hanya bisa diakses setelah login
+ * Email : ynuraini686@gmail.com
+ * Pass  : YADIGANTENG
+ */
 class AdminPanelActivity : AppCompatActivity() {
 
-    private lateinit var tvWelcome: TextView
-    private lateinit var btnLogout: Button
-    private lateinit var layoutAdminContent: LinearLayout
+    private val scope = CoroutineScope(Dispatchers.Main)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try { setContentView(R.layout.activity_admin_panel) }
         catch (e: Exception) { finish(); return }
 
-        tvWelcome = findViewById(R.id.tvAdminWelcome)
-        btnLogout = findViewById(R.id.btnAdminLogout)
-        layoutAdminContent = findViewById(R.id.layoutAdminContent)
-
+        // Cek login dulu
         if (!SecureConfig.isAdmin()) {
             showLoginDialog()
         } else {
-            showAdminContent()
+            showAdminPanel()
         }
+    }
+
+    private fun showLoginDialog() {
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(50, 30, 50, 30)
+        }
+        val etEmail = EditText(this).apply {
+            hint = "Email admin"
+            inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        }
+        val etPass = EditText(this).apply {
+            hint = "Kata sandi"
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                        android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        container.addView(etEmail)
+        container.addView(etPass)
+
+        AlertDialog.Builder(this)
+            .setTitle("🔐 Admin Login")
+            .setMessage("Masukkan kredensial admin")
+            .setView(container)
+            .setCancelable(false)
+            .setPositiveButton("Login") { _, _ ->
+                val email = etEmail.text.toString().trim()
+                val pass = etPass.text.toString()
+                if (SecureConfig.verifyAdminCredentials(email, pass)) {
+                    Toast.makeText(this, "✅ Login berhasil", Toast.LENGTH_SHORT).show()
+                    showAdminPanel()
+                } else {
+                    Toast.makeText(this, "❌ Email atau sandi salah", Toast.LENGTH_LONG).show()
+                    finish()
+                }
+            }
+            .setNegativeButton("Batal") { _, _ -> finish() }
+            .show()
+    }
+
+    private fun showAdminPanel() {
+        val tvInfo = findViewById<TextView>(R.id.tvAdminInfo)
+        val tvWelcome = findViewById<TextView>(R.id.tvAdminWelcome)
+        val btnLogout = findViewById<Button>(R.id.btnAdminLogout)
+
+        tvWelcome.text = "👑 ADMIN PANEL\nKARYADI Control Center"
+        tvInfo.text = "Status: LOGGED IN\nEmail: ${SecureConfig.getAdminEmail()}\n\nMemuat data..."
 
         btnLogout.setOnClickListener {
             SecureConfig.clearAdmin()
             Toast.makeText(this, "Logout berhasil", Toast.LENGTH_SHORT).show()
             finish()
         }
-    }
 
-    private fun showLoginDialog() {
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 30, 50, 10)
-        }
-
-        val etEmail = EditText(this).apply {
-            hint = "Email admin"
-            inputType = InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-        }
-        val etPass = EditText(this).apply {
-            hint = "Kata sandi"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        }
-
-        layout.addView(etEmail)
-        layout.addView(etPass)
-
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("🔐 Admin Panel")
-            .setMessage("Masukkan email & kata sandi admin")
-            .setView(layout)
-            .setCancelable(false)
-            .setPositiveButton("MASUK", null)
-            .setNegativeButton("BATAL") { _, _ -> finish() }
-            .create()
-
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val email = etEmail.text.toString().trim()
-                val pass = etPass.text.toString()
-                if (SecureConfig.verifyAdminCredentials(email, pass)) {
-                    Toast.makeText(this, "✅ Selamat datang, Admin!", Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
-                    showAdminContent()
+        // Load workflow status
+        scope.launch {
+            try {
+                val (ok, runs) = AdminApi.listRuns(10)
+                if (ok && runs.isNotEmpty()) {
+                    val sb = StringBuilder()
+                    sb.append("Status: LOGGED IN\n")
+                    sb.append("Email: ${SecureConfig.getAdminEmail()}\n\n")
+                    sb.append("📊 WORKFLOW TERBARU:\n\n")
+                    for (r in runs.take(5)) {
+                        sb.append("• ${r.name}\n")
+                        sb.append("  Status: ${r.status}/${r.conclusion}\n")
+                        sb.append("  Run #${r.runNumber}\n\n")
+                    }
+                    tvInfo.text = sb.toString()
                 } else {
-                    Toast.makeText(this, "❌ Email atau kata sandi salah", Toast.LENGTH_LONG).show()
-                    etPass.text.clear()
+                    tvInfo.text = "Status: LOGGED IN\n\nTidak ada workflow run."
                 }
+            } catch (e: Exception) {
+                tvInfo.text = "Status: LOGGED IN\n\nError: ${e.message}"
             }
-        }
-        dialog.show()
-    }
-
-    private fun showAdminContent() {
-        layoutAdminContent.visibility = View.VISIBLE
-        tvWelcome.text = "👑 Admin: ${SecureConfig.getAdminEmail()}"
-
-        findViewById<TextView>(R.id.tvAdminInfo).text = buildString {
-            append("═══════════════════════\n")
-            append("📱 App Info\n")
-            append("═══════════════════════\n")
-            append("Version : ${BuildConfig.VERSION_NAME}\n")
-            append("Code    : ${BuildConfig.VERSION_CODE}\n")
-            append("Credit  : ${SecureConfig.getCredit()}\n\n")
-            append("═══════════════════════\n")
-            append("🔑 GitHub Config\n")
-            append("═══════════════════════\n")
-            append("User    : ${SecureConfig.getGithubUser()}\n")
-            append("Repo    : ${SecureConfig.getGithubRepo()}\n")
-            append("Token   : ${if (SecureConfig.hasGithubToken()) "✅ Aktif" else "❌ Kosong"}\n")
         }
     }
 }
