@@ -12,9 +12,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
-
     private lateinit var tvStatus: TextView
     private lateinit var tvBanner: TextView
+    private var isForceUpdateOn = false
+    private var isMaintenanceOn = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,15 +23,12 @@ class MainActivity : AppCompatActivity() {
         try { setContentView(R.layout.activity_main) }
         catch (e: Exception) { finish(); return }
 
-        if (!SecureConfig.isAdmin()) {
-            showLoginDialog()
-        } else {
-            showAdminMenu()
-        }
+        if (!SecureConfig.isAdmin()) showLoginDialog()
+        else showAdminMenu()
     }
 
     private fun showLoginDialog() {
-        val container = android.widget.LinearLayout(this).apply {
+        val c = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
             setPadding(50, 30, 50, 30)
         }
@@ -43,19 +41,16 @@ class MainActivity : AppCompatActivity() {
             inputType = android.text.InputType.TYPE_CLASS_TEXT or
                         android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
         }
-        container.addView(etEmail)
-        container.addView(etPass)
+        c.addView(etEmail); c.addView(etPass)
 
         AlertDialog.Builder(this)
             .setTitle("🔐 Admin Login")
-            .setView(container)
+            .setView(c)
             .setCancelable(false)
             .setPositiveButton("Login") { _, _ ->
                 if (SecureConfig.verifyAdminCredentials(
-                        etEmail.text.toString(),
-                        etPass.text.toString())) {
-                    Toast.makeText(this, "✅ Login berhasil",
-                        Toast.LENGTH_SHORT).show()
+                        etEmail.text.toString(), etPass.text.toString())) {
+                    Toast.makeText(this, "✅ Login berhasil", Toast.LENGTH_SHORT).show()
                     showAdminMenu()
                 } else {
                     Toast.makeText(this, "❌ Salah", Toast.LENGTH_LONG).show()
@@ -69,7 +64,6 @@ class MainActivity : AppCompatActivity() {
     private fun showAdminMenu() {
         tvStatus = findViewById(R.id.tvStatus)
         tvBanner = findViewById(R.id.tvBanner)
-
         findViewById<TextView>(R.id.tvCredit)?.text =
             "Login: ${SecureConfig.getAdminEmail()}"
 
@@ -79,9 +73,7 @@ class MainActivity : AppCompatActivity() {
 
         // KOMUNIKASI
         clickCard(R.id.cardAdminBroadcast) { start(AdminBroadcastActivity::class.java) }
-        clickCard(R.id.cardAdminPushNotif) {
-            Toast.makeText(this, "Push Notif — coming soon", Toast.LENGTH_SHORT).show()
-        }
+        clickCard(R.id.cardAdminPushNotif) { start(AdminPushNotifActivity::class.java) }
 
         // KONTROL APK
         clickCard(R.id.cardAdminForceUpdate) { toggleForceUpdate() }
@@ -89,28 +81,27 @@ class MainActivity : AppCompatActivity() {
 
         // KONFIGURASI
         clickCard(R.id.cardAdminToken) { start(AdminSettingsActivity::class.java) }
-        clickCard(R.id.cardAdminModels) {
-            Toast.makeText(this, "Manage Model — coming soon", Toast.LENGTH_SHORT).show()
-        }
+        clickCard(R.id.cardAdminModels) { start(AdminModelsActivity::class.java) }
         clickCard(R.id.cardAdminConfig) { start(AdminSettingsActivity::class.java) }
 
         // DATA & LOG
-        clickCard(R.id.cardAdminLogs) {
-            Toast.makeText(this, "Log — coming soon", Toast.LENGTH_SHORT).show()
-        }
-        clickCard(R.id.cardAdminBackup) {
-            Toast.makeText(this, "Backup — coming soon", Toast.LENGTH_SHORT).show()
-        }
+        clickCard(R.id.cardAdminLogs) { start(AdminLogsActivity::class.java) }
+        clickCard(R.id.cardAdminBackup) { start(AdminBackupActivity::class.java) }
 
         // LAINNYA
         clickCard(R.id.cardInstructions) { start(InstructionsActivity::class.java) }
-        clickCard(R.id.cardAdminLogout) {
-            SecureConfig.clearAdmin()
-            Toast.makeText(this, "Logout", Toast.LENGTH_SHORT).show()
-            finish()
-        }
+        clickCard(R.id.cardAdminLogout) { logout() }
 
-        // Listen stats
+        // Listen config
+        lifecycleScope.launch {
+            FirebaseManager.configFlow().collectLatest { cfg ->
+                isForceUpdateOn = cfg.forceUpdate
+                isMaintenanceOn = cfg.maintenanceMode
+                tvStatus?.text = "🔄 Force: ${if (cfg.forceUpdate) "ON" else "OFF"} | " +
+                                 "🛠️ Maint: ${if (cfg.maintenanceMode) "ON" else "OFF"} | " +
+                                 "📢 Ads: ${if (cfg.showAds) "ON" else "OFF"}"
+            }
+        }
         lifecycleScope.launch {
             FirebaseManager.statsFlow().collectLatest { stats ->
                 if (stats != null) {
@@ -121,43 +112,50 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        lifecycleScope.launch {
-            FirebaseManager.configFlow().collectLatest { cfg ->
-                tvStatus?.text = "🔄 Force: ${cfg.forceUpdate} | " +
-                                 "🛠️ Maintenance: ${cfg.maintenanceMode} | " +
-                                 "📢 Ads: ${cfg.showAds}"
-            }
-        }
     }
 
     private fun toggleForceUpdate() {
+        val newVal = !isForceUpdateOn
         lifecycleScope.launch {
-            try {
-                FirebaseManager.updateConfig("force_update", true) { ok ->
-                    Toast.makeText(this@MainActivity,
-                        if (ok) "✅ Force Update ON" else "❌ Gagal",
-                        Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Error: ${e.message}",
+            val ok = FirebaseManager.updateConfig("force_update", newVal)
+            if (ok) {
+                isForceUpdateOn = newVal
+                Toast.makeText(this@MainActivity,
+                    "✅ Force Update ${if (newVal) "ON" else "OFF"}",
                     Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this@MainActivity, "❌ Gagal", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     private fun toggleMaintenance() {
+        val newVal = !isMaintenanceOn
         AlertDialog.Builder(this)
             .setTitle("Maintenance Mode")
-            .setMessage("Aktifkan mode maintenance? Client tidak bisa akses.")
-            .setPositiveButton("Aktifkan") { _, _ ->
-                FirebaseManager.updateConfig("maintenance_mode", true) { ok ->
-                    Toast.makeText(this@MainActivity,
-                        if (ok) "✅ Maintenance ON" else "❌ Gagal",
-                        Toast.LENGTH_SHORT).show()
+            .setMessage("${if (newVal) "Aktifkan" else "Matikan"} maintenance?")
+            .setPositiveButton("Ya") { _, _ ->
+                lifecycleScope.launch {
+                    val ok = FirebaseManager.updateConfig("maintenance_mode", newVal)
+                    if (ok) {
+                        isMaintenanceOn = newVal
+                        Toast.makeText(this@MainActivity,
+                            "✅ Maintenance ${if (newVal) "ON" else "OFF"}",
+                            Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this@MainActivity,
+                            "❌ Gagal", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
             .setNegativeButton("Batal", null)
             .show()
+    }
+
+    private fun logout() {
+        SecureConfig.clearAdmin()
+        Toast.makeText(this, "Logout", Toast.LENGTH_SHORT).show()
+        finish()
     }
 
     private fun clickCard(id: Int, action: () -> Unit) {
@@ -165,8 +163,7 @@ class MainActivity : AppCompatActivity() {
             findViewById<View>(id)?.setOnClickListener {
                 try { action() }
                 catch (e: Exception) {
-                    Toast.makeText(this, "Error: ${e.message}",
-                        Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         } catch (_: Exception) {}
