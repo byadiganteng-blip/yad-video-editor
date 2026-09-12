@@ -1,12 +1,9 @@
 package com.yad.videoeditor
 
 import android.os.Bundle
-import android.view.View
 import android.widget.*
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class AdminPanelActivity : AppCompatActivity() {
@@ -29,23 +26,39 @@ class AdminPanelActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btnAdminForceUpdate)?.setOnClickListener {
-            FirebaseManager.updateConfig("force_update", true)
-            Toast.makeText(this, "✅ Force update ON", Toast.LENGTH_SHORT).show()
+            lifecycleScope.launch {
+                val ok = FirebaseManager.updateConfig("force_update", true)
+                Toast.makeText(this@AdminPanelActivity,
+                    if (ok) "✅ Force update ON" else "❌ Gagal",
+                    Toast.LENGTH_SHORT).show()
+            }
         }
 
         findViewById<Button>(R.id.btnAdminMaintenance)?.setOnClickListener {
-            FirebaseManager.updateConfig("maintenance_mode", true)
-            Toast.makeText(this, "✅ Maintenance ON", Toast.LENGTH_SHORT).show()
+            lifecycleScope.launch {
+                val ok = FirebaseManager.updateConfig("maintenance_mode", true)
+                Toast.makeText(this@AdminPanelActivity,
+                    if (ok) "✅ Maintenance ON" else "❌ Gagal",
+                    Toast.LENGTH_SHORT).show()
+            }
         }
 
         findViewById<Button>(R.id.btnAdminToggleAds)?.setOnClickListener {
-            FirebaseManager.updateConfig("show_ads", false)
-            Toast.makeText(this, "✅ Iklan OFF", Toast.LENGTH_SHORT).show()
+            lifecycleScope.launch {
+                val ok = FirebaseManager.updateConfig("show_ads", false)
+                Toast.makeText(this@AdminPanelActivity,
+                    if (ok) "✅ Iklan OFF" else "❌ Gagal",
+                    Toast.LENGTH_SHORT).show()
+            }
         }
 
         findViewById<Button>(R.id.btnAdminResetAll)?.setOnClickListener {
-            FirebaseManager.updateConfig("free_limit_per_day", 5)
-            Toast.makeText(this, "✅ Reset semua limit", Toast.LENGTH_SHORT).show()
+            lifecycleScope.launch {
+                val ok = FirebaseManager.updateConfig("free_limit_per_day", 5)
+                Toast.makeText(this@AdminPanelActivity,
+                    if (ok) "✅ Reset semua limit" else "❌ Gagal",
+                    Toast.LENGTH_SHORT).show()
+            }
         }
     }
 }
