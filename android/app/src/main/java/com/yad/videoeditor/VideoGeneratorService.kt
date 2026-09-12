@@ -52,7 +52,7 @@ class VideoGeneratorService : Service() {
         val modelId = intent.getStringExtra(EXTRA_MODEL) ?: "waifu"
 
         isRunning = true
-        startForeground(NOTIF_ID, buildNotification(0, "Memulai proses..."))
+        startForeground(NOTIF_ID, buildNotification(0, "Memulai..."))
 
         currentJob?.cancel()
         currentJob = scope.launch {
@@ -65,17 +65,15 @@ class VideoGeneratorService : Service() {
                         sendBroadcast(ACTION_PROGRESS, pct, msg, null)
                     }
                 )
-
                 if (file != null) {
-                    updateNotification(100, "✅ Selesai!")
+                    updateNotification(100, "Selesai!")
                     sendBroadcast(ACTION_DONE, 100, "Video selesai", file.absolutePath)
                     showDoneNotification(file.absolutePath)
                 } else {
-                    updateNotification(0, "❌ Gagal membuat video")
+                    updateNotification(0, "Gagal")
                     sendBroadcast(ACTION_FAILED, 0, "Gagal membuat video", null)
                 }
             } catch (e: Exception) {
-                updateNotification(0, "❌ Error: ${e.message}")
                 sendBroadcast(ACTION_FAILED, 0, e.message ?: "Error", null)
             } finally {
                 isRunning = false
@@ -85,7 +83,6 @@ class VideoGeneratorService : Service() {
                 stopSelf()
             }
         }
-
         return START_NOT_STICKY
     }
 
@@ -94,71 +91,54 @@ class VideoGeneratorService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID, "YAD Video Generator",
                 NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Proses pembuatan video AI"
-                setShowBadge(false)
-            }
-            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            nm.createNotificationChannel(channel)
+            )
+            getSystemService(NotificationManager::class.java)
+                .createNotificationChannel(channel)
         }
     }
 
     private fun buildNotification(progress: Int, message: String): Notification {
         val intent = Intent(this, MainActivity::class.java)
-        val pi = PendingIntent.getActivity(
-            this, 0, intent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            else PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        val pi = PendingIntent.getActivity(this, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("🎬 YAD Video Editor")
             .setContentText(message)
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setContentIntent(pi)
             .setOngoing(true)
-            .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-
-        if (progress > 0 && progress < 100) {
-            builder.setProgress(100, progress, false)
-        } else if (progress >= 100) {
-            builder.setProgress(0, 0, false)
-        } else {
-            builder.setProgress(0, 0, true)
-        }
+        if (progress > 0 && progress < 100) builder.setProgress(100, progress, false)
+        else if (progress >= 100) builder.setProgress(0, 0, false)
+        else builder.setProgress(0, 0, true)
         return builder.build()
     }
 
     private fun updateNotification(progress: Int, message: String) {
         try {
-            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            nm.notify(NOTIF_ID, buildNotification(progress, message))
+            getSystemService(NotificationManager::class.java)
+                .notify(NOTIF_ID, buildNotification(progress, message))
         } catch (_: Exception) {}
     }
 
     private fun showDoneNotification(filePath: String) {
         try {
-            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val intent = Intent(this, VideoPreviewActivity::class.java).apply {
                 putExtra("video_path", filePath)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
-            val pi = PendingIntent.getActivity(
-                this, 2, intent,
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                else PendingIntent.FLAG_UPDATE_CURRENT
-            )
+            val pi = PendingIntent.getActivity(this, 2, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             val notif = NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("✅ Video Selesai!")
-                .setContentText("Tap untuk preview & download")
+                .setContentText("Tap untuk preview")
                 .setSmallIcon(android.R.drawable.stat_sys_download_done)
                 .setContentIntent(pi)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .build()
-            nm.notify(NOTIF_ID + 1, notif)
+            getSystemService(NotificationManager::class.java)
+                .notify(NOTIF_ID + 1, notif)
         } catch (_: Exception) {}
     }
 
