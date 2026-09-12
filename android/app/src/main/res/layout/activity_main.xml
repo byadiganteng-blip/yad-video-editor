@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F5">
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <LinearLayout
+            android:orientation="vertical"
+            android:background="#1A237E"
+            android:padding="24dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:text="Yad Video Editor"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+            <TextView
+                android:id="@+id/tvCredit"
+                android:text="Created by KARYADI"
+                android:textColor="#FFD54F"
+                android:textSize="12sp"
+                android:layout_gravity="center"
+                android:layout_marginTop="4dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+        <LinearLayout
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <Button android:id="@+id/btnFiles" android:text="Files"
+                android:layout_marginBottom="8dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <Button android:id="@+id/btnActions" android:text="Actions"
+                android:layout_marginBottom="8dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <Button android:id="@+id/btnAdmin" android:text="Admin Panel"
+                android:layout_marginBottom="8dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <Button android:id="@+id/btnEditor" android:text="Video Editor"
+                android:layout_marginBottom="8dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <Button android:id="@+id/btnInstructions" android:text="Instructions"
+                android:layout_marginBottom="8dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <Button android:id="@+id/btnCredit" android:text="Credit"
+                android:layout_marginBottom="8dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <Button android:id="@+id/btnStatistics" android:text="Statistics"
+                android:layout_marginBottom="8dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <Button android:id="@+id/btnSettings" android:text="Settings"
+                android:layout_marginBottom="8dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
