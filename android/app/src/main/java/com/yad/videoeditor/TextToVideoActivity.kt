@@ -13,10 +13,6 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 
-/**
- * AI Text to Video — dengan pilihan model AI
- * Created by KARYADI, Coding by KARYADI
- */
 class TextToVideoActivity : AppCompatActivity() {
     companion object { private const val REQ_PICK_TXT = 1001 }
 
@@ -50,16 +46,12 @@ class TextToVideoActivity : AppCompatActivity() {
                     lastVideoPath = path
                     progressBar.progress = 100
                     tvPercent.text = "100%"
-                    tvStatus.text = "✅ Video selesai! Tap untuk preview"
+                    tvStatus.text = "Video selesai! Tap untuk preview"
                     btnDownloadNow.visibility = View.VISIBLE
-                    Toast.makeText(this@TextToVideoActivity,
-                        "✅ Video selesai dibuat!", Toast.LENGTH_LONG).show()
                 }
                 VideoGeneratorService.ACTION_FAILED -> {
                     val msg = intent.getStringExtra(VideoGeneratorService.EXTRA_MESSAGE) ?: "Gagal"
-                    tvStatus.text = "❌ $msg"
-                    Toast.makeText(this@TextToVideoActivity, "❌ $msg",
-                        Toast.LENGTH_LONG).show()
+                    tvStatus.text = "Error: $msg"
                 }
             }
         }
@@ -70,7 +62,6 @@ class TextToVideoActivity : AppCompatActivity() {
         try { setContentView(R.layout.activity_text_to_video) }
         catch (e: Exception) { finish(); return }
 
-        // Bind views
         etStory = findViewById(R.id.etStory)
         etWatermark = findViewById(R.id.etWatermark)
         spModel = findViewById(R.id.spModel)
@@ -87,20 +78,16 @@ class TextToVideoActivity : AppCompatActivity() {
         progressContainer = findViewById(R.id.progressContainer)
         btnDownloadNow = findViewById(R.id.btnDownloadNow)
 
-        // Spinner Model AI
         spModel.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
             ModelPresets.ALL.map { it.displayName })
-
         spModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
-                val model = ModelPresets.ALL[pos]
-                tvModelInfo.text = model.description
+                tvModelInfo.text = ModelPresets.ALL[pos].description
             }
             override fun onNothingSelected(p: AdapterView<*>?) {}
         }
 
-        // Spinner lain
         spVideoSize.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
             VideoSizePreset.ALL.map { "${it.displayName} (${it.aspectRatio})" })
@@ -116,24 +103,22 @@ class TextToVideoActivity : AppCompatActivity() {
             SubtitleStyle.ALL.map { it.displayName })
 
         tvStatus.text = if (SecureConfig.hasGithubToken())
-            "✅ Siap membuat video"
-        else
-            "⚠️ Token tidak tersedia"
+            "Siap membuat video" else "Token tidak tersedia"
 
         findViewById<Button>(R.id.btnGenerate).setOnClickListener { generate() }
         findViewById<Button>(R.id.btnUploadTxt).setOnClickListener { pickTxtFile() }
 
         btnDownloadNow.setOnClickListener {
             lastVideoPath?.let { path ->
-                val intent = Intent(this, VideoPreviewActivity::class.java)
-                intent.putExtra("video_path", path)
-                startActivity(intent)
-            } ?: Toast.makeText(this, "Video belum siap", Toast.LENGTH_SHORT).show()
+                val i = Intent(this, VideoPreviewActivity::class.java)
+                i.putExtra("video_path", path)
+                startActivity(i)
+            }
         }
 
         if (VideoGeneratorService.isRunning) {
             progressContainer.visibility = View.VISIBLE
-            tvStatus.text = "⏳ Proses sedang berjalan di background..."
+            tvStatus.text = "Proses sedang berjalan..."
         }
     }
 
@@ -164,11 +149,11 @@ class TextToVideoActivity : AppCompatActivity() {
     }
 
     private fun pickTxtFile() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+        val i = Intent(Intent.ACTION_GET_CONTENT).apply {
             type = "text/plain"
             addCategory(Intent.CATEGORY_OPENABLE)
         }
-        startActivityForResult(Intent.createChooser(intent, "Pilih .txt"), REQ_PICK_TXT)
+        startActivityForResult(Intent.createChooser(i, "Pilih .txt"), REQ_PICK_TXT)
     }
 
     @Deprecated("Deprecated in Java")
@@ -178,10 +163,7 @@ class TextToVideoActivity : AppCompatActivity() {
             val uri: Uri = data?.data ?: return
             try {
                 val text = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
-                if (!text.isNullOrBlank()) {
-                    etStory.setText(text)
-                    Toast.makeText(this, "File dimuat", Toast.LENGTH_SHORT).show()
-                }
+                if (!text.isNullOrBlank()) etStory.setText(text)
             } catch (e: Exception) {
                 Toast.makeText(this, "Gagal: ${e.message}", Toast.LENGTH_LONG).show()
             }
@@ -199,7 +181,6 @@ class TextToVideoActivity : AppCompatActivity() {
             return
         }
 
-        // Ambil model yang dipilih
         val model = ModelPresets.ALL[spModel.selectedItemPosition]
         val watermark = if (swShowWatermark.isChecked) etWatermark.text.toString().trim() else ""
         val voice = VoicePreset.ALL[spVoice.selectedItemPosition].id
@@ -213,23 +194,19 @@ class TextToVideoActivity : AppCompatActivity() {
         btnDownloadNow.visibility = View.GONE
         lastVideoPath = null
 
-        val serviceIntent = Intent(this, VideoGeneratorService::class.java).apply {
+        val si = Intent(this, VideoGeneratorService::class.java).apply {
             putExtra(VideoGeneratorService.EXTRA_PROMPT, story)
             putExtra(VideoGeneratorService.EXTRA_VOICE, voice)
             putExtra(VideoGeneratorService.EXTRA_WATERMARK, watermark)
             putExtra(VideoGeneratorService.EXTRA_SHOW_SUBTITLE, showSubtitle)
             putExtra(VideoGeneratorService.EXTRA_SUBTITLE_STYLE, subtitleStyle)
-            putExtra("model_id", model.id)  // ← Kirim model yang dipilih
+            putExtra("model_id", model.id)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            ContextCompat.startForegroundService(this, serviceIntent)
+            ContextCompat.startForegroundService(this, si)
         } else {
-            startService(serviceIntent)
+            startService(si)
         }
-
-        Toast.makeText(this,
-            "🚀 Proses berjalan dengan ${model.displayName}",
-            Toast.LENGTH_LONG).show()
     }
 }
