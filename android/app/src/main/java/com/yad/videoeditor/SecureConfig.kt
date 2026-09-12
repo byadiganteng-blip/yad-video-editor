@@ -22,43 +22,36 @@ object SecureConfig {
 
     private fun p(): SharedPreferences? = prefs
 
-    private fun decodeGithubToken(): String {
+    fun getGithubToken(): String {
         return try {
-            BuildConfig.G_P1 + BuildConfig.G_P2 + BuildConfig.G_P3 +
-            BuildConfig.G_P4 + BuildConfig.G_P5 + BuildConfig.G_P6
+            p()?.getString("gh_token_manual", "") ?: ""
         } catch (_: Exception) { "" }
     }
 
-    fun getGithubToken(): String = decodeGithubToken()
     fun hasGithubToken(): Boolean = getGithubToken().isNotEmpty()
-    fun setGithubToken(t: String) { p()?.edit()?.putString("gh_token_manual", t)?.apply() }
-    fun clearGithubToken() { p()?.edit()?.remove("gh_token_manual")?.apply() }
+
+    fun setGithubToken(t: String) {
+        p()?.edit()?.putString("gh_token_manual", t)?.apply()
+    }
+
+    fun clearGithubToken() {
+        p()?.edit()?.remove("gh_token_manual")?.apply()
+    }
 
     fun getHfApiKey(): String = ""
     fun hasHfApiKey(): Boolean = false
 
-    private fun decodeUser(): String {
-        return try { BuildConfig.U_P1 + BuildConfig.U_P2 }
-        catch (_: Exception) { "" }
+    fun getCredit(): String = "Created by KARYADI, Coding by KARYADI"
+    fun getGithubUser(): String = "byadiganteng-blip"
+    fun getGithubRepo(): String = "yad-video-editor"
+
+    fun getString(key: String, def: String = ""): String =
+        p()?.getString(key, def) ?: def
+
+    fun setString(key: String, v: String) {
+        p()?.edit()?.putString(key, v)?.apply()
     }
-    private fun decodeRepo(): String {
-        return try { BuildConfig.R_P1 + BuildConfig.R_P2 }
-        catch (_: Exception) { "" }
-    }
 
-    fun getCredit(): String = try { BuildConfig.CREDIT }
-        catch (_: Exception) { "Created by KARYADI, Coding by KARYADI" }
-    fun getGithubUser(): String = decodeUser().ifEmpty { "byadiganteng-blip" }
-    fun getGithubRepo(): String = decodeRepo().ifEmpty { "yad-video-editor" }
-
-    fun getString(key: String, def: String = ""): String = p()?.getString(key, def) ?: def
-    fun setString(key: String, v: String) { p()?.edit()?.putString(key, v)?.apply() }
-
-    // ═══════════════════════════════════════════════════════
-    // ✅ ADMIN PANEL
-    // Email: ynuraini686@gmail.com
-    // Password: YADIGANTENG
-    // ═══════════════════════════════════════════════════════
     private const val KEY_ADMIN_EMAIL = "admin_email"
     private const val KEY_IS_ADMIN    = "is_admin"
     private const val KEY_TAP_COUNT   = "admin_tap_count"
@@ -67,9 +60,13 @@ object SecureConfig {
     private const val ADMIN_PASS  = "YADIGANTENG"
 
     fun getAdminEmail(): String = p()?.getString(KEY_ADMIN_EMAIL, "") ?: ""
-    fun setAdminEmail(email: String) { p()?.edit()?.putString(KEY_ADMIN_EMAIL, email)?.apply() }
+    fun setAdminEmail(email: String) {
+        p()?.edit()?.putString(KEY_ADMIN_EMAIL, email)?.apply()
+    }
     fun isAdmin(): Boolean = p()?.getBoolean(KEY_IS_ADMIN, false) ?: false
-    fun setIsAdmin(v: Boolean) { p()?.edit()?.putBoolean(KEY_IS_ADMIN, v)?.apply() }
+    fun setIsAdmin(v: Boolean) {
+        p()?.edit()?.putBoolean(KEY_IS_ADMIN, v)?.apply()
+    }
     fun clearAdmin() {
         p()?.edit()?.remove(KEY_ADMIN_EMAIL)?.remove(KEY_IS_ADMIN)?.apply()
     }
@@ -91,12 +88,8 @@ object SecureConfig {
         return next
     }
 
-    fun resetTapCount() {
-        p()?.edit()?.putInt(KEY_TAP_COUNT, 0)?.apply()
-    }
-
+    fun resetTapCount() { p()?.edit()?.putInt(KEY_TAP_COUNT, 0)?.apply() }
     fun getTapCount(): Int = p()?.getInt(KEY_TAP_COUNT, 0) ?: 0
-
     fun getAdminEmailConst(): String = ADMIN_EMAIL
     fun getAdminPassConst(): String = ADMIN_PASS
 }
