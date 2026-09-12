@@ -14,8 +14,11 @@ import java.util.concurrent.TimeUnit
 object AiImageGenerator {
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)
+        .readTimeout(300, TimeUnit.SECONDS)
         .build()
+
+    // 45 menit = 540 iterasi × 5 detik
+    private const val MAX_POLL_ITERATIONS = 540
 
     fun interface ProgressCallback {
         fun onProgress(sceneIndex: Int, totalScenes: Int,
@@ -35,6 +38,7 @@ object AiImageGenerator {
         try {
             val jobId = UUID.randomUUID().toString().replace("-", "")
 
+            // 1. Trigger workflow
             callback?.onProgress(1, 1, "SENDING", 5, "Mengirim permintaan...")
             val ok = GitHubAiClient.dispatchVideo(
                 prompt, jobId, voice, watermark, showSubtitle, subtitleStyle, modelId
@@ -45,21 +49,36 @@ object AiImageGenerator {
             }
             callback?.onProgress(1, 1, "SENDING", 10, "Permintaan terkirim")
 
+            // 2. Poll status — max 45 menit
             var url: String? = null
-            for (i in 0 until 180) {
+            for (i in 0 until MAX_POLL_ITERATIONS) {
                 delay(5_000)
-                val pct = 10 + (i * 75 / 180)
+
+                // Progress: 10% → 88% selama 45 menit
+                val pct = 10 + (i * 78 / MAX_POLL_ITERATIONS)
+                val elapsedMin = (i * 5) / 60
+                val elapsedSec = (i * 5) % 60
+
                 url = GitHubAiClient.checkResult(jobId)
                 if (url != null) break
-                callback?.onProgress(1, 1, "WAITING", pct,
-                    "Memproses AI... ${i * 5}s")
+
+                callback?.onProgress(
+                    1, 1, "WAITING", pct,
+                    "Memproses AI... (%02d:%02d)".format(elapsedMin, elapsedSec)
+                )
             }
+
+            // Cek: kalau timeout tapi workflow mungkin masih jalan
             if (url == null) {
-                callback?.onProgress(1, 1, "FAILED", 0, "Timeout — coba lagi")
+                callback?.onProgress(
+                    1, 1, "TIMEOUT", 90,
+                    "Masih diproses. Cek notifikasi nanti."
+                )
                 return@withContext null
             }
 
-            callback?.onProgress(1, 1, "DOWNLOADING", 90, "Mengunduh hasil...")
+            // 3. Download video
+            callback?.onProgress(1, 1, "DOWNLOADING", 90, "Mengunduh video...")
             val request = Request.Builder().url(url).get().build()
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
@@ -67,15 +86,16 @@ object AiImageGenerator {
                     return@withContext null
                 }
                 val bytes = response.body?.bytes() ?: return@withContext null
-                val dir = File(context.getExternalFilesDir(null) ?: context.filesDir, "ai_videos")
+                val dir = File(
+                    context.getExternalFilesDir(null) ?: context.filesDir,
+                    "ai_videos"
+                )
                 if (!dir.exists()) dir.mkdirs()
 
-                val isVideo = url.endsWith(".mp4", ignoreCase = true)
-                val ext = if (isVideo) "mp4" else "png"
-                val file = File(dir, "video_$jobId.$ext")
+                val file = File(dir, "video_$jobId.mp4")
                 FileOutputStream(file).use { out -> out.write(bytes) }
 
-                callback?.onProgress(1, 1, "DONE", 100, "Selesai ✓")
+                callback?.onProgress(1, 1, "DONE", 100, "Selesai!")
                 file
             }
         } catch (e: Exception) {
