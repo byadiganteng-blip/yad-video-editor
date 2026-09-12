@@ -14,7 +14,6 @@ class TextToVideoActivity : AppCompatActivity() {
     companion object { private const val REQ_PICK_TXT = 1001 }
 
     private lateinit var etStory: EditText
-    private lateinit var etApiKey: EditText
     private lateinit var spVideoSize: Spinner
     private lateinit var spQuality: Spinner
     private lateinit var tvStatus: TextView
@@ -26,7 +25,6 @@ class TextToVideoActivity : AppCompatActivity() {
         catch (e: Exception) { finish(); return }
 
         etStory = findViewById(R.id.etStory)
-        etApiKey = findViewById(R.id.etApiKey)
         spVideoSize = findViewById(R.id.spVideoSize)
         spQuality = findViewById(R.id.spQuality)
         tvStatus = findViewById(R.id.tvStatus)
@@ -37,13 +35,14 @@ class TextToVideoActivity : AppCompatActivity() {
         spQuality.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
             QualityPreset.ALL.map { it.displayName })
         spQuality.setSelection(3)
-        etApiKey.setText(SecureConfig.getHfApiKey())
+
+        if (!SecureConfig.hasGithubToken()) {
+            tvStatus.text = "⚠️ Token GitHub tidak tersedia"
+        } else {
+            tvStatus.text = "✅ Siap — generate via GitHub Actions"
+        }
 
         findViewById<Button>(R.id.btnGenerate).setOnClickListener { generate() }
-        findViewById<Button>(R.id.btnSaveApiKey).setOnClickListener {
-            SecureConfig.setHfApiKey(etApiKey.text.toString().trim())
-            Toast.makeText(this, "API key tersimpan", Toast.LENGTH_SHORT).show()
-        }
         findViewById<Button>(R.id.btnUploadTxt).setOnClickListener { pickTxtFile() }
     }
 
@@ -74,23 +73,28 @@ class TextToVideoActivity : AppCompatActivity() {
 
     private fun generate() {
         val story = etStory.text.toString().trim()
-        val apiKey = etApiKey.text.toString().trim()
-        if (story.isEmpty()) { Toast.makeText(this, "Masukkan cerita", Toast.LENGTH_SHORT).show(); return }
-        if (apiKey.isEmpty()) { Toast.makeText(this, "Masukkan API key", Toast.LENGTH_LONG).show(); return }
+        if (story.isEmpty()) {
+            Toast.makeText(this, "Masukkan cerita", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!SecureConfig.hasGithubToken()) {
+            Toast.makeText(this, "Token GitHub tidak tersedia", Toast.LENGTH_LONG).show()
+            return
+        }
 
         val videoSize = VideoSizePreset.ALL[spVideoSize.selectedItemPosition]
         val quality = QualityPreset.ALL[spQuality.selectedItemPosition]
 
         progressBar.visibility = View.VISIBLE
-        tvStatus.text = "Memproses..."
+        tvStatus.text = "Mengirim ke GitHub Actions..."
 
         lifecycleScope.launch {
             try {
                 val scenes = AiImageGenerator.splitIntoScenes(story, 8)
                 var ok = 0
                 scenes.forEachIndexed { i, scene ->
-                    tvStatus.text = "Gambar ${i+1}/${scenes.size}..."
-                    if (AiImageGenerator.generateImage(this@TextToVideoActivity, scene, apiKey) != null) ok++
+                    tvStatus.text = "Gambar ${i+1}/${scenes.size} (via GitHub)..."
+                    if (AiImageGenerator.generateImage(this@TextToVideoActivity, scene) != null) ok++
                 }
                 progressBar.visibility = View.GONE
                 tvStatus.text = "Selesai: $ok/${scenes.size} gambar\n" +

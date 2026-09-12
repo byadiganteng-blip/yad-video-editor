@@ -3,38 +3,47 @@ package com.yad.videoeditor
 import android.content.Context
 import android.graphics.BitmapFactory
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 object AiImageGenerator {
     private val client = OkHttpClient.Builder()
-        .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(180, TimeUnit.SECONDS)
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(120, TimeUnit.SECONDS)
         .build()
 
-    suspend fun generateImage(context: Context, prompt: String, apiKey: String): File? =
+    /**
+     * Generate gambar via GitHub Actions.
+     * 1. Dispatch workflow dengan prompt
+     * 2. Poll Release sampai hasil tersedia
+     * 3. Download gambar
+     */
+    suspend fun generateImage(context: Context, prompt: String): File? =
         withContext(Dispatchers.IO) {
             try {
-                val url = "https://api-inference.huggingface.co/models/hakurei/waifu-diffusion"
-                val body = JSONObject().apply {
-                    put("inputs", prompt)
-                    put("options", JSONObject().apply { put("wait_for_model", true) })
-                }.toString()
+                val jobId = UUID.randomUUID().toString().replace("-", "")
+                // 1. Dispatch
+                val ok = GitHubAiClient.dispatchGeneration(prompt, jobId)
+                if (!ok) return@withContext null
 
-                val request = Request.Builder()
-                    .url(url)
-                    .header("Authorization", "Bearer $apiKey")
-                    .header("Content-Type", "application/json")
-                    .post(body.toRequestBody("application/json".toMediaTypeOrNull()))
-                    .build()
+                // 2. Poll (max 5 menit)
+                var url: String? = null
+                val maxAttempts = 60  // 60 * 5s = 5 menit
+                for (i in 0 until maxAttempts) {
+                    delay(5_000)
+                    url = GitHubAiClient.checkResult(jobId)
+                    if (url != null) break
+                }
+                if (url == null) return@withContext null
 
+                // 3. Download
+                val request = Request.Builder().url(url).get().build()
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return@withContext null
                     val bytes = response.body?.bytes() ?: return@withContext null
@@ -42,7 +51,7 @@ object AiImageGenerator {
                         ?: return@withContext null
                     val dir = File(context.cacheDir, "ai_images")
                     if (!dir.exists()) dir.mkdirs()
-                    val file = File(dir, "img_${System.currentTimeMillis()}.png")
+                    val file = File(dir, "img_$jobId.png")
                     FileOutputStream(file).use { out ->
                         bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
                     }

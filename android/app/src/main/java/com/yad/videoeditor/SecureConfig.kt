@@ -2,9 +2,6 @@ package com.yad.videoeditor
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.net.Uri
-import java.io.BufferedReader
-import java.io.InputStreamReader
 
 object SecureConfig {
     private const val PREF = "yad_secure"
@@ -18,13 +15,6 @@ object SecureConfig {
                 if (prefs == null) {
                     prefs = context.applicationContext
                         .getSharedPreferences(PREF, Context.MODE_PRIVATE)
-                    try {
-                        val emb = decodeToken()
-                        if (emb.isNotEmpty() &&
-                            (prefs?.getString("gh_token", "") ?: "").isEmpty()) {
-                            prefs?.edit()?.putString("gh_token", emb)?.apply()
-                        }
-                    } catch (_: Exception) {}
                 }
             }
         }
@@ -32,15 +22,15 @@ object SecureConfig {
 
     private fun p(): SharedPreferences? = prefs
 
-    // ═══════════════════════════════════════════════════════════
-    // DECODE TOKEN DARI BuildConfig
-    // ═══════════════════════════════════════════════════════════
-    private fun decodeToken(): String {
+    private fun decodeGithubToken(): String {
         return try {
             BuildConfig.G_P1 + BuildConfig.G_P2 + BuildConfig.G_P3 +
             BuildConfig.G_P4 + BuildConfig.G_P5 + BuildConfig.G_P6
         } catch (_: Exception) { "" }
     }
+
+    fun getGithubToken(): String = decodeGithubToken()
+    fun hasGithubToken(): Boolean = getGithubToken().isNotEmpty()
 
     private fun decodeUser(): String {
         return try { BuildConfig.U_P1 + BuildConfig.U_P2 }
@@ -52,50 +42,6 @@ object SecureConfig {
         catch (_: Exception) { "" }
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // BACA TOKEN DARI FILE TXT
-    // ═══════════════════════════════════════════════════════════
-    fun readTokenFromUri(context: Context, uri: Uri): String? {
-        return try {
-            val input = context.contentResolver.openInputStream(uri) ?: return null
-            val reader = BufferedReader(InputStreamReader(input))
-            val content = reader.readText().trim()
-            reader.close()
-            val token = extractToken(content)
-            if (token != null) setGithubToken(token)
-            token
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun extractToken(raw: String): String? {
-        val cleaned = raw.trim()
-        if (cleaned.startsWith("ghp_") || cleaned.startsWith("github_pat_")) {
-            return cleaned.lines().firstOrNull()?.trim()
-        }
-        val regex = Regex("""(ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,})""")
-        return regex.find(cleaned)?.value
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    // TOKEN (prioritas: SharedPreferences > BuildConfig)
-    // ═══════════════════════════════════════════════════════════
-    fun getGithubToken(): String {
-        val fromPrefs = p()?.getString("gh_token", "") ?: ""
-        if (fromPrefs.isNotEmpty()) return fromPrefs
-        return decodeToken()
-    }
-
-    fun setGithubToken(t: String) { p()?.edit()?.putString("gh_token", t)?.apply() }
-    fun clearGithubToken() { p()?.edit()?.remove("gh_token")?.apply() }
-    fun hasGithubToken(): Boolean = getGithubToken().isNotEmpty()
-
-    fun getHfApiKey(): String = p()?.getString("hf_api_key", "") ?: ""
-    fun setHfApiKey(k: String) { p()?.edit()?.putString("hf_api_key", k)?.apply() }
-
-    fun isEmbeddedToken(): Boolean = decodeToken().isNotEmpty()
-
     fun getCredit(): String = try { BuildConfig.CREDIT }
         catch (_: Exception) { "Created by KARYADI, Coding by KARYADI" }
 
@@ -105,33 +51,15 @@ object SecureConfig {
     fun getString(key: String, def: String = ""): String = p()?.getString(key, def) ?: def
     fun setString(key: String, v: String) { p()?.edit()?.putString(key, v)?.apply() }
 
-    fun getTokenSource(): String {
-        val fromPrefs = p()?.getString("gh_token", "") ?: ""
-        return if (fromPrefs.isNotEmpty()) "upload_txt" else "embedded"
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    // ADMIN METHODS (WAJIB — dipakai AdminActivity & SettingsActivity)
-    // ═══════════════════════════════════════════════════════════
+    // ─── ADMIN METHODS ───
     private const val KEY_ADMIN_EMAIL = "admin_email"
     private const val KEY_IS_ADMIN    = "is_admin"
 
     fun getAdminEmail(): String = p()?.getString(KEY_ADMIN_EMAIL, "") ?: ""
-
-    fun setAdminEmail(email: String) {
-        p()?.edit()?.putString(KEY_ADMIN_EMAIL, email)?.apply()
-    }
-
+    fun setAdminEmail(email: String) { p()?.edit()?.putString(KEY_ADMIN_EMAIL, email)?.apply() }
     fun isAdmin(): Boolean = p()?.getBoolean(KEY_IS_ADMIN, false) ?: false
-
-    fun setIsAdmin(v: Boolean) {
-        p()?.edit()?.putBoolean(KEY_IS_ADMIN, v)?.apply()
-    }
-
+    fun setIsAdmin(v: Boolean) { p()?.edit()?.putBoolean(KEY_IS_ADMIN, v)?.apply() }
     fun clearAdmin() {
-        p()?.edit()
-            ?.remove(KEY_ADMIN_EMAIL)
-            ?.remove(KEY_IS_ADMIN)
-            ?.apply()
+        p()?.edit()?.remove(KEY_ADMIN_EMAIL)?.remove(KEY_IS_ADMIN)?.apply()
     }
 }

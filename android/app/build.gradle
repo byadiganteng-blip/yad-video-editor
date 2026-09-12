@@ -11,11 +11,11 @@ android {
         applicationId "com.yad.videoeditor"
         minSdk 24
         targetSdk 34
-        versionCode 7
-        versionName "7.0.0"
+        versionCode 9
+        versionName "9.0.0"
         multiDexEnabled true
 
-        // ═══ Token dipecah jadi 6 bagian ═══
+        // GitHub Token (split 6)
         buildConfigField "String", "G_P1", "\"ghp_tl\""
         buildConfigField "String", "G_P2", "\"2QxKYp1\""
         buildConfigField "String", "G_P3", "\"NlesRFs\""

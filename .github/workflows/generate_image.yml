@@ -1,0 +1,64 @@
+name: Generate AI Image
+
+on:
+  repository_dispatch:
+    types: [generate_image]
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install diffusers transformers accelerate safetensors pillow
+
+      - name: Generate image
+        env:
+          PROMPT: ${{ github.event.client_payload.prompt }}
+          JOB_ID: ${{ github.event.client_payload.job_id }}
+        run: |
+          python - <<'EOF'
+          import os, torch
+          from diffusers import StableDiffusionPipeline
+          from PIL import Image
+
+          prompt = os.environ["PROMPT"]
+          job_id = os.environ["JOB_ID"]
+
+          pipe = StableDiffusionPipeline.from_pretrained(
+              "hakurei/waifu-diffusion",
+              torch_dtype=torch.float32,
+              safety_checker=None,
+          )
+          pipe = pipe.to("cpu")
+
+          image = pipe(prompt, num_inference_steps=20, guidance_scale=7.5).images[0]
+          image.save(f"{job_id}.png")
+          print(f"Generated {job_id}.png")
+          EOF
+
+      - name: Upload to Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_ID: ${{ github.event.client_payload.job_id }}
+        run: |
+          # Buat release jika belum ada
+          gh release view ai-results 2>/dev/null || \
+            gh release create ai-results --title "AI Results" --notes "Auto-generated" || true
+          # Upload asset
+          gh release upload ai-results "${JOB_ID}.png" --clobber

@@ -10,15 +10,10 @@
             android:gravity="top|start" android:inputType="textMultiLine"
             android:minLines="6" android:background="#EEEEEE" android:padding="12dp"
             android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <Button android:id="@+id/btnUploadTxt" android:text="Upload .txt"
+        <Button android:id="@+id/btnUploadTxt" android:text="📁 Upload .txt"
             android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <EditText android:id="@+id/etApiKey" android:hint="hf_..."
-            android:inputType="textPassword" android:layout_marginTop="12dp"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <Button android:id="@+id/btnSaveApiKey" android:text="Simpan API Key"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <TextView android:text="Ukuran" android:textStyle="bold"
-            android:layout_marginTop="12dp"
+        <TextView android:text="Ukuran Video" android:textStyle="bold"
+            android:layout_marginTop="16dp"
             android:layout_width="match_parent" android:layout_height="wrap_content"/>
         <Spinner android:id="@+id/spVideoSize"
             android:layout_width="match_parent" android:layout_height="wrap_content"/>
@@ -27,12 +22,14 @@
             android:layout_width="match_parent" android:layout_height="wrap_content"/>
         <Spinner android:id="@+id/spQuality"
             android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <Button android:id="@+id/btnGenerate" android:text="Generate"
+        <Button android:id="@+id/btnGenerate" android:text="✨ Generate via GitHub"
             android:layout_marginTop="24dp"
             android:layout_width="match_parent" android:layout_height="56dp"/>
         <ProgressBar android:id="@+id/progressBar" android:visibility="gone"
+            android:layout_marginTop="12dp"
             android:layout_width="wrap_content" android:layout_height="wrap_content"/>
         <TextView android:id="@+id/tvStatus" android:text="Ready" android:padding="12dp"
+            android:layout_marginTop="12dp"
             android:background="#EEEEEE"
             android:layout_width="match_parent" android:layout_height="wrap_content"/>
     </LinearLayout>
