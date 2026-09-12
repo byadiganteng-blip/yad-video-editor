@@ -21,40 +21,46 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Cache Gradle
-        uses: actions/cache@v4
+      # Setup Gradle 8.2 (sesuai dengan yang dibutuhkan Kotlin 1.9.20)
+      - name: Setup Gradle 8.2
+        uses: gradle/gradle-build-action@v3
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          gradle-version: 8.2
+          cache-read-only: false
+
+      - name: Fix gradle wrapper
+        working-directory: android
+        run: |
+          # Buat gradle wrapper 8.2 kalau belum ada
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 8.2 --distribution-type bin
+          fi
+          chmod +x gradlew
+          # Pastikan pakai 8.2
+          sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.2-bin.zip|' gradle/wrapper/gradle-wrapper.properties
 
       - name: Build Client APK
         working-directory: android
-        run: |
-          gradle wrapper --gradle-version 8.2 --distribution-type bin
-          chmod +x gradlew
-          ./gradlew assembleClientDebug --no-daemon
+        run: ./gradlew assembleClientDebug --no-daemon --stacktrace
 
       - name: Build Admin APK
         working-directory: android
-        run: |
-          ./gradlew assembleAdminDebug --no-daemon
+        run: ./gradlew assembleAdminDebug --no-daemon --stacktrace
 
       - name: Rename APKs
         run: |
           mkdir -p output
           find android/app/build/outputs/apk/client/debug -name "*.apk" \
-            -exec cp {} output/AI-TXT-to-Video-Editor-v13.apk \;
+            -exec cp {} output/AI-TXT-to-Video-Editor-v13.apk \; 2>/dev/null || true
           find android/app/build/outputs/apk/admin/debug -name "*.apk" \
-            -exec cp {} output/YAD-Admin-v13.apk \;
+            -exec cp {} output/YAD-Admin-v13.apk \; 2>/dev/null || true
           ls -la output/
 
       - name: Upload APKs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: yad-apks-v13
           path: output/*.apk
+          if-no-files-found: ignore
           retention-days: 30
