@@ -3,6 +3,8 @@ package com.yad.videoeditor
 import android.os.Bundle
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class AdminSettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,8 +18,10 @@ class AdminSettingsActivity : AppCompatActivity() {
         val etLimit = findViewById<EditText>(R.id.etFreeLimit)
         val btnSaveToken = findViewById<Button>(R.id.btnSaveToken)
         val btnSaveConfig = findViewById<Button>(R.id.btnSaveConfig)
+        val btnSync = findViewById<Button>(R.id.btnSyncFromFirebase)
 
         etToken?.setText(SecureConfig.getGithubToken())
+        etLimit?.setText("3")
 
         btnSaveToken?.setOnClickListener {
             val t = etToken?.text?.toString()?.trim() ?: ""
@@ -40,9 +44,24 @@ class AdminSettingsActivity : AppCompatActivity() {
 
         btnSaveConfig?.setOnClickListener {
             val limit = etLimit?.text?.toString()?.toIntOrNull() ?: 3
-            FirebaseManager.updateConfig("free_limit_per_day", limit) { ok ->
-                if (ok) Toast.makeText(this, "✅ Config tersimpan",
+            lifecycleScope.launch {
+                val ok = FirebaseManager.updateConfig("free_limit_per_day", limit)
+                Toast.makeText(this@AdminSettingsActivity,
+                    if (ok) "✅ Config tersimpan" else "❌ Gagal",
                     Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        btnSync?.setOnClickListener {
+            SecureConfig.fetchTokenFromFirestore { ok ->
+                if (ok) {
+                    etToken?.setText(SecureConfig.getGithubToken())
+                    Toast.makeText(this, "✅ Token di-sync",
+                        Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "❌ Gagal sync",
+                        Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
