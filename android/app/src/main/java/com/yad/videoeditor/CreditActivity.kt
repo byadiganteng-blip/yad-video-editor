@@ -7,74 +7,58 @@ import androidx.appcompat.app.AppCompatActivity
 class CreditActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        try {
-            setContentView(R.layout.activity_credit)
-        } catch (e: Exception) {
-            finish()
-            return
-        }
+        try { setContentView(R.layout.activity_credit) }
+        catch (e: Exception) { finish(); return }
 
-        // Cari ID yang ada — coba beberapa kemungkinan
-        val tvInfo = try {
-            findViewById<TextView>(R.id.tvCredit)
-        } catch (e: Exception) {
-            null
-        } ?: try {
-            findViewById<TextView>(R.id.tvInfo)
-        } catch (e: Exception) {
-            null
-        } ?: try {
-            findViewById<TextView>(R.id.tvCreditText)
-        } catch (e: Exception) {
-            null
-        }
-
-        tvInfo?.text = """
-            ╔══════════════════════════════════════╗
-            ║   🎬 AI TXT TO VIDEO + EDITOR       ║
-            ║   AI Story-to-Video Generator       ║
-            ╚══════════════════════════════════════╝
+        // Layout activity_credit.xml punya ID "tvCredit"
+        val tvInfo = findViewById<TextView>(R.id.tvCredit)
+        tvInfo.text = """
+            ╔════════════════════════════════════════╗
+            ║   🎬 AI TXT TO VIDEO + EDITOR         ║
+            ║   AI Story-to-Video Generator         ║
+            ╚════════════════════════════════════════╝
 
             ✨ KARYA ASLI
 
             👨‍💻 DEVELOPER & CREATOR
-            ─────────────────────────────────────
+            ────────────────────────────────────────
             Nama  : KARYADI
             Peran : Founder, Developer, Designer
             Motto : Coding by KARYADI,
                     Kualitas oleh KARYADI
 
             🎨 TENTANG APLIKASI
-            ─────────────────────────────────────
-            Mengubah cerita tulisan menjadi video
-            AI berkualitas tinggi — otomatis & cepat.
+            ────────────────────────────────────────
+            AI TXT to Video + Editor mengubah
+            cerita tulisan menjadi video AI
+            berkualitas tinggi — otomatis & cepat.
 
             🚀 TEKNOLOGI
-            ─────────────────────────────────────
+            ────────────────────────────────────────
             • Stable Diffusion AI (10 Model)
             • Edge TTS Neural Voice
             • GitHub Actions Cloud
             • MoviePy Video Engine
-            • Kotlin Native Android
+            • Firebase + Kotlin Android
 
             💝 SPECIAL THANKS
-            ─────────────────────────────────────
+            ────────────────────────────────────────
             • Keluarga tercinta
             • Pengguna setia
             • Komunitas AI Indonesia
             • Allah SWT yang Maha Kuasa
 
             📜 COPYRIGHT
-            ─────────────────────────────────────
+            ────────────────────────────────────────
             © 2026 KARYADI. All Rights Reserved.
 
             📞 KONTAK
-            ─────────────────────────────────────
+            ────────────────────────────────────────
             Email  : ynuraini686@gmail.com
             GitHub : byadiganteng-blip
 
             "Setiap cerita layak jadi video."
-                    — KARYADI
+                     — KARYADI
 
             Dibuat dengan ❤️ di Indonesia
         """.trimIndent()
