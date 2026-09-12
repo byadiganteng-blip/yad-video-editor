@@ -182,6 +182,46 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardAiVideo"
+                android:layout_marginBottom="12dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp">
+                <LinearLayout android:orientation="horizontal" android:padding="16dp"
+                    android:layout_width="match_parent" android:layout_height="wrap_content">
+                    <TextView android:text="AI" android:textSize="24sp"
+                        android:padding="12dp" android:background="#ED64A6"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <TextView android:text="Buat Video dari Teks" android:textSize="16sp"
+                        android:textStyle="bold" android:layout_marginStart="16dp"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardTokenSetup"
+                android:layout_marginBottom="12dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp">
+                <LinearLayout android:orientation="horizontal" android:padding="16dp"
+                    android:layout_width="match_parent" android:layout_height="wrap_content">
+                    <TextView android:text="🔑" android:textSize="24sp"
+                        android:padding="12dp" android:background="#4299E1"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <TextView android:text="Setup Token" android:textSize="16sp"
+                        android:textStyle="bold" android:layout_marginStart="16dp"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
             <!-- FILES -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardFiles"

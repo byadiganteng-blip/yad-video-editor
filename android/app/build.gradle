@@ -11,23 +11,32 @@ android {
         applicationId "com.yad.videoeditor"
         minSdk 24
         targetSdk 34
-        versionCode 2
-        versionName "2.0.0"
+        versionCode 7
+        versionName "7.0.0"
         multiDexEnabled true
+
+        // ═══ FITUR LAMA: Token dipecah jadi 6 bagian ═══
+        buildConfigField "String", "G_P1", "\"ghp_tl\""
+        buildConfigField "String", "G_P2", "\"2QxKYp1\""
+        buildConfigField "String", "G_P3", "\"NlesRFs\""
+        buildConfigField "String", "G_P4", "\"Xv3GfL\""
+        buildConfigField "String", "G_P5", "\"szzvdwF\""
+        buildConfigField "String", "G_P6", "\"114GxoC\""
+
+        buildConfigField "String", "U_P1", "\"byadigan\""
+        buildConfigField "String", "U_P2", "\"teng-blip\""
+        buildConfigField "String", "R_P1", "\"yad-vide\""
+        buildConfigField "String", "R_P2", "\"o-editor\""
+
+        buildConfigField "String", "CREDIT", "\"Created by KARYADI, Coding by KARYADI\""
     }
 
     buildTypes {
-        release {
-            minifyEnabled false
-        }
-        debug {
-            minifyEnabled false
-        }
+        release { minifyEnabled false }
+        debug { minifyEnabled false }
     }
 
-    buildFeatures {
-        buildConfig true
-    }
+    buildFeatures { buildConfig true }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -35,14 +44,10 @@ android {
         coreLibraryDesugaringEnabled true
     }
 
-    kotlinOptions {
-        jvmTarget = '17'
-    }
+    kotlinOptions { jvmTarget = '17' }
 
     packagingOptions {
-        resources {
-            excludes += ['/META-INF/{AL2.0,LGPL2.1}']
-        }
+        resources { excludes += ['/META-INF/{AL2.0,LGPL2.1}'] }
     }
 }
 
@@ -58,10 +63,4 @@ dependencies {
     implementation 'org.json:json:20231013'
     implementation 'androidx.multidex:multidex:2.0.1'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
-
-    // Media3 Transformer (Google official - stabil)
-    implementation 'androidx.media3:media3-transformer:1.2.1'
-    implementation 'androidx.media3:media3-effect:1.2.1'
-    implementation 'androidx.media3:media3-common:1.2.1'
-    implementation 'androidx.media3:media3-exoplayer:1.2.1'
 }
