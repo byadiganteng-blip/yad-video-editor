@@ -22,53 +22,47 @@ object SecureConfig {
 
     private fun p(): SharedPreferences? = prefs
 
-    /**
-     * Ambil token GitHub.
-     * Prioritas:
-     *   1. Token yang di-embed di BuildConfig (GH_TOKEN)
-     *   2. Token manual dari SharedPreferences (jika user set)
-     */
+    // ============================================================
+    //  GITHUB TOKEN — dari SharedPreferences
+    // ============================================================
     fun getGithubToken(): String {
-        // Coba BuildConfig dulu
-        try {
-            val embedded = BuildConfig.GH_TOKEN
-            if (embedded.isNotEmpty()) return embedded
-        } catch (_: Exception) {}
-
-        // Fallback ke SharedPreferences
         return try {
-            p()?.getString("gh_token_manual", "") ?: ""
+            val fromPrefs = p()?.getString("gh_token", "") ?: ""
+            if (fromPrefs.isNotEmpty()) return fromPrefs
+
+            // Fallback ke BuildConfig (kosong kalau tidak di-embed)
+            try {
+                val fromBc = BuildConfig.GH_TOKEN
+                if (fromBc.isNotEmpty()) return fromBc
+            } catch (_: Exception) {}
+
+            ""
         } catch (_: Exception) { "" }
     }
 
     fun hasGithubToken(): Boolean = getGithubToken().isNotEmpty()
 
     fun setGithubToken(t: String) {
-        p()?.edit()?.putString("gh_token_manual", t)?.apply()
+        p()?.edit()?.putString("gh_token", t.trim())?.apply()
     }
 
     fun clearGithubToken() {
-        p()?.edit()?.remove("gh_token_manual")?.apply()
+        p()?.edit()?.remove("gh_token")?.apply()
     }
 
     fun getCredit(): String = "Created by KARYADI, Coding by KARYADI"
     fun getGithubUser(): String = "byadiganteng-blip"
     fun getGithubRepo(): String = "yad-video-editor"
 
-    fun getString(key: String, def: String = ""): String =
-        p()?.getString(key, def) ?: def
-
-    fun setString(key: String, v: String) {
-        p()?.edit()?.putString(key, v)?.apply()
-    }
-
-    // ADMIN
+    // ============================================================
+    //  ADMIN
+    // ============================================================
     private const val KEY_ADMIN_EMAIL = "admin_email"
-    private const val KEY_IS_ADMIN    = "is_admin"
-    private const val KEY_TAP_COUNT   = "admin_tap_count"
+    private const val KEY_IS_ADMIN = "is_admin"
+    private const val KEY_TAP_COUNT = "admin_tap_count"
 
     private const val ADMIN_EMAIL = "ynuraini686@gmail.com"
-    private const val ADMIN_PASS  = "YADIGANTENG"
+    private const val ADMIN_PASS = "YADIGANTENG"
 
     fun getAdminEmail(): String = p()?.getString(KEY_ADMIN_EMAIL, "") ?: ""
     fun setAdminEmail(email: String) {
@@ -83,10 +77,17 @@ object SecureConfig {
     }
 
     fun verifyAdminCredentials(email: String, password: String): Boolean {
-        val ok = email.trim().equals(ADMIN_EMAIL, ignoreCase = true) &&
-                 password == ADMIN_PASS
+        val e = email.trim().lowercase()
+        val adminEmail = try {
+            BuildConfig.ADMIN_EMAIL.ifEmpty { ADMIN_EMAIL }
+        } catch (_: Exception) { ADMIN_EMAIL }
+        val adminPass = try {
+            BuildConfig.ADMIN_PASS.ifEmpty { ADMIN_PASS }
+        } catch (_: Exception) { ADMIN_PASS }
+
+        val ok = e == adminEmail.lowercase() && password == adminPass
         if (ok) {
-            setAdminEmail(email.trim())
+            setAdminEmail(e)
             setIsAdmin(true)
         }
         return ok
