@@ -16,15 +16,12 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-/**
- * CLIENT MENU — hanya untuk APK client (com.yad.videoeditor)
- * TIDAK ada tombol admin panel di sini.
- */
 class MainActivity : AppCompatActivity() {
 
     private val PERMISSION_REQUEST_CODE = 1001
     private lateinit var tvBanner: TextView
     private lateinit var tvStatus: TextView
+    private var maintenanceShown = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,10 +40,9 @@ class MainActivity : AppCompatActivity() {
                 "Created by KARYADI, Coding by KARYADI"
         } catch (_: Exception) {}
 
-        // Status token
         updateStatus()
 
-        // Menu CLIENT (tanpa admin)
+        // Menu CLIENT
         clickCard(R.id.cardVideoList) { start(VideoListActivity::class.java) }
         clickCard(R.id.cardEditor) { start(VideoEditorActivity::class.java) }
         clickCard(R.id.cardAiVideo) { start(TextToVideoActivity::class.java) }
@@ -67,10 +63,16 @@ class MainActivity : AppCompatActivity() {
     private fun listenConfig() {
         lifecycleScope.launch {
             FirebaseManager.configFlow().collectLatest { cfg ->
+                // Force update
                 if (cfg.forceUpdate && BuildConfig.VERSION_CODE < cfg.minVersionCode) {
                     showForceUpdateDialog(cfg.updateUrl)
                 }
-                if (cfg.maintenanceMode) showMaintenanceDialog()
+                // Maintenance
+                if (cfg.maintenanceMode && !maintenanceShown) {
+                    maintenanceShown = true
+                    showMaintenanceDialog()
+                }
+                // Banner
                 if (cfg.messageBanner.isNotEmpty()) {
                     tvBanner?.text = cfg.messageBanner
                     tvBanner?.visibility = View.VISIBLE
@@ -91,23 +93,32 @@ class MainActivity : AppCompatActivity() {
 
     private fun showForceUpdateDialog(url: String) {
         AlertDialog.Builder(this)
-            .setTitle("Update Tersedia")
-            .setMessage("Versi baru tersedia. Silakan update.")
+            .setTitle("⚠️ Update Tersedia")
+            .setMessage("Versi baru tersedia. Silakan update untuk lanjut.")
             .setCancelable(false)
-            .setPositiveButton("Update") { _, _ ->
-                if (url.isNotEmpty())
-                    startActivity(Intent(Intent.ACTION_VIEW,
-                        android.net.Uri.parse(url)))
+            .setPositiveButton("Update Sekarang") { _, _ ->
+                if (url.isNotEmpty()) {
+                    try {
+                        startActivity(Intent(Intent.ACTION_VIEW,
+                            android.net.Uri.parse(url)))
+                    } catch (e: Exception) {
+                        Toast.makeText(this, "Gagal buka link", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(this, "URL update belum di-set admin",
+                        Toast.LENGTH_LONG).show()
+                }
             }
+            .setNegativeButton("Nanti") { _, _ -> }
             .show()
     }
 
     private fun showMaintenanceDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Maintenance")
-            .setMessage("Aplikasi sedang maintenance.")
+            .setTitle("🛠️ Maintenance")
+            .setMessage("Aplikasi sedang dalam perbaikan.\nCoba lagi nanti.")
             .setCancelable(false)
-            .setPositiveButton("Tutup") { _, _ -> finish() }
+            .setPositiveButton("Keluar") { _, _ -> finish() }
             .show()
     }
 
