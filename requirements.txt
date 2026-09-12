@@ -3,17 +3,21 @@ torch==2.2.1
 torchvision==0.17.1
 numpy==1.26.4
 
-# Diffusers & Transformers (versi kompatibel)
+# Diffusers & Transformers
 diffusers==0.27.2
 transformers==4.38.2
 accelerate==0.27.2
 huggingface_hub==0.20.3
 safetensors==0.4.2
 
-# Video & audio
+# Video
 moviepy==1.0.3
 imageio-ffmpeg==0.4.9
-edge-tts==6.1.9
+
+# TTS OFFLINE — Piper (gratis, tanpa API)
+piper-tts==1.2.0
+onnxruntime==1.17.0
 
 # Utils
 Pillow==10.2.0
+requests
