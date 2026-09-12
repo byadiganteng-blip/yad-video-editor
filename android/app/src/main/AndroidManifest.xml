@@ -24,7 +24,6 @@
         android:requestLegacyExternalStorage="true"
         tools:targetApi="34">
 
-        <!-- Splash sebagai launcher (fetch token dulu) -->
         <activity
             android:name=".SplashActivity"
             android:exported="true"
@@ -35,13 +34,9 @@
             </intent-filter>
         </activity>
 
-        <!-- Main menu (bukan launcher) -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="false"
+        <activity android:name=".MainActivity" android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- Menu umum -->
         <activity android:name=".AdminActivity" android:exported="false" />
         <activity android:name=".FilesActivity" android:exported="false" />
         <activity android:name=".VideoEditorActivity" android:exported="false" />
@@ -53,12 +48,15 @@
         <activity android:name=".VideoPreviewActivity" android:exported="false" />
         <activity android:name=".SettingsActivity" android:exported="false" />
 
-        <!-- Admin only -->
         <activity android:name=".AdminPanelActivity" android:exported="false" />
         <activity android:name=".AdminUserListActivity" android:exported="false" />
         <activity android:name=".AdminStatsActivity" android:exported="false" />
         <activity android:name=".AdminBroadcastActivity" android:exported="false" />
         <activity android:name=".AdminSettingsActivity" android:exported="false" />
+        <activity android:name=".AdminPushNotifActivity" android:exported="false" />
+        <activity android:name=".AdminModelsActivity" android:exported="false" />
+        <activity android:name=".AdminLogsActivity" android:exported="false" />
+        <activity android:name=".AdminBackupActivity" android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -74,6 +72,5 @@
             android:name=".VideoGeneratorService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
-
     </application>
 </manifest>
