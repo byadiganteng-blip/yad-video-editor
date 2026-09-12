@@ -1,6 +1,7 @@
 package com.yad.videoeditor
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
@@ -12,11 +13,13 @@ import java.util.concurrent.TimeUnit
 /**
  * GitHub API client
  * Created by KARYADI, Coding by KARYADI
+ * Fixed by Auto-Fix Script
  */
 object AdminApi {
 
     private const val OWNER = "byadiganteng-blip"
-    private const val REPO = "youtube-auto-pipeline"
+    private const val REPO = "yad-video-editor"   // ✅ FIXED
+    private const val BRANCH = "main"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -27,7 +30,8 @@ object AdminApi {
         val b = Request.Builder()
             .url(url)
             .header("Authorization", "token ${SecureConfig.getGithubToken()}")
-            .header("Accept", "application/vnd.github.v3+json")
+            .header("Accept", "application/vnd.github+json")
+            .header("X-GitHub-Api-Version", "2022-11-28")
             .header("User-Agent", "YadApp")
 
         when (method.uppercase()) {
@@ -41,7 +45,10 @@ object AdminApi {
         return b.build()
     }
 
-    suspend fun triggerBuild(workflow: String = "build-apk.yml", ref: String = "main"): Pair<Boolean, String> =
+    // ============================================================
+    //  TRIGGER BUILD APK
+    // ============================================================
+    suspend fun triggerBuild(workflow: String = "build-apk.yml", ref: String = BRANCH): Pair<Boolean, String> =
         withContext(Dispatchers.IO) {
             try {
                 val url = "https://api.github.com/repos/$OWNER/$REPO/actions/workflows/$workflow/dispatches"
@@ -53,6 +60,98 @@ object AdminApi {
             }
         }
 
+    // ============================================================
+    //  TRIGGER GENERATE VIDEO (generate_image.yml)
+    // ============================================================
+    suspend fun triggerVideoGenerate(
+        prompt: String,
+        voice: String = "male_id",
+        watermark: String = "",
+        showSubtitle: Boolean = true,
+        subtitleStyle: String = "neon",
+        scenesCount: String = "8",
+        imageStyle: String = "cinematic"
+    ): Pair<Boolean, Long?> = withContext(Dispatchers.IO) {
+        try {
+            val url = "https://api.github.com/repos/$OWNER/$REPO/" +
+                      "actions/workflows/generate_image.yml/dispatches"
+
+            val json = """
+                {
+                  "ref": "$BRANCH",
+                  "inputs": {
+                    "prompt": ${JSONObject.quote(prompt)},
+                    "voice": "$voice",
+                    "watermark": "${watermark.replace("\"", "\\\"")}",
+                    "show_subtitle": "$showSubtitle",
+                    "subtitle_style": "$subtitleStyle",
+                    "scenes_count": "$scenesCount",
+                    "image_style": "$imageStyle"
+                  }
+                }
+            """.trimIndent()
+
+            println("Trigger URL: $url")
+            println("Body: $json")
+
+            val resp = client.newCall(req(url, "POST", json)).execute()
+            val body = resp.body?.string() ?: ""
+            println("Response: ${resp.code} / $body")
+
+            if (resp.code == 204) {
+                delay(3000)
+                val runId = getLatestVideoRunId()
+                true to runId
+            } else {
+                false to null
+            }
+        } catch (e: Exception) {
+            println("Error: ${e.message}")
+            false to null
+        }
+    }
+
+    private suspend fun getLatestVideoRunId(): Long? = withContext(Dispatchers.IO) {
+        try {
+            val url = "https://api.github.com/repos/$OWNER/$REPO/" +
+                      "actions/workflows/generate_image.yml/runs?per_page=1"
+            val resp = client.newCall(req(url)).execute()
+            val arr = JSONObject(resp.body?.string() ?: "{}")
+                .optJSONArray("workflow_runs") ?: return@withContext null
+            if (arr.length() == 0) return@withContext null
+            arr.getJSONObject(0).getLong("id")
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // ============================================================
+    //  STATUS WORKFLOW
+    // ============================================================
+    suspend fun getRunStatus(runId: Long): WorkflowStatus = withContext(Dispatchers.IO) {
+        try {
+            val url = "https://api.github.com/repos/$OWNER/$REPO/actions/runs/$runId"
+            val resp = client.newCall(req(url)).execute()
+            val json = JSONObject(resp.body?.string() ?: "{}")
+            WorkflowStatus(
+                status = json.optString("status", "unknown"),
+                conclusion = json.optString("conclusion", ""),
+                htmlUrl = json.optString("html_url", "")
+            )
+        } catch (e: Exception) {
+            WorkflowStatus("unknown", "", "")
+        }
+    }
+
+    data class WorkflowStatus(
+        val status: String,
+        val conclusion: String,
+        val htmlUrl: String
+    )
+
+    // ============================================================
+    //  LIST RUNS (untuk Admin)
+    // ============================================================
     suspend fun listRuns(limit: Int = 30): Pair<Boolean, List<WorkflowRun>> =
         withContext(Dispatchers.IO) {
             try {
@@ -78,20 +177,6 @@ object AdminApi {
                 true to runs
             } catch (e: Exception) {
                 false to emptyList()
-            }
-        }
-
-    suspend fun getLatestLogs(workflow: String = "build-apk.yml"): String =
-        withContext(Dispatchers.IO) {
-            try {
-                val url = "https://api.github.com/repos/$OWNER/$REPO/actions/workflows/$workflow/runs?per_page=1"
-                val resp = client.newCall(req(url)).execute()
-                val arr = JSONObject(resp.body?.string() ?: "{}").optJSONArray("workflow_runs")
-                if (arr == null || arr.length() == 0) return@withContext "No runs"
-                val run = arr.getJSONObject(0)
-                "Run #${run.getLong("id")}: ${run.optString("status")}/${run.optString("conclusion")}"
-            } catch (e: Exception) {
-                "Error: ${e.message}"
             }
         }
 
