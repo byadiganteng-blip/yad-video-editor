@@ -18,6 +18,7 @@ class VideoGeneratorService : Service() {
         const val EXTRA_WATERMARK = "watermark"
         const val EXTRA_SHOW_SUBTITLE = "show_subtitle"
         const val EXTRA_SUBTITLE_STYLE = "subtitle_style"
+        const val EXTRA_MODEL = "model_id"
 
         var isRunning = false
             private set
@@ -44,10 +45,11 @@ class VideoGeneratorService : Service() {
         if (intent == null) return START_NOT_STICKY
 
         val prompt = intent.getStringExtra(EXTRA_PROMPT) ?: return START_NOT_STICKY
-        val voice = intent.getStringExtra(EXTRA_VOICE) ?: "none"
+        val voice = intent.getStringExtra(EXTRA_VOICE) ?: "male_id"
         val watermark = intent.getStringExtra(EXTRA_WATERMARK) ?: ""
         val showSubtitle = intent.getBooleanExtra(EXTRA_SHOW_SUBTITLE, true)
         val subtitleStyle = intent.getStringExtra(EXTRA_SUBTITLE_STYLE) ?: "neon"
+        val modelId = intent.getStringExtra(EXTRA_MODEL) ?: "waifu"
 
         isRunning = true
         startForeground(NOTIF_ID, buildNotification(0, "Memulai proses..."))
@@ -57,8 +59,8 @@ class VideoGeneratorService : Service() {
             try {
                 val file = AiImageGenerator.generateVideo(
                     this@VideoGeneratorService,
-                    prompt, voice, watermark, showSubtitle, subtitleStyle,
-                    AiImageGenerator.ProgressCallback { _, _, stage, pct, msg ->
+                    prompt, voice, watermark, showSubtitle, subtitleStyle, modelId,
+                    AiImageGenerator.ProgressCallback { _, _, _, pct, msg ->
                         updateNotification(pct, msg)
                         sendBroadcast(ACTION_PROGRESS, pct, msg, null)
                     }
@@ -90,8 +92,7 @@ class VideoGeneratorService : Service() {
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID,
-                "YAD Video Generator",
+                CHANNEL_ID, "YAD Video Generator",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Proses pembuatan video AI"
@@ -110,7 +111,6 @@ class VideoGeneratorService : Service() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             else PendingIntent.FLAG_UPDATE_CURRENT
         )
-
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("🎬 YAD Video Editor")
             .setContentText(message)
@@ -127,7 +127,6 @@ class VideoGeneratorService : Service() {
         } else {
             builder.setProgress(0, 0, true)
         }
-
         return builder.build()
     }
 
@@ -151,16 +150,14 @@ class VideoGeneratorService : Service() {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 else PendingIntent.FLAG_UPDATE_CURRENT
             )
-
             val notif = NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("✅ Video Selesai!")
-                .setContentText("Tap untuk melihat preview")
+                .setContentText("Tap untuk preview & download")
                 .setSmallIcon(android.R.drawable.stat_sys_download_done)
                 .setContentIntent(pi)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .build()
-
             nm.notify(NOTIF_ID + 1, notif)
         } catch (_: Exception) {}
     }
