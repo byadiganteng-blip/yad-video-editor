@@ -1,0 +1,10 @@
+moviepy==1.0.3
+diffusers==0.27.2
+transformers==4.38.2
+accelerate==0.27.2
+edge-tts==6.1.9
+torch==2.2.1
+torchvision==0.17.1
+imageio-ffmpeg==0.4.9
+Pillow==10.2.0
+numpy==1.26.4
