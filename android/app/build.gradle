@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'com.google.gms.google-services'
 }
 
 android {
@@ -8,31 +9,50 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.yad.videoeditor"
         minSdk 21
         targetSdk 34
         versionCode 13
         versionName "13.0.0"
         multiDexEnabled true
 
-        // ⚠️ TOKEN DI-EMBED DI SINI (ganti dengan token Anda)
+        // Token GitHub di-embed (GANTI DENGAN TOKEN ANDA)
         buildConfigField "String", "GH_TOKEN",
             "\"ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx\""
-
-        buildConfigField "String", "U_P1", "\"byadigan\""
-        buildConfigField "String", "U_P2", "\"teng-blip\""
-        buildConfigField "String", "R_P1", "\"yad-vide\""
-        buildConfigField "String", "R_P2", "\"o-editor\""
-        buildConfigField "String", "CREDIT",
-            "\"Created by KARYADI, Coding by KARYADI\""
         buildConfigField "String", "ADMIN_EMAIL",
             "\"ynuraini686@gmail.com\""
         buildConfigField "String", "ADMIN_PASS",
             "\"YADIGANTENG\""
+
+        // Firebase DB URL
+        buildConfigField "String", "FIREBASE_URL",
+            "\"https://yad-video-editor-default-rtdb.asia-southeast1.firebasedatabase.app\""
+    }
+
+    // 2 varian APK
+    flavorDimensions "version"
+    productFlavors {
+        client {
+            dimension "version"
+            applicationId "com.yad.videoeditor"
+            versionNameSuffix "-client"
+            resValue "string", "app_name", "AI TXT to Video + Editor"
+            buildConfigField "boolean", "IS_ADMIN_APP", "false"
+        }
+        admin {
+            dimension "version"
+            applicationId "com.yad.videoeditor.admin"
+            versionNameSuffix "-admin"
+            resValue "string", "app_name", "YAD Admin"
+            buildConfigField "boolean", "IS_ADMIN_APP", "true"
+        }
     }
 
     buildTypes {
-        release { minifyEnabled false }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
+                          'proguard-rules.pro'
+        }
         debug { minifyEnabled false }
     }
 
@@ -66,5 +86,11 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
     implementation 'androidx.lifecycle:lifecycle-service:2.7.0'
     implementation 'com.github.bumptech.glide:glide:4.16.0'
+
+    // Firebase
+    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+    implementation 'com.google.firebase:firebase-database-ktx'
+    implementation 'com.google.firebase:firebase-auth-ktx'
+
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 }
