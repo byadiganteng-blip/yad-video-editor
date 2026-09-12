@@ -18,7 +18,6 @@ object SecureConfig {
                 if (prefs == null) {
                     prefs = context.applicationContext
                         .getSharedPreferences(PREF, Context.MODE_PRIVATE)
-                    // ═══ FITUR LAMA: auto-embed token saat pertama init ═══
                     try {
                         val emb = decodeToken()
                         if (emb.isNotEmpty() &&
@@ -34,7 +33,7 @@ object SecureConfig {
     private fun p(): SharedPreferences? = prefs
 
     // ═══════════════════════════════════════════════════════════
-    // FITUR LAMA: Gabungkan token dari 6 bagian BuildConfig
+    // DECODE TOKEN DARI BuildConfig
     // ═══════════════════════════════════════════════════════════
     private fun decodeToken(): String {
         return try {
@@ -54,7 +53,7 @@ object SecureConfig {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // FITUR BARU: Baca token dari file .txt yang di-upload user
+    // BACA TOKEN DARI FILE TXT
     // ═══════════════════════════════════════════════════════════
     fun readTokenFromUri(context: Context, uri: Uri): String? {
         return try {
@@ -80,13 +79,11 @@ object SecureConfig {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // GETTER / SETTER TOKEN (prioritas: SharedPreferences > BuildConfig)
+    // TOKEN (prioritas: SharedPreferences > BuildConfig)
     // ═══════════════════════════════════════════════════════════
     fun getGithubToken(): String {
-        // Prioritas 1: dari SharedPreferences (hasil upload txt)
         val fromPrefs = p()?.getString("gh_token", "") ?: ""
         if (fromPrefs.isNotEmpty()) return fromPrefs
-        // Prioritas 2: fallback ke token embed di BuildConfig
         return decodeToken()
     }
 
@@ -108,9 +105,33 @@ object SecureConfig {
     fun getString(key: String, def: String = ""): String = p()?.getString(key, def) ?: def
     fun setString(key: String, v: String) { p()?.edit()?.putString(key, v)?.apply() }
 
-    // ═══ Fungsi tambahan untuk info sumber token ═══
     fun getTokenSource(): String {
         val fromPrefs = p()?.getString("gh_token", "") ?: ""
         return if (fromPrefs.isNotEmpty()) "upload_txt" else "embedded"
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ADMIN METHODS (WAJIB — dipakai AdminActivity & SettingsActivity)
+    // ═══════════════════════════════════════════════════════════
+    private const val KEY_ADMIN_EMAIL = "admin_email"
+    private const val KEY_IS_ADMIN    = "is_admin"
+
+    fun getAdminEmail(): String = p()?.getString(KEY_ADMIN_EMAIL, "") ?: ""
+
+    fun setAdminEmail(email: String) {
+        p()?.edit()?.putString(KEY_ADMIN_EMAIL, email)?.apply()
+    }
+
+    fun isAdmin(): Boolean = p()?.getBoolean(KEY_IS_ADMIN, false) ?: false
+
+    fun setIsAdmin(v: Boolean) {
+        p()?.edit()?.putBoolean(KEY_IS_ADMIN, v)?.apply()
+    }
+
+    fun clearAdmin() {
+        p()?.edit()
+            ?.remove(KEY_ADMIN_EMAIL)
+            ?.remove(KEY_IS_ADMIN)
+            ?.apply()
     }
 }
