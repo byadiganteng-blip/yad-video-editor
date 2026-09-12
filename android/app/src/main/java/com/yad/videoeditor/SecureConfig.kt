@@ -2,6 +2,8 @@ package com.yad.videoeditor
 
 import android.content.Context
 import android.content.SharedPreferences
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 object SecureConfig {
     private const val PREF = "yad_secure"
@@ -9,12 +11,16 @@ object SecureConfig {
     @Volatile
     private var prefs: SharedPreferences? = null
 
+    @Volatile
+    private var cachedToken: String = ""
+
     fun init(context: Context) {
         if (prefs == null) {
             synchronized(this) {
                 if (prefs == null) {
                     prefs = context.applicationContext
                         .getSharedPreferences(PREF, Context.MODE_PRIVATE)
+                    cachedToken = prefs?.getString("gh_token", "") ?: ""
                 }
             }
         }
@@ -22,31 +28,36 @@ object SecureConfig {
 
     private fun p(): SharedPreferences? = prefs
 
-    // ============================================================
-    //  GITHUB TOKEN — dari SharedPreferences
-    // ============================================================
     fun getGithubToken(): String {
-        return try {
-            val fromPrefs = p()?.getString("gh_token", "") ?: ""
-            if (fromPrefs.isNotEmpty()) return fromPrefs
+        if (cachedToken.isNotEmpty()) return cachedToken
+        return try { p()?.getString("gh_token", "") ?: "" }
+        catch (_: Exception) { "" }
+    }
 
-            // Fallback ke BuildConfig (kosong kalau tidak di-embed)
+    fun fetchTokenFromFirestore(onDone: (Boolean) -> Unit = {}) {
+        GlobalScope.launch {
             try {
-                val fromBc = BuildConfig.GH_TOKEN
-                if (fromBc.isNotEmpty()) return fromBc
-            } catch (_: Exception) {}
-
-            ""
-        } catch (_: Exception) { "" }
+                val ok = FirebaseManager.loginAnonymous()
+                if (!ok) { onDone(false); return@launch }
+                val token = FirebaseManager.fetchGithubToken()
+                if (token != null && token.startsWith("ghp_")) {
+                    setGithubToken(token)
+                    onDone(true)
+                } else onDone(false)
+            } catch (e: Exception) { onDone(false) }
+        }
     }
 
     fun hasGithubToken(): Boolean = getGithubToken().isNotEmpty()
 
     fun setGithubToken(t: String) {
-        p()?.edit()?.putString("gh_token", t.trim())?.apply()
+        val trimmed = t.trim()
+        cachedToken = trimmed
+        p()?.edit()?.putString("gh_token", trimmed)?.apply()
     }
 
     fun clearGithubToken() {
+        cachedToken = ""
         p()?.edit()?.remove("gh_token")?.apply()
     }
 
@@ -54,9 +65,7 @@ object SecureConfig {
     fun getGithubUser(): String = "byadiganteng-blip"
     fun getGithubRepo(): String = "yad-video-editor"
 
-    // ============================================================
-    //  ADMIN
-    // ============================================================
+    // ADMIN
     private const val KEY_ADMIN_EMAIL = "admin_email"
     private const val KEY_IS_ADMIN = "is_admin"
     private const val KEY_TAP_COUNT = "admin_tap_count"
@@ -78,18 +87,8 @@ object SecureConfig {
 
     fun verifyAdminCredentials(email: String, password: String): Boolean {
         val e = email.trim().lowercase()
-        val adminEmail = try {
-            BuildConfig.ADMIN_EMAIL.ifEmpty { ADMIN_EMAIL }
-        } catch (_: Exception) { ADMIN_EMAIL }
-        val adminPass = try {
-            BuildConfig.ADMIN_PASS.ifEmpty { ADMIN_PASS }
-        } catch (_: Exception) { ADMIN_PASS }
-
-        val ok = e == adminEmail.lowercase() && password == adminPass
-        if (ok) {
-            setAdminEmail(e)
-            setIsAdmin(true)
-        }
+        val ok = e == ADMIN_EMAIL.lowercase() && password == ADMIN_PASS
+        if (ok) { setAdminEmail(e); setIsAdmin(true) }
         return ok
     }
 
