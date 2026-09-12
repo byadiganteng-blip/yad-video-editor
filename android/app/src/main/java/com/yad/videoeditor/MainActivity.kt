@@ -1,18 +1,25 @@
 package com.yad.videoeditor
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
+    private val PERMISSION_REQUEST_CODE = 1001
+    private lateinit var tvBanner: TextView
     private lateinit var tvStatus: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,74 +29,102 @@ class MainActivity : AppCompatActivity() {
         catch (e: Exception) { finish(); return }
 
         FirebaseManager.registerUser(this)
+        FirebaseManager.updateLastUsed(this)
 
-        // Cek login admin
-        if (!SecureConfig.isAdmin()) {
-            showLoginDialog()
+        tvBanner = findViewById(R.id.tvBanner)
+        tvStatus = findViewById(R.id.tvStatus)
+
+        try {
+            findViewById<TextView>(R.id.tvCredit)?.text =
+                "Created by KARYADI, Coding by KARYADI"
+        } catch (_: Exception) {}
+
+        // ============================================================
+        //  CEK TOKEN — kalau kosong, minta input
+        // ============================================================
+        if (!SecureConfig.hasGithubToken()) {
+            TokenInputDialog.show(this) { success ->
+                if (success) {
+                    Toast.makeText(this, "✅ Token tersimpan",
+                        Toast.LENGTH_SHORT).show()
+                    updateStatus()
+                } else {
+                    Toast.makeText(this,
+                        "Token tidak valid. Buka Pengaturan nanti.",
+                        Toast.LENGTH_LONG).show()
+                }
+            }
         } else {
-            showAdminMenu()
+            updateStatus()
+        }
+
+        // Menu
+        clickCard(R.id.cardVideoList) { start(VideoListActivity::class.java) }
+        clickCard(R.id.cardEditor) { start(VideoEditorActivity::class.java) }
+        clickCard(R.id.cardAiVideo) { start(TextToVideoActivity::class.java) }
+        clickCard(R.id.cardFiles) { start(FilesActivity::class.java) }
+        clickCard(R.id.cardInstructions) { start(InstructionsActivity::class.java) }
+        clickCard(R.id.cardCredit) { start(CreditActivity::class.java) }
+        clickCard(R.id.cardStatistics) { start(StatisticsActivity::class.java) }
+        clickCard(R.id.cardSettings) { start(SettingsActivity::class.java) }
+
+        requestAllPermissions()
+        listenConfig()
+    }
+
+    private fun updateStatus() {
+        tvStatus?.text = if (SecureConfig.hasGithubToken())
+            "✅ Siap" else "⚠️ Token belum diisi"
+    }
+
+    private fun listenConfig() {
+        lifecycleScope.launch {
+            FirebaseManager.configFlow().collectLatest { cfg ->
+                if (cfg.forceUpdate && BuildConfig.VERSION_CODE < cfg.minVersionCode) {
+                    showForceUpdateDialog(cfg.updateUrl)
+                }
+                if (cfg.maintenanceMode) {
+                    showMaintenanceDialog()
+                }
+                if (cfg.messageBanner.isNotEmpty()) {
+                    tvBanner?.text = cfg.messageBanner
+                    tvBanner?.visibility = View.VISIBLE
+                } else {
+                    tvBanner?.visibility = View.GONE
+                }
+            }
+        }
+        lifecycleScope.launch {
+            FirebaseManager.broadcastFlow().collectLatest { b ->
+                if (b?.active == true && b.message.isNotEmpty()) {
+                    tvBanner?.text = "📢 " + b.message
+                    tvBanner?.visibility = View.VISIBLE
+                }
+            }
         }
     }
 
-    private fun showLoginDialog() {
-        val container = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(50, 30, 50, 30)
-        }
-        val etEmail = android.widget.EditText(this).apply {
-            hint = "Email admin"
-            inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-        }
-        val etPass = android.widget.EditText(this).apply {
-            hint = "Kata sandi"
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or
-                        android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-        }
-        container.addView(etEmail)
-        container.addView(etPass)
-
+    private fun showForceUpdateDialog(url: String) {
         AlertDialog.Builder(this)
-            .setTitle("🔐 Admin Login")
-            .setMessage("Masukkan kredensial admin")
-            .setView(container)
+            .setTitle("Update Tersedia")
+            .setMessage("Versi baru tersedia. Silakan update.")
             .setCancelable(false)
-            .setPositiveButton("Login") { _, _ ->
-                if (SecureConfig.verifyAdminCredentials(
-                        etEmail.text.toString(),
-                        etPass.text.toString())) {
-                    Toast.makeText(this, "✅ Login berhasil",
-                        Toast.LENGTH_SHORT).show()
-                    showAdminMenu()
-                } else {
-                    Toast.makeText(this, "❌ Salah", Toast.LENGTH_LONG).show()
-                    finish()
+            .setPositiveButton("Update") { _, _ ->
+                if (url.isNotEmpty()) {
+                    startActivity(Intent(Intent.ACTION_VIEW,
+                        android.net.Uri.parse(url)))
                 }
             }
-            .setNegativeButton("Batal") { _, _ -> finish() }
             .show()
     }
 
-    private fun showAdminMenu() {
-        tvStatus = findViewById(R.id.tvCredit)
-        tvStatus?.text = "👑 ADMIN: ${SecureConfig.getAdminEmail()}"
-
-        // Menu admin
-        clickCard(R.id.cardVideoList) { start(AdminUserListActivity::class.java) }
-        clickCard(R.id.cardEditor) { start(AdminStatsActivity::class.java) }
-        clickCard(R.id.cardAiVideo) { start(AdminBroadcastActivity::class.java) }
-        clickCard(R.id.cardFiles) { start(AdminSettingsActivity::class.java) }
-        clickCard(R.id.cardInstructions) { start(AdminStatsActivity::class.java) }
-        clickCard(R.id.cardCredit) { start(CreditActivity::class.java) }
-        clickCard(R.id.cardStatistics) { start(AdminPanelActivity::class.java) }
-
-        // Listen stats
-        lifecycleScope.launch {
-            FirebaseManager.statsFlow().collectLatest { stats ->
-                if (stats != null) {
-                    tvStatus?.text = "👑 Admin | Total user: ${stats["total_users"] ?: 0}"
-                }
-            }
-        }
+    private fun showMaintenanceDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Maintenance")
+            .setMessage("Aplikasi sedang maintenance.")
+            .setCancelable(false)
+            .setPositiveButton("Tutup") { _, _ -> finish() }
+            .show()
     }
 
     private fun clickCard(id: Int, action: () -> Unit) {
@@ -104,11 +139,38 @@ class MainActivity : AppCompatActivity() {
         } catch (_: Exception) {}
     }
 
-    private fun start(cls: Class<*>) {
-        startActivity(Intent(this, cls))
+    private fun start(cls: Class<*>) { startActivity(Intent(this, cls)) }
+
+    private fun requestAllPermissions() {
+        val permissions = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.READ_MEDIA_VIDEO)
+            permissions.add(Manifest.permission.READ_MEDIA_AUDIO)
+            permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        }
+        val notGranted = permissions.filter {
+            ContextCompat.checkSelfPermission(this, it) !=
+                PackageManager.PERMISSION_GRANTED
+        }
+        if (notGranted.isNotEmpty()) {
+            ActivityCompat.requestPermissions(
+                this, notGranted.toTypedArray(), PERMISSION_REQUEST_CODE)
+        }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        AlertDialog.Builder(this)
+            .setTitle("Keluar?")
+            .setMessage("Tutup aplikasi?")
+            .setPositiveButton("Ya") { _, _ -> finish() }
+            .setNegativeButton("Batal", null)
+            .show()
     }
 }
