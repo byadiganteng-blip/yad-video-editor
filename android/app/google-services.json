@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "954465770137",
+    "firebase_url": "https://yad-video-editor-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "yad-video-editor",
+    "storage_bucket": "yad-video-editor.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:954465770137:android:8968c8545e93253abd3608",
+        "android_client_info": {
+          "package_name": "com.yad.videoeditor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpEKuyMVvgep1C71MQXKq_sI4rH_kkOdo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:954465770137:android:b11ba4a56d84a523bd3608",
+        "android_client_info": {
+          "package_name": "com.yad.videoeditor.admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpEKuyMVvgep1C71MQXKq_sI4rH_kkOdo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
