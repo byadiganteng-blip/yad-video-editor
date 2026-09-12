@@ -14,10 +14,6 @@ import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
-/**
- * Main Activity - dengan mode admin tersembunyi + auto permission
- * Created by KARYADI, Coding by KARYADI
- */
 class MainActivity : AppCompatActivity() {
 
     private var headerTapCount = 0
@@ -32,14 +28,16 @@ class MainActivity : AppCompatActivity() {
         try {
             setContentView(R.layout.activity_main)
         } catch (e: Exception) {
-            Toast.makeText(this, "Layout error: ${e.message}", Toast.LENGTH_LONG).show()
             finish()
             return
         }
 
-        findViewById<TextView>(R.id.tvCredit)?.text = "Created by KARYADI, Coding by KARYADI"
+        try {
+            findViewById<TextView>(R.id.tvCredit)?.text =
+                "Created by KARYADI, Coding by KARYADI"
+        } catch (_: Exception) {}
 
-        // FIX: Setup click listener di CardView (bukan TextView panah)
+        // Menu utama
         clickCard(R.id.cardVideoList) { start(VideoListActivity::class.java) }
         clickCard(R.id.cardEditor) { start(VideoEditorActivity::class.java) }
         clickCard(R.id.cardAiVideo) { start(TextToVideoActivity::class.java) }
@@ -47,22 +45,21 @@ class MainActivity : AppCompatActivity() {
         clickCard(R.id.cardInstructions) { start(InstructionsActivity::class.java) }
         clickCard(R.id.cardCredit) { start(CreditActivity::class.java) }
         clickCard(R.id.cardStatistics) { start(StatisticsActivity::class.java) }
-        clickCard(R.id.cardSettings) { start(SettingsActivity::class.java) }
+        // Tombol Pengaturan DIHAPUS
 
-        // Header tap 5x untuk mode admin
-        setupHiddenAdmin()
+        // Tap 5x header → Admin Panel (login)
+        setupAdminTap()
 
-        // Auto request permissions
         requestAllPermissions()
     }
 
     private fun clickCard(id: Int, action: () -> Unit) {
         try {
             findViewById<View>(id)?.setOnClickListener {
-                try {
-                    action()
-                } catch (e: Exception) {
-                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                try { action() }
+                catch (e: Exception) {
+                    Toast.makeText(this, "Error: ${e.message}",
+                        Toast.LENGTH_SHORT).show()
                 }
             }
         } catch (_: Exception) {}
@@ -72,101 +69,54 @@ class MainActivity : AppCompatActivity() {
         startActivity(Intent(this, cls))
     }
 
-    private fun setupHiddenAdmin() {
-        val header = findViewById<View>(R.id.headerLayout)
-        val hint = findViewById<TextView>(R.id.tvHiddenHint)
-        val adminCard = findViewById<CardView>(R.id.cardAdminHidden)
-
-        header?.setOnClickListener {
-            val now = System.currentTimeMillis()
-            if (now - lastTapTime > TAP_INTERVAL) headerTapCount = 0
-            lastTapTime = now
-            headerTapCount++
-
-            val remaining = REQUIRED_TAPS - headerTapCount
-
-            if (remaining > 0) {
-                hint.text = "Tap $remaining kali lagi untuk Admin Panel"
-                hint.alpha = 1.0f
-                hint.postDelayed({
-                    hint.text = ""
-                    hint.alpha = 0.5f
-                }, 2000)
-            } else {
-                adminCard.visibility = View.VISIBLE
-                hint.text = "Admin Panel unlocked!"
-                hint.alpha = 1.0f
-                headerTapCount = 0
-
-                adminCard.setOnClickListener {
-                    try {
-                        startActivity(Intent(this, AdminActivity::class.java))
-                    } catch (e: Exception) {
-                        Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-
-                Toast.makeText(this, "Admin Panel unlocked", Toast.LENGTH_SHORT).show()
-                hint.postDelayed({
-                    hint.text = ""
-                    hint.alpha = 0.5f
-                }, 3000)
+    private fun setupAdminTap() {
+        val header = findViewById<View>(R.id.headerLayout) ?: return
+        header.isClickable = true
+        header.setOnClickListener {
+            val count = SecureConfig.incrementTapCount()
+            val remaining = 5 - count
+            if (remaining in 1..4) {
+                Toast.makeText(this, "Tap $remaining kali lagi...",
+                    Toast.LENGTH_SHORT).show()
+            } else if (count == 5) {
+                SecureConfig.resetTapCount()
+                startActivity(Intent(this, AdminPanelActivity::class.java))
+            } else if (count > 5) {
+                SecureConfig.resetTapCount()
             }
         }
     }
 
-    // ============================================================
-    // AUTO REQUEST ALL PERMISSIONS
-    // ============================================================
     private fun requestAllPermissions() {
         val permissions = mutableListOf<String>()
-
-        // Storage permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13+
             permissions.add(Manifest.permission.READ_MEDIA_VIDEO)
             permissions.add(Manifest.permission.READ_MEDIA_AUDIO)
             permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         } else {
-            // Android 12 and below
             permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
                 permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
         }
 
-        // Cek mana yang belum granted
         val notGranted = permissions.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(this, it) !=
+                PackageManager.PERMISSION_GRANTED
         }
 
         if (notGranted.isNotEmpty()) {
             ActivityCompat.requestPermissions(
-                this,
-                notGranted.toTypedArray(),
-                PERMISSION_REQUEST_CODE
+                this, notGranted.toTypedArray(), PERMISSION_REQUEST_CODE
             )
         }
     }
 
     override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            val granted = grantResults.count { it == PackageManager.PERMISSION_GRANTED }
-            val total = grantResults.size
-            if (granted == total) {
-                Toast.makeText(this, "Semua izin diberikan", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this,
-                    "$granted dari $total izin diberikan. Beberapa fitur mungkin terbatas.",
-                    Toast.LENGTH_LONG).show()
-            }
-        }
     }
 
     @Deprecated("Deprecated in Java")
@@ -179,29 +129,5 @@ class MainActivity : AppCompatActivity() {
                 .setNegativeButton("Batal", null)
                 .show()
         } catch (_: Exception) { super.onBackPressed() }
-
-
-        // ═══════════════════════════════════════════════════════
-        // ✅ ADMIN PANEL — Tap 5 kali di logo/title
-        // ═══════════════════════════════════════════════════════
-        setupAdminTap()
     }
-
-    private fun setupAdminTap() {
-        // FIX: headerLayout sudah ada di XML, dan seluruh area header
-        // (logo + title + credit) akan menjadi target tap 5x.
-        val header = findViewById<android.view.View>(R.id.headerLayout) ?: return
-        header.isClickable = true
-        header.setOnClickListener {
-            val count = SecureConfig.incrementTapCount()
-            if (count == 5) {
-                SecureConfig.resetTapCount()
-                // ✅ Buka Admin Panel
-                startActivity(android.content.Intent(
-                    this, AdminPanelActivity::class.java))
-            } else if (count > 5) {
-                SecureConfig.resetTapCount()
-            }
-        }
-    }
-    }
+}
