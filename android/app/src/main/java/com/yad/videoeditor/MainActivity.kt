@@ -188,27 +188,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupAdminTap() {
-        val targets = listOf<Int>(
-            R.id.tvAppTitle,
-            R.id.tvTitle,
-            R.id.ivLogo,
-            R.id.imgLogo
-        )
-        for (id in targets) {
-            val v = findViewById<android.view.View>(id) ?: continue
-            v.isClickable = true
-            v.setOnClickListener {
-                val count = SecureConfig.incrementTapCount()
-                if (count == 5) {
-                    SecureConfig.resetTapCount()
-                    // ✅ Buka Admin Panel (login dialog akan muncul)
-                    startActivity(android.content.Intent(
-                        this, AdminPanelActivity::class.java))
-                } else if (count > 5) {
-                    SecureConfig.resetTapCount()
-                }
+        // FIX: headerLayout sudah ada di XML, dan seluruh area header
+        // (logo + title + credit) akan menjadi target tap 5x.
+        val header = findViewById<android.view.View>(R.id.headerLayout) ?: return
+        header.isClickable = true
+        header.setOnClickListener {
+            val count = SecureConfig.incrementTapCount()
+            if (count == 5) {
+                SecureConfig.resetTapCount()
+                // ✅ Buka Admin Panel
+                startActivity(android.content.Intent(
+                    this, AdminPanelActivity::class.java))
+            } else if (count > 5) {
+                SecureConfig.resetTapCount()
             }
-            break
         }
     }
     }
