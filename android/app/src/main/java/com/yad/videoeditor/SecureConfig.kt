@@ -55,7 +55,7 @@ object SecureConfig {
     fun setString(key: String, v: String) { p()?.edit()?.putString(key, v)?.apply() }
 
     // ═══════════════════════════════════════════════════════
-    // ✅ ADMIN PANEL — verifikasi credentials
+    // ✅ ADMIN PANEL
     // Email: ynuraini686@gmail.com
     // Password: YADIGANTENG
     // ═══════════════════════════════════════════════════════
@@ -74,10 +74,6 @@ object SecureConfig {
         p()?.edit()?.remove(KEY_ADMIN_EMAIL)?.remove(KEY_IS_ADMIN)?.apply()
     }
 
-    /**
-     * Verifikasi credential admin.
-     * @return true jika email & password cocok
-     */
     fun verifyAdminCredentials(email: String, password: String): Boolean {
         val ok = email.trim().equals(ADMIN_EMAIL, ignoreCase = true) &&
                  password == ADMIN_PASS
@@ -88,10 +84,6 @@ object SecureConfig {
         return ok
     }
 
-    /**
-     * Hitung tap untuk trigger admin panel.
-     * @return jumlah tap saat ini
-     */
     fun incrementTapCount(): Int {
         val current = p()?.getInt(KEY_TAP_COUNT, 0) ?: 0
         val next = current + 1

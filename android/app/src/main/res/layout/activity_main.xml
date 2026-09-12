@@ -182,7 +182,6 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- AI TEXT TO VIDEO -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardAiVideo"
                 android:layout_marginBottom="12dp"
@@ -245,6 +244,8 @@
                         android:layout_height="wrap_content"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
+
+            <!-- AI TEXT TO VIDEO -->
 
             <!-- AI TEXT TO VIDEO — Icon Keren -->
 

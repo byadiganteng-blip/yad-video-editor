@@ -78,7 +78,8 @@ class VideoGeneratorService : Service() {
             } finally {
                 isRunning = false
                 delay(3000)
-                stopForeground(STOP_FOREGROUND_DETACH)
+                stopForeground(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+                    STOP_FOREGROUND_DETACH else 0)
                 stopSelf()
             }
         }

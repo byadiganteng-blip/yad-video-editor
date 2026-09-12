@@ -31,7 +31,6 @@ class TextToVideoActivity : AppCompatActivity() {
     private lateinit var btnDownloadNow: Button
     private var lastVideoPath: String? = null
 
-    // ✅ Broadcast receiver untuk update progress dari service
     private val progressReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
@@ -97,7 +96,6 @@ class TextToVideoActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnGenerate).setOnClickListener { generate() }
         findViewById<Button>(R.id.btnUploadTxt).setOnClickListener { pickTxtFile() }
 
-        // ✅ Tombol download cepat dari progress
         btnDownloadNow.setOnClickListener {
             lastVideoPath?.let { path ->
                 val intent = Intent(this, VideoPreviewActivity::class.java)
@@ -106,7 +104,6 @@ class TextToVideoActivity : AppCompatActivity() {
             } ?: Toast.makeText(this, "Video belum siap", Toast.LENGTH_SHORT).show()
         }
 
-        // ✅ Jika service sedang berjalan, restore progress
         if (VideoGeneratorService.isRunning) {
             progressContainer.visibility = View.VISIBLE
             tvStatus.text = "⏳ Proses sedang berjalan di background..."
@@ -115,7 +112,6 @@ class TextToVideoActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // ✅ Register broadcast receiver
         val filter = IntentFilter().apply {
             addAction(VideoGeneratorService.ACTION_PROGRESS)
             addAction(VideoGeneratorService.ACTION_DONE)
@@ -188,7 +184,6 @@ class TextToVideoActivity : AppCompatActivity() {
         btnDownloadNow.visibility = View.GONE
         lastVideoPath = null
 
-        // ✅ Jalankan foreground service — berjalan di background
         val serviceIntent = Intent(this, VideoGeneratorService::class.java).apply {
             putExtra(VideoGeneratorService.EXTRA_PROMPT, story)
             putExtra(VideoGeneratorService.EXTRA_VOICE, voice)

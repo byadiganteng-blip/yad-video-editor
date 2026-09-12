@@ -22,7 +22,6 @@ class AdminPanelActivity : AppCompatActivity() {
         btnLogout = findViewById(R.id.btnAdminLogout)
         layoutAdminContent = findViewById(R.id.layoutAdminContent)
 
-        // Cek login
         if (!SecureConfig.isAdmin()) {
             showLoginDialog()
         } else {
@@ -84,7 +83,6 @@ class AdminPanelActivity : AppCompatActivity() {
         layoutAdminContent.visibility = View.VISIBLE
         tvWelcome.text = "👑 Admin: ${SecureConfig.getAdminEmail()}"
 
-        // Tampilkan info build
         findViewById<TextView>(R.id.tvAdminInfo).text = buildString {
             append("═══════════════════════\n")
             append("📱 App Info\n")

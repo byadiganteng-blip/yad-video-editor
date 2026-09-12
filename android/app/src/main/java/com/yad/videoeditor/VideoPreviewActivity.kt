@@ -55,7 +55,6 @@ class VideoPreviewActivity : AppCompatActivity() {
         val sizeMb = file.length() / (1024.0 * 1024.0)
         tvInfo.text = "📁 ${file.name}\n📊 ${String.format("%.2f", sizeMb)} MB"
 
-        // Setup VideoView
         videoView.setVideoPath(videoPath)
         videoView.setOnPreparedListener { mp ->
             mediaPlayer = mp
@@ -87,13 +86,9 @@ class VideoPreviewActivity : AppCompatActivity() {
         btnShare.setOnClickListener { shareVideo(file) }
     }
 
-    /**
-     * ✅ Download video ke gallery — support Android 6 ke bawah
-     */
     private fun downloadVideo(file: File) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // Android 10+ — MediaStore
                 val values = ContentValues().apply {
                     put(MediaStore.Video.Media.DISPLAY_NAME, file.name)
                     put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
@@ -109,7 +104,6 @@ class VideoPreviewActivity : AppCompatActivity() {
                 Toast.makeText(this, "✅ Tersimpan di Movies/YAD Video Editor",
                     Toast.LENGTH_LONG).show()
             } else {
-                // Android 9 ke bawah — direct ke folder Movies
                 val destDir = File(
                     Environment.getExternalStoragePublicDirectory(
                         Environment.DIRECTORY_MOVIES
@@ -124,7 +118,6 @@ class VideoPreviewActivity : AppCompatActivity() {
                     }
                 }
 
-                // Trigger media scanner biar muncul di Gallery
                 val intent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
                 intent.data = Uri.fromFile(destFile)
                 sendBroadcast(intent)
