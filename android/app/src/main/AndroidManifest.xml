@@ -33,11 +33,10 @@
         </activity>
 
         <activity android:name=".AdminActivity" android:exported="false" />
-        <activity android:name=".ActionsActivity" android:exported="false" />
         <activity android:name=".FilesActivity" android:exported="false" />
         <activity android:name=".VideoEditorActivity" android:exported="false" />
         <activity android:name=".SettingsActivity" android:exported="false" />
-        <activity android:name=".DownloadActivity" android:exported="false" />
+        <activity android:name=".VideoListActivity" android:exported="false" />
         <activity android:name=".InstructionsActivity" android:exported="false" />
         <activity android:name=".CreditActivity" android:exported="false" />
         <activity android:name=".StatisticsActivity" android:exported="false" />

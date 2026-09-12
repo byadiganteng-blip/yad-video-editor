@@ -1,50 +1,537 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="#F5F5F5">
-    <LinearLayout android:orientation="vertical"
-        android:layout_width="match_parent" android:layout_height="wrap_content">
-        <LinearLayout android:orientation="vertical"
-            android:background="#1A237E" android:padding="24dp"
-            android:layout_width="match_parent" android:layout_height="wrap_content">
-            <TextView android:text="Yad Video Editor"
-                android:textColor="#FFFFFF" android:textSize="22sp"
-                android:textStyle="bold" android:layout_gravity="center"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <TextView android:id="@+id/tvCredit"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_light"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- HEADER dengan gradient -->
+        <LinearLayout
+            android:id="@+id/headerLayout"
+            android:orientation="vertical"
+            android:background="@drawable/header_gradient"
+            android:padding="32dp"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:src="@drawable/ic_video_editor"
+                android:layout_width="64dp"
+                android:layout_height="64dp"/>
+
+            <TextView
+                android:text="Yad Video Editor"
+                android:textColor="@color/text_white"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:layout_marginTop="12dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:id="@+id/tvCredit"
                 android:text="Created by KARYADI"
-                android:textColor="#FFD54F" android:textSize="12sp"
-                android:layout_gravity="center" android:layout_marginTop="4dp"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                android:textColor="#FFD54F"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:id="@+id/tvHiddenHint"
+                android:text=""
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:alpha="0.5"
+                android:layout_marginTop="4dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
         </LinearLayout>
-        <LinearLayout android:orientation="vertical" android:padding="16dp"
-            android:layout_width="match_parent" android:layout_height="wrap_content">
-            <Button android:id="@+id/btnFiles" android:text="Files"
-                android:layout_marginBottom="6dp"
-                android:layout_width="match_parent" android:layout_height="wrap_content"/>
-            <Button android:id="@+id/btnEditor" android:text="Video Editor"
-                android:layout_marginBottom="6dp"
-                android:layout_width="match_parent" android:layout_height="wrap_content"/>
-            <Button android:id="@+id/btnDownload" android:text="Download"
-                android:layout_marginBottom="6dp"
-                android:layout_width="match_parent" android:layout_height="wrap_content"/>
-            <Button android:id="@+id/btnActions" android:text="Actions"
-                android:layout_marginBottom="6dp"
-                android:layout_width="match_parent" android:layout_height="wrap_content"/>
-            <Button android:id="@+id/btnAdmin" android:text="Admin Panel"
-                android:layout_marginBottom="6dp"
-                android:layout_width="match_parent" android:layout_height="wrap_content"/>
-            <Button android:id="@+id/btnInstructions" android:text="Instructions"
-                android:layout_marginBottom="6dp"
-                android:layout_width="match_parent" android:layout_height="wrap_content"/>
-            <Button android:id="@+id/btnCredit" android:text="Credit"
-                android:layout_marginBottom="6dp"
-                android:layout_width="match_parent" android:layout_height="wrap_content"/>
-            <Button android:id="@+id/btnStatistics" android:text="Statistics"
-                android:layout_marginBottom="6dp"
-                android:layout_width="match_parent" android:layout_height="wrap_content"/>
-            <Button android:id="@+id/btnSettings" android:text="Settings"
-                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+        <!-- Menu utama -->
+        <LinearLayout
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- VIDEO LIST -->
+            <androidx.cardview.widget.CardView
+                android:layout_marginBottom="12dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:src="@drawable/ic_download"
+                        android:background="@color/btn_blue"
+                        android:padding="12dp"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"/>
+
+                    <LinearLayout
+                        android:orientation="vertical"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:text="Video Saya"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+
+                        <TextView
+                            android:text="Lihat & download hasil video"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/btnVideoList"
+                        android:text="›"
+                        android:textSize="28sp"
+                        android:textColor="@color/primary"
+                        android:padding="8dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- VIDEO EDITOR -->
+            <androidx.cardview.widget.CardView
+                android:layout_marginBottom="12dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:src="@drawable/ic_video_editor"
+                        android:background="@color/btn_purple"
+                        android:padding="12dp"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"/>
+
+                    <LinearLayout
+                        android:orientation="vertical"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:text="Video Editor"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+
+                        <TextView
+                            android:text="Trim, rotate, dan lainnya"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/btnEditor"
+                        android:text="›"
+                        android:textSize="28sp"
+                        android:textColor="@color/primary"
+                        android:padding="8dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- FILES -->
+            <androidx.cardview.widget.CardView
+                android:layout_marginBottom="12dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:src="@drawable/ic_files"
+                        android:background="@color/btn_green"
+                        android:padding="12dp"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"/>
+
+                    <LinearLayout
+                        android:orientation="vertical"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:text="Files"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+
+                        <TextView
+                            android:text="Kelola file di perangkat"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/btnFiles"
+                        android:text="›"
+                        android:textSize="28sp"
+                        android:textColor="@color/primary"
+                        android:padding="8dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- INSTRUCTIONS -->
+            <androidx.cardview.widget.CardView
+                android:layout_marginBottom="12dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:src="@drawable/ic_instructions"
+                        android:background="@color/btn_orange"
+                        android:padding="12dp"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"/>
+
+                    <LinearLayout
+                        android:orientation="vertical"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:text="Petunjuk"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+
+                        <TextView
+                            android:text="Cara pakai aplikasi"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/btnInstructions"
+                        android:text="›"
+                        android:textSize="28sp"
+                        android:textColor="@color/primary"
+                        android:padding="8dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- CREDIT -->
+            <androidx.cardview.widget.CardView
+                android:layout_marginBottom="12dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:src="@drawable/ic_credit"
+                        android:background="@color/btn_pink"
+                        android:padding="12dp"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"/>
+
+                    <LinearLayout
+                        android:orientation="vertical"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:text="Credit"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+
+                        <TextView
+                            android:text="Info pembuat aplikasi"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/btnCredit"
+                        android:text="›"
+                        android:textSize="28sp"
+                        android:textColor="@color/primary"
+                        android:padding="8dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- STATISTICS -->
+            <androidx.cardview.widget.CardView
+                android:layout_marginBottom="12dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:src="@drawable/ic_stats"
+                        android:background="@color/btn_teal"
+                        android:padding="12dp"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"/>
+
+                    <LinearLayout
+                        android:orientation="vertical"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:text="Statistik"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+
+                        <TextView
+                            android:text="Data penggunaan aplikasi"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/btnStatistics"
+                        android:text="›"
+                        android:textSize="28sp"
+                        android:textColor="@color/primary"
+                        android:padding="8dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- SETTINGS -->
+            <androidx.cardview.widget.CardView
+                android:layout_marginBottom="12dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:src="@drawable/ic_settings"
+                        android:background="@color/btn_indigo"
+                        android:padding="12dp"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"/>
+
+                    <LinearLayout
+                        android:orientation="vertical"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:text="Pengaturan"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+
+                        <TextView
+                            android:text="Konfigurasi aplikasi"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/btnSettings"
+                        android:text="›"
+                        android:textSize="28sp"
+                        android:textColor="@color/primary"
+                        android:padding="8dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- ADMIN PANEL (HIDDEN - hanya muncul kalau unlock) -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardAdminHidden"
+                android:visibility="gone"
+                android:layout_marginBottom="12dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:src="@drawable/ic_settings"
+                        android:background="@color/btn_red"
+                        android:padding="12dp"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"/>
+
+                    <LinearLayout
+                        android:orientation="vertical"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:text="Admin Panel"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/danger"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+
+                        <TextView
+                            android:text="Mode admin"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/btnAdmin"
+                        android:text="›"
+                        android:textSize="28sp"
+                        android:textColor="@color/danger"
+                        android:padding="8dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Footer -->
+            <TextView
+                android:text="Created by KARYADI, Coding by KARYADI"
+                android:textSize="11sp"
+                android:textColor="@color/text_hint"
+                android:gravity="center"
+                android:paddingTop="16dp"
+                android:paddingBottom="8dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
