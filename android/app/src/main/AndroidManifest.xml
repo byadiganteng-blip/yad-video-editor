@@ -12,7 +12,6 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
-
     <application
         android:name=".YadApp"
         android:allowBackup="false"
@@ -41,27 +40,21 @@
         <activity android:name=".InstructionsActivity" android:exported="false" />
         <activity android:name=".CreditActivity" android:exported="false" />
         <activity android:name=".StatisticsActivity" android:exported="false" />
+        <activity android:name=".AdminPanelActivity" android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.yad.videoeditor.fileprovider"
+            android:authorities="${APP_ID}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-    
-        <!-- ✅ Foreground Service untuk proses background -->
+
         <service
             android:name=".VideoGeneratorService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
-
-        <!-- Admin Panel -->
-        <activity
-            android:name=".AdminPanelActivity"
-            android:exported="false" />
-
     </application>
 </manifest>
