@@ -11,8 +11,7 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 /**
- * Wrapper untuk GitHub API — trigger generate_image.yml
- * Created by KARYADI, Coding by KARYADI
+ * Wrapper GitHub API — trigger generate_image.yml
  */
 object GitHubAiClient {
 
@@ -25,21 +24,17 @@ object GitHubAiClient {
         .readTimeout(120, TimeUnit.SECONDS)
         .build()
 
-    /**
-     * Kirim permintaan generate video ke GitHub Actions.
-     */
     suspend fun dispatchVideo(
         prompt: String,
         jobId: String,
         voice: String = "male_id",
         watermark: String = "",
         showSubtitle: Boolean = true,
-        subtitleStyle: String = "neon"
+        subtitleStyle: String = "neon",
+        modelId: String = "waifu"
     ): Boolean = withContext(Dispatchers.IO) {
         try {
-            val url = "https://api.github.com/repos/$OWNER/$REPO/" +
-                      "actions/workflows/$WORKFLOW/dispatches"
-
+            val url = "https://api.github.com/repos/$OWNER/$REPO/actions/workflows/$WORKFLOW/dispatches"
             val wm = watermark.replace("\"", "\\\"")
             val json = """
                 {
@@ -51,13 +46,13 @@ object GitHubAiClient {
                     "show_subtitle": "$showSubtitle",
                     "subtitle_style": "$subtitleStyle",
                     "scenes_count": "8",
-                    "image_style": "cinematic"
+                    "image_style": "cinematic",
+                    "model_id": "$modelId"
                   }
                 }
             """.trimIndent()
 
             val body = json.toRequestBody("application/json".toMediaTypeOrNull())
-
             val req = Request.Builder()
                 .url(url)
                 .header("Authorization", "token ${SecureConfig.getGithubToken()}")
@@ -69,41 +64,30 @@ object GitHubAiClient {
 
             val resp = client.newCall(req).execute()
             resp.code == 204
-        } catch (e: Exception) {
-            false
-        }
+        } catch (e: Exception) { false }
     }
 
-    /**
-     * Cek hasil generate video via GitHub Release.
-     */
     suspend fun checkResult(jobId: String): String? = withContext(Dispatchers.IO) {
         try {
-            val url = "https://api.github.com/repos/$OWNER/$REPO/releases?per_page=5"
+            val url = "https://api.github.com/repos/$OWNER/$REPO/releases?per_page=10"
             val req = Request.Builder()
                 .url(url)
                 .header("Authorization", "token ${SecureConfig.getGithubToken()}")
                 .header("Accept", "application/vnd.github+json")
                 .build()
-
             val resp = client.newCall(req).execute()
-            val body = resp.body?.string() ?: "[]"
-            val arr = JSONArray(body)
-
+            val arr = JSONArray(resp.body?.string() ?: "[]")
             for (i in 0 until arr.length()) {
                 val release = arr.getJSONObject(i)
                 val assets = release.optJSONArray("assets") ?: continue
                 for (j in 0 until assets.length()) {
                     val asset = assets.getJSONObject(j)
-                    val name = asset.optString("name")
-                    if (name.endsWith(".mp4")) {
+                    if (asset.optString("name").endsWith(".mp4")) {
                         return@withContext asset.optString("browser_download_url")
                     }
                 }
             }
             null
-        } catch (e: Exception) {
-            null
-        }
+        } catch (e: Exception) { null }
     }
 }
