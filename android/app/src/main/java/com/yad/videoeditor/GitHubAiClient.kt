@@ -10,11 +10,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
-/**
- * Wrapper GitHub API — trigger generate_image.yml
- */
 object GitHubAiClient {
-
     private const val OWNER = "byadiganteng-blip"
     private const val REPO = "yad-video-editor"
     private const val WORKFLOW = "generate_image.yml"
@@ -34,7 +30,8 @@ object GitHubAiClient {
         modelId: String = "waifu"
     ): Boolean = withContext(Dispatchers.IO) {
         try {
-            val url = "https://api.github.com/repos/$OWNER/$REPO/actions/workflows/$WORKFLOW/dispatches"
+            val url = "https://api.github.com/repos/$OWNER/$REPO/" +
+                      "actions/workflows/$WORKFLOW/dispatches"
             val wm = watermark.replace("\"", "\\\"")
             val json = """
                 {
