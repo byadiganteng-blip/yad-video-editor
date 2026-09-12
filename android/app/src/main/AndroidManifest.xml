@@ -18,7 +18,7 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="AI TXT to Video + Editor"
+        android:label="@string/app_name"
         android:theme="@style/Theme.YadVideoEditor"
         android:usesCleartextTraffic="true"
         android:requestLegacyExternalStorage="true"
@@ -38,17 +38,22 @@
         <activity android:name=".FilesActivity" android:exported="false" />
         <activity android:name=".VideoEditorActivity" android:exported="false" />
         <activity android:name=".TextToVideoActivity" android:exported="false" />
-        <activity android:name=".SettingsActivity" android:exported="false" />
         <activity android:name=".VideoListActivity" android:exported="false" />
         <activity android:name=".InstructionsActivity" android:exported="false" />
         <activity android:name=".CreditActivity" android:exported="false" />
         <activity android:name=".StatisticsActivity" android:exported="false" />
-        <activity android:name=".AdminPanelActivity" android:exported="false" />
+        <activity android:name=".VideoPreviewActivity" android:exported="false" />
 
-        <!-- FileProvider — authorities DI-HARDCODE (tidak pakai placeholder) -->
+        <!-- Admin only -->
+        <activity android:name=".AdminPanelActivity" android:exported="false" />
+        <activity android:name=".AdminUserListActivity" android:exported="false" />
+        <activity android:name=".AdminStatsActivity" android:exported="false" />
+        <activity android:name=".AdminBroadcastActivity" android:exported="false" />
+        <activity android:name=".AdminSettingsActivity" android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.yad.videoeditor.fileprovider"
+            android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
@@ -56,7 +61,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Foreground Service untuk generate video -->
         <service
             android:name=".VideoGeneratorService"
             android:exported="false"
