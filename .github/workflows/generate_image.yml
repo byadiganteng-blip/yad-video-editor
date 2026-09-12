@@ -1,8 +1,8 @@
-name: Generate AI Image
+name: Generate AI Video
 
 on:
   repository_dispatch:
-    types: [generate_image]
+    types: [generate_video]
 
 permissions:
   contents: write
@@ -10,7 +10,7 @@ permissions:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -21,30 +21,95 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu
+
+      - name: Install Python deps
         run: |
           pip install --upgrade pip
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install diffusers transformers accelerate safetensors pillow
+          pip install edge-tts moviepy
 
-      - name: Generate image
+      - name: Generate video
         env:
           PROMPT: ${{ github.event.client_payload.prompt }}
           JOB_ID: ${{ github.event.client_payload.job_id }}
+          VOICE: ${{ github.event.client_payload.voice }}
+          WATERMARK: ${{ github.event.client_payload.watermark }}
+          SHOW_SUBTITLE: ${{ github.event.client_payload.show_subtitle }}
+          SUBTITLE_STYLE: ${{ github.event.client_payload.subtitle_style }}
         run: |
           python - <<'EOF'
-          import os, torch
+          import os, asyncio, torch
           from diffusers import StableDiffusionPipeline
+          from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, CompositeVideoClip, TextClip
+          from PIL import Image, ImageDraw, ImageFont
+
           prompt = os.environ["PROMPT"]
           job_id = os.environ["JOB_ID"]
+          voice = os.environ.get("VOICE", "none")
+          watermark = os.environ.get("WATERMARK", "")
+          show_subtitle = os.environ.get("SHOW_SUBTITLE", "true") == "true"
+          subtitle_style = os.environ.get("SUBTITLE_STYLE", "neon")
+
+          # 1. Generate image
           pipe = StableDiffusionPipeline.from_pretrained(
               "hakurei/waifu-diffusion",
               torch_dtype=torch.float32,
               safety_checker=None,
-          )
-          pipe = pipe.to("cpu")
+          ).to("cpu")
           image = pipe(prompt, num_inference_steps=20, guidance_scale=7.5).images[0]
-          image.save(f"{job_id}.png")
+          image.save("scene.png")
+
+          # 2. Voice (edge-tts)
+          voice_map = {
+              "male_id": "id-ID-ArdiNeural",
+              "female_id": "id-ID-GadisNeural",
+              "child_id": "id-ID-ArdiNeural",
+              "male_en": "en-US-GuyNeural",
+              "female_en": "en-US-JennyNeural",
+              "robot": "en-US-DavisNeural",
+          }
+          voice_file = "voice.mp3"
+          if voice in voice_map:
+              import edge_tts
+              asyncio.run(edge_tts.Communicate(prompt, voice_map[voice]).save(voice_file))
+
+          # 3. Build video with moviepy
+          clip = ImageClip("scene.png").set_duration(5)
+          clips = [clip]
+
+          if show_subtitle:
+              # Subtitle style
+              style_opts = {}
+              if subtitle_style == "neon":
+                  style_opts = {"color": "cyan", "stroke_color": "magenta", "stroke_width": 3}
+              elif subtitle_style == "outline":
+                  style_opts = {"color": "white", "stroke_color": "black", "stroke_width": 4}
+              elif subtitle_style == "classic":
+                  style_opts = {"color": "white", "stroke_color": "black", "stroke_width": 1}
+              else:
+                  style_opts = {"color": "yellow", "stroke_color": "black", "stroke_width": 2}
+
+              txt = TextClip(prompt[:50], fontsize=36, font="DejaVu-Sans",
+                             **style_opts).set_position(("center", "bottom")).set_duration(5)
+              clips.append(txt)
+
+          if watermark:
+              wm = TextClip(watermark, fontsize=24, color="white",
+                            stroke_color="black", stroke_width=1
+                            ).set_position(("right", "top")).set_duration(5)
+              clips.append(wm)
+
+          final = CompositeVideoClip(clips)
+          if voice in voice_map and os.path.exists(voice_file):
+              audio = AudioFileClip(voice_file)
+              final = final.set_audio(audio)
+
+          final.write_videofile(f"{job_id}.mp4", fps=24, codec="libx264", audio_codec="aac")
           EOF
 
       - name: Upload to Release
@@ -54,4 +119,4 @@ jobs:
         run: |
           gh release view ai-results 2>/dev/null || \
             gh release create ai-results --title "AI Results" --notes "Auto-generated" || true
-          gh release upload ai-results "${JOB_ID}.png" --clobber
+          gh release upload ai-results "${JOB_ID}.mp4" --clobber

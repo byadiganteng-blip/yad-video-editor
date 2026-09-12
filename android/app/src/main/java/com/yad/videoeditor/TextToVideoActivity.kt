@@ -14,10 +14,17 @@ class TextToVideoActivity : AppCompatActivity() {
     companion object { private const val REQ_PICK_TXT = 1001 }
 
     private lateinit var etStory: EditText
+    private lateinit var etWatermark: EditText
     private lateinit var spVideoSize: Spinner
     private lateinit var spQuality: Spinner
+    private lateinit var spVoice: Spinner
+    private lateinit var spSubtitleStyle: Spinner
+    private lateinit var swShowSubtitle: Switch
+    private lateinit var swShowWatermark: Switch
     private lateinit var tvStatus: TextView
+    private lateinit var tvPercent: TextView
     private lateinit var progressBar: ProgressBar
+    private lateinit var progressContainer: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,21 +32,33 @@ class TextToVideoActivity : AppCompatActivity() {
         catch (e: Exception) { finish(); return }
 
         etStory = findViewById(R.id.etStory)
+        etWatermark = findViewById(R.id.etWatermark)
         spVideoSize = findViewById(R.id.spVideoSize)
         spQuality = findViewById(R.id.spQuality)
+        spVoice = findViewById(R.id.spVoice)
+        spSubtitleStyle = findViewById(R.id.spSubtitleStyle)
+        swShowSubtitle = findViewById(R.id.swShowSubtitle)
+        swShowWatermark = findViewById(R.id.swShowWatermark)
         tvStatus = findViewById(R.id.tvStatus)
+        tvPercent = findViewById(R.id.tvPercent)
         progressBar = findViewById(R.id.progressBar)
+        progressContainer = findViewById(R.id.progressContainer)
 
+        // Setup spinners
         spVideoSize.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
             VideoSizePreset.ALL.map { "${it.displayName} (${it.aspectRatio})" })
         spQuality.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
             QualityPreset.ALL.map { it.displayName })
         spQuality.setSelection(3)
+        spVoice.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
+            VoicePreset.ALL.map { it.displayName })
+        spSubtitleStyle.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
+            SubtitleStyle.ALL.map { it.displayName })
 
         tvStatus.text = if (SecureConfig.hasGithubToken())
-            "✅ Siap — generate via GitHub Actions"
+            "✅ Siap membuat video"
         else
-            "⚠️ Token GitHub tidak tersedia"
+            "⚠️ Token tidak tersedia"
 
         findViewById<Button>(R.id.btnGenerate).setOnClickListener { generate() }
         findViewById<Button>(R.id.btnUploadTxt).setOnClickListener { pickTxtFile() }
@@ -77,30 +96,44 @@ class TextToVideoActivity : AppCompatActivity() {
             return
         }
         if (!SecureConfig.hasGithubToken()) {
-            Toast.makeText(this, "Token GitHub tidak tersedia", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Token tidak tersedia", Toast.LENGTH_LONG).show()
             return
         }
 
-        val videoSize = VideoSizePreset.ALL[spVideoSize.selectedItemPosition]
-        val quality = QualityPreset.ALL[spQuality.selectedItemPosition]
+        val watermark = if (swShowWatermark.isChecked) etWatermark.text.toString().trim() else ""
+        val voice = VoicePreset.ALL[spVoice.selectedItemPosition].id
+        val showSubtitle = swShowSubtitle.isChecked
+        val subtitleStyle = SubtitleStyle.ALL[spSubtitleStyle.selectedItemPosition].id
 
-        progressBar.visibility = View.VISIBLE
-        tvStatus.text = "Mengirim ke GitHub Actions..."
+        progressContainer.visibility = View.VISIBLE
+        progressBar.progress = 0
+        tvPercent.text = "0%"
+        tvStatus.text = "Memulai..."
 
         lifecycleScope.launch {
             try {
-                val scenes = AiImageGenerator.splitIntoScenes(story, 8)
-                var ok = 0
-                scenes.forEachIndexed { i, scene ->
-                    tvStatus.text = "Gambar ${i+1}/${scenes.size} (via GitHub)..."
-                    if (AiImageGenerator.generateImage(this@TextToVideoActivity, scene) != null) ok++
-                }
-                progressBar.visibility = View.GONE
-                tvStatus.text = "Selesai: $ok/${scenes.size} gambar\n" +
-                        "Ukuran: ${videoSize.displayName}\nKualitas: ${quality.displayName}"
+                AiImageGenerator.generateVideo(
+                    this@TextToVideoActivity,
+                    story,
+                    voice,
+                    watermark,
+                    showSubtitle,
+                    subtitleStyle,
+                    AiImageGenerator.ProgressCallback { scene, total, stage, pct, msg ->
+                        runOnUiThread {
+                            progressBar.progress = pct
+                            tvPercent.text = "$pct%"
+                            tvStatus.text = msg
+                        }
+                    }
+                )
+                progressBar.progress = 100
+                tvPercent.text = "100%"
+                tvStatus.text = "✅ Video selesai dibuat!"
+                Toast.makeText(this@TextToVideoActivity,
+                    "Video selesai! Cek di folder Video Saya", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
-                progressBar.visibility = View.GONE
-                tvStatus.text = "Error: ${e.message}"
+                tvStatus.text = "❌ Error: ${e.message}"
             }
         }
     }

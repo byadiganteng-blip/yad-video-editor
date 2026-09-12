@@ -15,7 +15,9 @@ object GitHubAiClient {
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    suspend fun dispatchGeneration(prompt: String, jobId: String): Boolean =
+    suspend fun dispatchVideo(prompt: String, jobId: String,
+                              voice: String, watermark: String,
+                              showSubtitle: Boolean, subtitleStyle: String): Boolean =
         withContext(Dispatchers.IO) {
             try {
                 val token = SecureConfig.getGithubToken()
@@ -25,10 +27,14 @@ object GitHubAiClient {
 
                 val url = "https://api.github.com/repos/$user/$repo/dispatches"
                 val body = JSONObject().apply {
-                    put("event_type", "generate_image")
+                    put("event_type", "generate_video")
                     put("client_payload", JSONObject().apply {
                         put("prompt", prompt)
                         put("job_id", jobId)
+                        put("voice", voice)
+                        put("watermark", watermark)
+                        put("show_subtitle", showSubtitle)
+                        put("subtitle_style", subtitleStyle)
                     })
                 }.toString()
 

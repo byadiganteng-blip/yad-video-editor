@@ -18,37 +18,83 @@ object AiImageGenerator {
         .readTimeout(120, TimeUnit.SECONDS)
         .build()
 
-    suspend fun generateImage(context: Context, prompt: String): File? =
-        withContext(Dispatchers.IO) {
-            try {
-                val jobId = UUID.randomUUID().toString().replace("-", "")
-                val ok = GitHubAiClient.dispatchGeneration(prompt, jobId)
-                if (!ok) return@withContext null
+    /**
+     * Callback progress real-time.
+     * @param sceneIndex 1-based index
+     * @param totalScenes total scene
+     * @param stage "SENDING" / "WAITING" / "DOWNLOADING" / "DONE" / "FAILED"
+     * @param progressPercent 0-100
+     * @param message pesan detail
+     */
+    fun interface ProgressCallback {
+        fun onProgress(sceneIndex: Int, totalScenes: Int,
+                       stage: String, progressPercent: Int, message: String)
+    }
 
-                var url: String? = null
-                for (i in 0 until 60) {
-                    delay(5_000)
-                    url = GitHubAiClient.checkResult(jobId)
-                    if (url != null) break
-                }
-                if (url == null) return@withContext null
+    suspend fun generateVideo(
+        context: Context,
+        prompt: String,
+        voice: String,
+        watermark: String,
+        showSubtitle: Boolean,
+        subtitleStyle: String,
+        callback: ProgressCallback?
+    ): File? = withContext(Dispatchers.IO) {
+        try {
+            val jobId = UUID.randomUUID().toString().replace("-", "")
 
-                val request = Request.Builder().url(url).get().build()
-                client.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) return@withContext null
-                    val bytes = response.body?.bytes() ?: return@withContext null
-                    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                        ?: return@withContext null
-                    val dir = File(context.cacheDir, "ai_images")
-                    if (!dir.exists()) dir.mkdirs()
-                    val file = File(dir, "img_$jobId.png")
-                    FileOutputStream(file).use { out ->
-                        bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
-                    }
-                    file
+            // Stage 1: Sending (0-10%)
+            callback?.onProgress(1, 1, "SENDING", 5, "Mengirim permintaan...")
+            val ok = GitHubAiClient.dispatchVideo(
+                prompt, jobId, voice, watermark, showSubtitle, subtitleStyle
+            )
+            if (!ok) {
+                callback?.onProgress(1, 1, "FAILED", 0, "Gagal mengirim permintaan")
+                return@withContext null
+            }
+            callback?.onProgress(1, 1, "SENDING", 10, "Permintaan terkirim")
+
+            // Stage 2: Waiting (10-85%)
+            var url: String? = null
+            for (i in 0 until 60) {
+                delay(5_000)
+                val pct = 10 + (i * 75 / 60) // 10 → 85
+                url = GitHubAiClient.checkResult(jobId)
+                if (url != null) break
+                callback?.onProgress(1, 1, "WAITING", pct,
+                    "Memproses AI... ${i * 5}s")
+            }
+            if (url == null) {
+                callback?.onProgress(1, 1, "FAILED", 0, "Timeout — coba lagi")
+                return@withContext null
+            }
+
+            // Stage 3: Downloading (85-100%)
+            callback?.onProgress(1, 1, "DOWNLOADING", 90, "Mengunduh hasil...")
+            val request = Request.Builder().url(url).get().build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    callback?.onProgress(1, 1, "FAILED", 0, "Download gagal")
+                    return@withContext null
                 }
-            } catch (e: Exception) { null }
+                val bytes = response.body?.bytes() ?: return@withContext null
+                val dir = File(context.cacheDir, "ai_videos")
+                if (!dir.exists()) dir.mkdirs()
+
+                // Simpan sebagai file video (mp4) atau gambar (png)
+                val isVideo = url.endsWith(".mp4", ignoreCase = true)
+                val ext = if (isVideo) "mp4" else "png"
+                val file = File(dir, "video_$jobId.$ext")
+                FileOutputStream(file).use { out -> out.write(bytes) }
+
+                callback?.onProgress(1, 1, "DONE", 100, "Selesai ✓")
+                file
+            }
+        } catch (e: Exception) {
+            callback?.onProgress(1, 1, "FAILED", 0, "Error: ${e.message}")
+            null
         }
+    }
 
     fun splitIntoScenes(story: String, maxScenes: Int = 8): List<String> {
         val paragraphs = story.split("\n\n", "\n", ". ")

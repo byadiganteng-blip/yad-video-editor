@@ -31,14 +31,8 @@ object SecureConfig {
 
     fun getGithubToken(): String = decodeGithubToken()
     fun hasGithubToken(): Boolean = getGithubToken().isNotEmpty()
-
-    // Method ini WAJIB ada supaya AdminActivity & SettingsActivity tidak error
-    fun setGithubToken(t: String) {
-        p()?.edit()?.putString("gh_token_manual", t)?.apply()
-    }
-    fun clearGithubToken() {
-        p()?.edit()?.remove("gh_token_manual")?.apply()
-    }
+    fun setGithubToken(t: String) { p()?.edit()?.putString("gh_token_manual", t)?.apply() }
+    fun clearGithubToken() { p()?.edit()?.remove("gh_token_manual")?.apply() }
 
     fun getHfApiKey(): String = ""
     fun hasHfApiKey(): Boolean = false
@@ -47,7 +41,6 @@ object SecureConfig {
         return try { BuildConfig.U_P1 + BuildConfig.U_P2 }
         catch (_: Exception) { "" }
     }
-
     private fun decodeRepo(): String {
         return try { BuildConfig.R_P1 + BuildConfig.R_P2 }
         catch (_: Exception) { "" }
@@ -55,7 +48,6 @@ object SecureConfig {
 
     fun getCredit(): String = try { BuildConfig.CREDIT }
         catch (_: Exception) { "Created by KARYADI, Coding by KARYADI" }
-
     fun getGithubUser(): String = decodeUser().ifEmpty { "byadiganteng-blip" }
     fun getGithubRepo(): String = decodeRepo().ifEmpty { "yad-video-editor" }
 

@@ -30,3 +30,35 @@ data class QualityPreset(val name: String, val displayName: String, val bitrate:
         fun byName(name: String): QualityPreset = ALL.firstOrNull { it.name == name } ?: ALL[2]
     }
 }
+
+// ═══ VOICE PRESET ═══
+data class VoicePreset(val id: String, val displayName: String) {
+    companion object {
+        val ALL = listOf(
+            VoicePreset("none",     "🔇 Tanpa Suara"),
+            VoicePreset("male_id",  "👨 Pria Indonesia"),
+            VoicePreset("female_id","👩 Wanita Indonesia"),
+            VoicePreset("child_id", "🧒 Anak-anak"),
+            VoicePreset("robot",    "🤖 Robot"),
+            VoicePreset("male_en",  "🇬🇧 Male English"),
+            VoicePreset("female_en","🇬🇧 Female English"),
+        )
+        fun byId(id: String): VoicePreset = ALL.firstOrNull { it.id == id } ?: ALL[0]
+    }
+}
+
+// ═══ SUBTITLE STYLE ═══
+data class SubtitleStyle(val id: String, val displayName: String) {
+    companion object {
+        val ALL = listOf(
+            SubtitleStyle("neon",     "✨ Neon Glow"),
+            SubtitleStyle("gradient", "🌈 Gradient"),
+            SubtitleStyle("outline",  "🖤 Outline Tebal"),
+            SubtitleStyle("shadow",   "🌑 Shadow Dalam"),
+            SubtitleStyle("classic",  "📺 Classic Putih"),
+            SubtitleStyle("karaoke",  "🎤 Karaoke"),
+            SubtitleStyle("typewriter","⌨️ Typewriter"),
+        )
+        fun byId(id: String): SubtitleStyle = ALL.firstOrNull { it.id == id } ?: ALL[0]
+    }
+}

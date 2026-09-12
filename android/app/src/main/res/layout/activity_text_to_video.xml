@@ -1,36 +1,242 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent">
-    <LinearLayout android:orientation="vertical" android:padding="16dp"
-        android:layout_width="match_parent" android:layout_height="wrap_content">
-        <TextView android:text="Buat Video dari Teks" android:textSize="22sp"
-            android:textStyle="bold" android:layout_marginBottom="12dp"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <EditText android:id="@+id/etStory" android:hint="Tempel cerita"
-            android:gravity="top|start" android:inputType="textMultiLine"
-            android:minLines="6" android:background="#EEEEEE" android:padding="12dp"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <Button android:id="@+id/btnUploadTxt" android:text="📁 Upload .txt"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <TextView android:text="Ukuran Video" android:textStyle="bold"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F7"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- HEADER -->
+        <TextView
+            android:text="🎬 Buat Video dari Teks"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#1A1A1A"
+            android:layout_marginBottom="4dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:text="Ubah cerita jadi video dengan AI"
+            android:textSize="13sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="20dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <!-- STORY INPUT -->
+        <TextView
+            android:text="📝 Cerita"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginBottom="6dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <EditText
+            android:id="@+id/etStory"
+            android:hint="Tulis atau tempel cerita di sini..."
+            android:gravity="top|start"
+            android:inputType="textMultiLine"
+            android:minLines="6"
+            android:background="#FFFFFF"
+            android:padding="16dp"
+            android:textSize="15sp"
+            android:textColor="#333333"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <Button
+            android:id="@+id/btnUploadTxt"
+            android:text="📁 Upload .txt"
+            android:layout_marginTop="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <!-- VIDEO SIZE -->
+        <TextView
+            android:text="📐 Ukuran Video"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="4dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <Spinner
+            android:id="@+id/spVideoSize"
+            android:background="#FFFFFF"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <!-- QUALITY -->
+        <TextView
+            android:text="🎞️ Kualitas"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="4dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <Spinner
+            android:id="@+id/spQuality"
+            android:background="#FFFFFF"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <!-- VOICE -->
+        <TextView
+            android:text="🎤 Suara Narasi"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="4dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <Spinner
+            android:id="@+id/spVoice"
+            android:background="#FFFFFF"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <!-- WATERMARK -->
+        <LinearLayout
+            android:orientation="horizontal"
             android:layout_marginTop="16dp"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <Spinner android:id="@+id/spVideoSize"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <TextView android:text="Kualitas" android:textStyle="bold"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:text="💧 Tampilkan Watermark"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"/>
+            <Switch
+                android:id="@+id/swShowWatermark"
+                android:checked="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/etWatermark"
+            android:hint="Contoh: @karyadi_official"
+            android:background="#FFFFFF"
+            android:padding="12dp"
+            android:layout_marginTop="4dp"
+            android:textSize="14sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <!-- SUBTITLE -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:text="💬 Tampilkan Teks di Video"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"/>
+            <Switch
+                android:id="@+id/swShowSubtitle"
+                android:checked="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
+        <TextView
+            android:text="🎨 Style Teks"
+            android:textStyle="bold"
+            android:textColor="#333333"
             android:layout_marginTop="12dp"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <Spinner android:id="@+id/spQuality"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-        <Button android:id="@+id/btnGenerate" android:text="✨ Generate via GitHub"
-            android:layout_marginTop="24dp"
-            android:layout_width="match_parent" android:layout_height="56dp"/>
-        <ProgressBar android:id="@+id/progressBar" android:visibility="gone"
+            android:layout_marginBottom="4dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <Spinner
+            android:id="@+id/spSubtitleStyle"
+            android:background="#FFFFFF"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <!-- GENERATE BUTTON -->
+        <Button
+            android:id="@+id/btnGenerate"
+            android:text="🎬 MEMBUAT VIDEO"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:backgroundTint="#6C5CE7"
+            android:textColor="#FFFFFF"
+            android:layout_marginTop="28dp"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"/>
+
+        <!-- PROGRESS CONTAINER -->
+        <LinearLayout
+            android:id="@+id/progressContainer"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:background="#FFFFFF"
+            android:padding="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:text="Progress"
+                    android:textStyle="bold"
+                    android:textColor="#333333"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"/>
+                <TextView
+                    android:id="@+id/tvPercent"
+                    android:text="0%"
+                    android:textStyle="bold"
+                    android:textColor="#6C5CE7"
+                    android:textSize="16sp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:max="100"
+                android:progress="0"
+                android:progressTint="#6C5CE7"
+                android:layout_marginTop="8dp"
+                android:layout_width="match_parent"
+                android:layout_height="12dp"/>
+        </LinearLayout>
+
+        <!-- STATUS -->
+        <TextView
+            android:id="@+id/tvStatus"
+            android:text="Ready"
+            android:padding="14dp"
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:background="#FFFFFF"
             android:layout_marginTop="12dp"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-        <TextView android:id="@+id/tvStatus" android:text="Ready" android:padding="12dp"
-            android:layout_marginTop="12dp"
-            android:background="#EEEEEE"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
     </LinearLayout>
 </ScrollView>
