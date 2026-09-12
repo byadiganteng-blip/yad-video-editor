@@ -34,6 +34,7 @@ object AiImageGenerator {
         try {
             val jobId = UUID.randomUUID().toString().replace("-", "")
 
+            // 1. Trigger workflow
             callback?.onProgress(1, 1, "SENDING", 5, "Mengirim permintaan...")
             val ok = GitHubAiClient.dispatchVideo(
                 prompt, jobId, voice, watermark, showSubtitle, subtitleStyle
@@ -44,10 +45,11 @@ object AiImageGenerator {
             }
             callback?.onProgress(1, 1, "SENDING", 10, "Permintaan terkirim")
 
+            // 2. Poll status setiap 5 detik (max 10 menit)
             var url: String? = null
-            for (i in 0 until 60) {
+            for (i in 0 until 120) {
                 delay(5_000)
-                val pct = 10 + (i * 75 / 60)
+                val pct = 10 + (i * 75 / 120)
                 url = GitHubAiClient.checkResult(jobId)
                 if (url != null) break
                 callback?.onProgress(1, 1, "WAITING", pct,
@@ -58,6 +60,7 @@ object AiImageGenerator {
                 return@withContext null
             }
 
+            // 3. Download video
             callback?.onProgress(1, 1, "DOWNLOADING", 90, "Mengunduh hasil...")
             val request = Request.Builder().url(url).get().build()
             client.newCall(request).execute().use { response ->
