@@ -35,6 +35,8 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -75,7 +77,22 @@ jobs:
           IMAGE_STYLE: ${{ github.event.inputs.image_style }}
         run: python generate_video.py
 
-      - name: Upload video
+      - name: Upload to Release
+        if: success()
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: video-${{ github.run_id }}
+          name: Video ${{ github.run_id }}
+          body: |
+            Video hasil generate otomatis.
+            Prompt: ${{ github.event.inputs.prompt }}
+          files: |
+            *.mp4
+            scenes/*.png
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
