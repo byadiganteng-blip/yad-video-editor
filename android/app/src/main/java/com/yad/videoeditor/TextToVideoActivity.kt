@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 
@@ -18,6 +19,7 @@ class TextToVideoActivity : AppCompatActivity() {
 
     private lateinit var etStory: EditText
     private lateinit var etWatermark: EditText
+    private lateinit var spModel: Spinner
     private lateinit var spVideoSize: Spinner
     private lateinit var spQuality: Spinner
     private lateinit var spVoice: Spinner
@@ -66,6 +68,7 @@ class TextToVideoActivity : AppCompatActivity() {
 
         etStory = findViewById(R.id.etStory)
         etWatermark = findViewById(R.id.etWatermark)
+        spModel = findViewById(R.id.spModel)
         spVideoSize = findViewById(R.id.spVideoSize)
         spQuality = findViewById(R.id.spQuality)
         spVoice = findViewById(R.id.spVoice)
@@ -78,15 +81,33 @@ class TextToVideoActivity : AppCompatActivity() {
         progressContainer = findViewById(R.id.progressContainer)
         btnDownloadNow = findViewById(R.id.btnDownloadNow)
 
-        spVideoSize.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
+        // Model AI spinner
+        spModel.adapter = ArrayAdapter(this,
+            android.R.layout.simple_spinner_dropdown_item,
+            ModelPresets.ALL.map { it.displayName })
+
+        spVideoSize.adapter = ArrayAdapter(this,
+            android.R.layout.simple_spinner_dropdown_item,
             VideoSizePreset.ALL.map { "${it.displayName} (${it.aspectRatio})" })
-        spQuality.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
+        spQuality.adapter = ArrayAdapter(this,
+            android.R.layout.simple_spinner_dropdown_item,
             QualityPreset.ALL.map { it.displayName })
         spQuality.setSelection(3)
-        spVoice.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
+        spVoice.adapter = ArrayAdapter(this,
+            android.R.layout.simple_spinner_dropdown_item,
             VoicePreset.ALL.map { it.displayName })
-        spSubtitleStyle.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
+        spSubtitleStyle.adapter = ArrayAdapter(this,
+            android.R.layout.simple_spinner_dropdown_item,
             SubtitleStyle.ALL.map { it.displayName })
+
+        // Tampilkan deskripsi model saat dipilih
+        spModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
+                val model = ModelPresets.ALL[pos]
+                tvStatus.text = "🎨 ${model.displayName}\n${model.description}"
+            }
+            override fun onNothingSelected(p: AdapterView<*>?) {}
+        }
 
         tvStatus.text = if (SecureConfig.hasGithubToken())
             "✅ Siap membuat video"
@@ -172,6 +193,7 @@ class TextToVideoActivity : AppCompatActivity() {
             return
         }
 
+        val model = ModelPresets.ALL[spModel.selectedItemPosition]
         val watermark = if (swShowWatermark.isChecked) etWatermark.text.toString().trim() else ""
         val voice = VoicePreset.ALL[spVoice.selectedItemPosition].id
         val showSubtitle = swShowSubtitle.isChecked
@@ -180,7 +202,7 @@ class TextToVideoActivity : AppCompatActivity() {
         progressContainer.visibility = View.VISIBLE
         progressBar.progress = 0
         tvPercent.text = "0%"
-        tvStatus.text = "Memulai..."
+        tvStatus.text = "Memulai dengan ${model.displayName}..."
         btnDownloadNow.visibility = View.GONE
         lastVideoPath = null
 
@@ -190,6 +212,7 @@ class TextToVideoActivity : AppCompatActivity() {
             putExtra(VideoGeneratorService.EXTRA_WATERMARK, watermark)
             putExtra(VideoGeneratorService.EXTRA_SHOW_SUBTITLE, showSubtitle)
             putExtra(VideoGeneratorService.EXTRA_SUBTITLE_STYLE, subtitleStyle)
+            putExtra("model_id", model.id)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
