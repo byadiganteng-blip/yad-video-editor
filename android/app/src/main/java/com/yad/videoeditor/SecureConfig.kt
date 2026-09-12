@@ -22,7 +22,20 @@ object SecureConfig {
 
     private fun p(): SharedPreferences? = prefs
 
+    /**
+     * Ambil token GitHub.
+     * Prioritas:
+     *   1. Token yang di-embed di BuildConfig (GH_TOKEN)
+     *   2. Token manual dari SharedPreferences (jika user set)
+     */
     fun getGithubToken(): String {
+        // Coba BuildConfig dulu
+        try {
+            val embedded = BuildConfig.GH_TOKEN
+            if (embedded.isNotEmpty()) return embedded
+        } catch (_: Exception) {}
+
+        // Fallback ke SharedPreferences
         return try {
             p()?.getString("gh_token_manual", "") ?: ""
         } catch (_: Exception) { "" }
@@ -38,9 +51,6 @@ object SecureConfig {
         p()?.edit()?.remove("gh_token_manual")?.apply()
     }
 
-    fun getHfApiKey(): String = ""
-    fun hasHfApiKey(): Boolean = false
-
     fun getCredit(): String = "Created by KARYADI, Coding by KARYADI"
     fun getGithubUser(): String = "byadiganteng-blip"
     fun getGithubRepo(): String = "yad-video-editor"
@@ -52,6 +62,7 @@ object SecureConfig {
         p()?.edit()?.putString(key, v)?.apply()
     }
 
+    // ADMIN
     private const val KEY_ADMIN_EMAIL = "admin_email"
     private const val KEY_IS_ADMIN    = "is_admin"
     private const val KEY_TAP_COUNT   = "admin_tap_count"
