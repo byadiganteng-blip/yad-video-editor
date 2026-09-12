@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
-# AI STORY-TO-VIDEO GENERATOR — Multi-Model Support
-import os, re, asyncio, textwrap
+# ============================================================
+#  AI STORY-TO-VIDEO GENERATOR
+#  - TTS: Piper (offline, tanpa API)
+#  - Fallback: tanpa audio jika model tidak ada
+# ============================================================
+
+import os, re, subprocess, wave, textwrap, time
 from pathlib import Path
 import torch
 from diffusers import StableDiffusionPipeline
@@ -17,7 +22,6 @@ SCENES_COUNT   = int(os.environ.get("SCENES_COUNT", "8"))
 IMAGE_STYLE    = os.environ.get("IMAGE_STYLE", "cinematic")
 MODEL_ID       = os.environ.get("MODEL_ID", "waifu")
 
-# Mapping model ID → HuggingFace path
 MODEL_MAP = {
     "waifu":       "hakurei/waifu-diffusion",
     "sd15":        "runwayml/stable-diffusion-v1-5",
@@ -30,7 +34,6 @@ MODEL_MAP = {
     "realistic":   "SG161222/Realistic_Vision_V5.1_noVAE",
     "majicmix":    "digiplay/majicMIX_realistic_v7",
 }
-
 MODEL_PATH = MODEL_MAP.get(MODEL_ID, MODEL_MAP["waifu"])
 print(f"Using model: {MODEL_ID} → {MODEL_PATH}")
 
@@ -98,20 +101,117 @@ def generate_image(scene_text, idx, style):
     image.save(path); print(f"   Saved: {path}"); return str(path)
 
 
-VOICE_MAP = {"male_id": "id-ID-ArdiNeural", "female_id": "id-ID-GadisNeural",
-             "child_id": "id-ID-ArdiNeural", "male_en": "en-US-GuyNeural",
-             "female_en": "en-US-JennyNeural", "robot": "en-US-DavisNeural"}
-VOICE_FILE = "voice.mp3"
+# ============================================================
+#  PIPER TTS — OFFLINE, TANPA API
+# ============================================================
+PIPER_MODEL_MAP = {
+    # Indonesia
+    "male_id":   "id_ID-male",
+    "female_id": "id_ID-female",
+    "child_id":  "id_ID-male",
+    # English
+    "male_en":   "en_US-male",
+    "female_en": "en_US-female",
+    "robot":     "en_US-male",
+}
 
-async def _tts(text, voice):
-    import edge_tts
-    await edge_tts.Communicate(text, voice).save(VOICE_FILE)
+PIPER_BASE_URL = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
+PIPER_MODEL_DIR = Path("piper_models")
+PIPER_MODEL_DIR.mkdir(exist_ok=True)
+VOICE_FILE = "voice.wav"
+
+
+def download_piper_model(voice_name):
+    """Download model Piper jika belum ada."""
+    PIPER_MODEL_DIR.mkdir(exist_ok=True)
+
+    # Contoh: id_ID-male → id/id_ID/male/id_ID-male-medium.onnx
+    parts = voice_name.split("-")
+    lang_full = parts[0]   # id_ID
+    gender = parts[1]      # male
+    lang_short = lang_full.split("_")[0]  # id
+
+    # Path HuggingFace
+    base = f"{PIPER_BASE_URL}/{lang_short}/{lang_full}/{gender}/{voice_name}"
+    onnx_url = f"{base}-medium.onnx"
+    json_url = f"{base}-medium.onnx.json"
+
+    onnx_path = PIPER_MODEL_DIR / f"{voice_name}.onnx"
+    json_path = PIPER_MODEL_DIR / f"{voice_name}.onnx.json"
+
+    import urllib.request
+    for url, path in [(onnx_url, onnx_path), (json_url, json_path)]:
+        if not path.exists():
+            print(f"  📥 Download: {url}")
+            try:
+                urllib.request.urlretrieve(url, path)
+                print(f"  ✅ Saved: {path}")
+            except Exception as e:
+                print(f"  ❌ Gagal download {url}: {e}")
+                return None, None
+
+    return str(onnx_path), str(json_path)
+
+
+def make_voice_piper(text):
+    """Generate voice dengan Piper TTS."""
+    if VOICE not in PIPER_MODEL_MAP:
+        print(f"⚠️  Voice '{VOICE}' tidak ada di Piper map")
+        return None
+
+    voice_name = PIPER_MODEL_MAP[VOICE]
+    print(f"\n🎤 Generating voice-over (Piper: {voice_name})...")
+
+    onnx_path, json_path = download_piper_model(voice_name)
+    if not onnx_path or not os.path.exists(onnx_path):
+        print("  ❌ Model Piper tidak tersedia")
+        return None
+
+    # Pakai piper via command line (lebih reliable)
+    try:
+        import shutil
+        piper_bin = shutil.which("piper")
+        if not piper_bin:
+            # Coba lewat python module
+            cmd = [
+                "python", "-m", "piper",
+                "--model", onnx_path,
+                "--config", json_path,
+                "--output_file", VOICE_FILE,
+            ]
+        else:
+            cmd = [
+                piper_bin,
+                "--model", onnx_path,
+                "--config", json_path,
+                "--output_file", VOICE_FILE,
+            ]
+
+        result = subprocess.run(
+            cmd, input=text.encode("utf-8"),
+            capture_output=True, timeout=300
+        )
+
+        if result.returncode == 0 and os.path.exists(VOICE_FILE):
+            size = os.path.getsize(VOICE_FILE)
+            if size > 1000:
+                print(f"  ✅ Saved: {VOICE_FILE} ({size} bytes)")
+                return VOICE_FILE
+            else:
+                print(f"  ⚠️  File terlalu kecil: {size} bytes")
+                return None
+        else:
+            print(f"  ❌ Piper error: {result.stderr.decode()[:200]}")
+            return None
+
+    except Exception as e:
+        print(f"  ❌ Exception: {type(e).__name__}: {e}")
+        return None
+
 
 def make_voice(text):
-    if VOICE not in VOICE_MAP: return None
-    print(f"Generating voice-over ({VOICE})...")
-    asyncio.run(_tts(text, VOICE_MAP[VOICE]))
-    return VOICE_FILE
+    """Wrapper — coba Piper, fallback ke tanpa audio."""
+    return make_voice_piper(text)
 
 
 def get_subtitle_opts(style):
@@ -145,6 +245,7 @@ def make_scene_clip(image_path, scene_text, duration, subtitle_style):
 def main():
     print("=" * 70)
     print(f"MODEL: {MODEL_ID} | STYLE: {IMAGE_STYLE} | SCENES: {SCENES_COUNT}")
+    print(f"TTS: Piper (offline) | VOICE: {VOICE}")
     print("=" * 70)
 
     scenes = split_story_into_scenes(PROMPT, SCENES_COUNT)
@@ -157,11 +258,22 @@ def main():
 
     if not image_paths: raise SystemExit("Tidak ada gambar di-generate.")
 
+    # TTS Piper
     voice_path = make_voice(PROMPT)
+
     if voice_path and os.path.exists(voice_path):
-        audio = AudioFileClip(voice_path); total_duration = audio.duration + 0.5
+        try:
+            audio = AudioFileClip(voice_path)
+            total_duration = audio.duration + 0.5
+            print(f"✅ Audio: {audio.duration:.1f}s")
+        except Exception as e:
+            print(f"⚠️  Audio error: {e}")
+            audio = None
+            total_duration = 4.0 * len(image_paths)
     else:
-        audio = None; total_duration = 4.0 * len(image_paths)
+        audio = None
+        total_duration = 4.0 * len(image_paths)
+        print(f"⚠️  Tanpa audio — durasi: {total_duration}s")
 
     per_scene = total_duration / len(image_paths)
     scene_clips = []
@@ -181,8 +293,10 @@ def main():
         except Exception as e: print(f"Watermark gagal: {e}")
 
     if audio is not None:
-        audio = audio.set_duration(final.duration)
-        final = final.set_audio(audio)
+        try:
+            audio = audio.set_duration(final.duration)
+            final = final.set_audio(audio)
+        except Exception as e: print(f"Set audio error: {e}")
 
     final.write_videofile(OUTPUT_MP4, fps=24, codec="libx264",
                           audio_codec="aac", preset="medium", threads=4)
