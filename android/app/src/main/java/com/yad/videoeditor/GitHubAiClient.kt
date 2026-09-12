@@ -1,6 +1,5 @@
 package com.yad.videoeditor
 
-import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -16,10 +15,6 @@ object GitHubAiClient {
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    /**
-     * Kirim prompt ke GitHub Actions via repository_dispatch.
-     * Workflow akan generate gambar dan upload ke Release.
-     */
     suspend fun dispatchGeneration(prompt: String, jobId: String): Boolean =
         withContext(Dispatchers.IO) {
             try {
@@ -45,18 +40,10 @@ object GitHubAiClient {
                     .post(body.toRequestBody("application/json".toMediaTypeOrNull()))
                     .build()
 
-                client.newCall(request).execute().use { response ->
-                    response.isSuccessful
-                }
-            } catch (e: Exception) {
-                false
-            }
+                client.newCall(request).execute().use { it.isSuccessful }
+            } catch (e: Exception) { false }
         }
 
-    /**
-     * Cek apakah hasil sudah tersedia di Release.
-     * Return URL download jika sudah ada, null jika belum.
-     */
     suspend fun checkResult(jobId: String): String? =
         withContext(Dispatchers.IO) {
             try {
@@ -64,7 +51,6 @@ object GitHubAiClient {
                 val user  = SecureConfig.getGithubUser()
                 val repo  = SecureConfig.getGithubRepo()
 
-                // Cek di tag "ai-results" release
                 val url = "https://api.github.com/repos/$user/$repo/releases/tags/ai-results"
                 val request = Request.Builder()
                     .url(url)
@@ -87,8 +73,6 @@ object GitHubAiClient {
                     }
                     null
                 }
-            } catch (e: Exception) {
-                null
-            }
+            } catch (e: Exception) { null }
         }
 }

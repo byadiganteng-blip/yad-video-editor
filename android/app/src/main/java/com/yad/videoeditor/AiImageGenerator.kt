@@ -18,31 +18,21 @@ object AiImageGenerator {
         .readTimeout(120, TimeUnit.SECONDS)
         .build()
 
-    /**
-     * Generate gambar via GitHub Actions.
-     * 1. Dispatch workflow dengan prompt
-     * 2. Poll Release sampai hasil tersedia
-     * 3. Download gambar
-     */
     suspend fun generateImage(context: Context, prompt: String): File? =
         withContext(Dispatchers.IO) {
             try {
                 val jobId = UUID.randomUUID().toString().replace("-", "")
-                // 1. Dispatch
                 val ok = GitHubAiClient.dispatchGeneration(prompt, jobId)
                 if (!ok) return@withContext null
 
-                // 2. Poll (max 5 menit)
                 var url: String? = null
-                val maxAttempts = 60  // 60 * 5s = 5 menit
-                for (i in 0 until maxAttempts) {
+                for (i in 0 until 60) {
                     delay(5_000)
                     url = GitHubAiClient.checkResult(jobId)
                     if (url != null) break
                 }
                 if (url == null) return@withContext null
 
-                // 3. Download
                 val request = Request.Builder().url(url).get().build()
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return@withContext null

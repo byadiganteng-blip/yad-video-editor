@@ -43,7 +43,6 @@ class MainActivity : AppCompatActivity() {
         clickCard(R.id.cardVideoList) { start(VideoListActivity::class.java) }
         clickCard(R.id.cardEditor) { start(VideoEditorActivity::class.java) }
         clickCard(R.id.cardAiVideo) { start(TextToVideoActivity::class.java) }
-        clickCard(R.id.cardTokenSetup) { start(TokenSetupActivity::class.java) }
         clickCard(R.id.cardFiles) { start(FilesActivity::class.java) }
         clickCard(R.id.cardInstructions) { start(InstructionsActivity::class.java) }
         clickCard(R.id.cardCredit) { start(CreditActivity::class.java) }

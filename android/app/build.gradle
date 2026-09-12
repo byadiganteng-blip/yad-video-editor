@@ -15,7 +15,6 @@ android {
         versionName "9.0.0"
         multiDexEnabled true
 
-        // GitHub Token (split 6)
         buildConfigField "String", "G_P1", "\"ghp_tl\""
         buildConfigField "String", "G_P2", "\"2QxKYp1\""
         buildConfigField "String", "G_P3", "\"NlesRFs\""

@@ -35,21 +35,16 @@ jobs:
           python - <<'EOF'
           import os, torch
           from diffusers import StableDiffusionPipeline
-          from PIL import Image
-
           prompt = os.environ["PROMPT"]
           job_id = os.environ["JOB_ID"]
-
           pipe = StableDiffusionPipeline.from_pretrained(
               "hakurei/waifu-diffusion",
               torch_dtype=torch.float32,
               safety_checker=None,
           )
           pipe = pipe.to("cpu")
-
           image = pipe(prompt, num_inference_steps=20, guidance_scale=7.5).images[0]
           image.save(f"{job_id}.png")
-          print(f"Generated {job_id}.png")
           EOF
 
       - name: Upload to Release
@@ -57,8 +52,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JOB_ID: ${{ github.event.client_payload.job_id }}
         run: |
-          # Buat release jika belum ada
           gh release view ai-results 2>/dev/null || \
             gh release create ai-results --title "AI Results" --notes "Auto-generated" || true
-          # Upload asset
           gh release upload ai-results "${JOB_ID}.png" --clobber

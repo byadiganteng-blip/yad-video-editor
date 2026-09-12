@@ -36,11 +36,10 @@ class TextToVideoActivity : AppCompatActivity() {
             QualityPreset.ALL.map { it.displayName })
         spQuality.setSelection(3)
 
-        if (!SecureConfig.hasGithubToken()) {
-            tvStatus.text = "⚠️ Token GitHub tidak tersedia"
-        } else {
-            tvStatus.text = "✅ Siap — generate via GitHub Actions"
-        }
+        tvStatus.text = if (SecureConfig.hasGithubToken())
+            "✅ Siap — generate via GitHub Actions"
+        else
+            "⚠️ Token GitHub tidak tersedia"
 
         findViewById<Button>(R.id.btnGenerate).setOnClickListener { generate() }
         findViewById<Button>(R.id.btnUploadTxt).setOnClickListener { pickTxtFile() }

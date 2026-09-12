@@ -32,6 +32,17 @@ object SecureConfig {
     fun getGithubToken(): String = decodeGithubToken()
     fun hasGithubToken(): Boolean = getGithubToken().isNotEmpty()
 
+    // Method ini WAJIB ada supaya AdminActivity & SettingsActivity tidak error
+    fun setGithubToken(t: String) {
+        p()?.edit()?.putString("gh_token_manual", t)?.apply()
+    }
+    fun clearGithubToken() {
+        p()?.edit()?.remove("gh_token_manual")?.apply()
+    }
+
+    fun getHfApiKey(): String = ""
+    fun hasHfApiKey(): Boolean = false
+
     private fun decodeUser(): String {
         return try { BuildConfig.U_P1 + BuildConfig.U_P2 }
         catch (_: Exception) { "" }
@@ -51,7 +62,6 @@ object SecureConfig {
     fun getString(key: String, def: String = ""): String = p()?.getString(key, def) ?: def
     fun setString(key: String, v: String) { p()?.edit()?.putString(key, v)?.apply() }
 
-    // ─── ADMIN METHODS ───
     private const val KEY_ADMIN_EMAIL = "admin_email"
     private const val KEY_IS_ADMIN    = "is_admin"
 

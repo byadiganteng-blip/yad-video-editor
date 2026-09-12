@@ -36,7 +36,6 @@
         <activity android:name=".FilesActivity" android:exported="false" />
         <activity android:name=".VideoEditorActivity" android:exported="false" />
         <activity android:name=".TextToVideoActivity" android:exported="false" />
-        <activity android:name=".TokenSetupActivity" android:exported="false" />
         <activity android:name=".SettingsActivity" android:exported="false" />
         <activity android:name=".VideoListActivity" android:exported="false" />
         <activity android:name=".InstructionsActivity" android:exported="false" />
