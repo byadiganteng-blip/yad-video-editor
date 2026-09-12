@@ -124,7 +124,7 @@
                             android:layout_height="wrap_content"/>
 
                         <TextView
-                            android:text="Lihat semua device & status"
+                            android:text="Lihat semua device &amp; status"
                             android:textSize="11sp"
                             android:textColor="@color/text_secondary"
                             android:layout_width="match_parent"
@@ -624,7 +624,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- KATEGORI: DATA & LOG -->
+            <!-- KATEGORI: DATA &amp; LOG -->
 
             <TextView
                 android:text="💾 DATA &amp; LOG"
