@@ -29,11 +29,13 @@
                 android:layout_height="64dp"/>
 
             <TextView
-                android:text="Yad Video Editor"
+                android:id="@+id/tvAppTitle"
+                android:text="@string/app_name"
                 android:textColor="@color/text_white"
-                android:textSize="26sp"
+                android:textSize="22sp"
                 android:textStyle="bold"
                 android:layout_marginTop="12dp"
+                android:gravity="center"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
 
@@ -47,24 +49,34 @@
                 android:layout_height="wrap_content"/>
 
             <TextView
-                android:id="@+id/tvHiddenHint"
+                android:id="@+id/tvStatus"
                 android:text=""
                 android:textColor="#FFFFFF"
-                android:textSize="10sp"
-                android:alpha="0.5"
+                android:textSize="11sp"
                 android:layout_marginTop="4dp"
                 android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:id="@+id/tvBanner"
+                android:text=""
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:padding="8dp"
+                android:background="#33FFFFFF"
+                android:visibility="gone"
+                android:layout_marginTop="8dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
         </LinearLayout>
 
         <LinearLayout
             android:orientation="vertical"
             android:padding="16dp"
-            android:layout_marginTop="8dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- VIDEO SAYA -->
+            <!-- Video Saya -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardVideoList"
                 android:layout_marginBottom="12dp"
@@ -72,7 +84,6 @@
                 android:layout_height="wrap_content"
                 android:clickable="true"
                 android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp">
 
@@ -106,7 +117,7 @@
                             android:layout_height="wrap_content"/>
 
                         <TextView
-                            android:text="Lihat &amp; download hasil video"
+                            android:text="Lihat & download hasil video"
                             android:textSize="12sp"
                             android:textColor="@color/text_secondary"
                             android:layout_width="match_parent"
@@ -114,7 +125,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:text="&gt;"
+                        android:text=">"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
                         android:padding="8dp"
@@ -123,7 +134,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- VIDEO EDITOR -->
+            <!-- Video Editor -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardEditor"
                 android:layout_marginBottom="12dp"
@@ -131,7 +142,6 @@
                 android:layout_height="wrap_content"
                 android:clickable="true"
                 android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp">
 
@@ -173,7 +183,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:text="&gt;"
+                        android:text=">"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
                         android:padding="8dp"
@@ -182,6 +192,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+            <!-- AI Text to Video -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardAiVideo"
                 android:layout_marginBottom="12dp"
@@ -191,12 +202,14 @@
                 android:focusable="true"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp">
+
                 <LinearLayout
                     android:orientation="horizontal"
                     android:padding="16dp"
                     android:gravity="center_vertical"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
+
                     <LinearLayout
                         android:orientation="vertical"
                         android:gravity="center"
@@ -208,48 +221,41 @@
                             android:textSize="28sp"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
-                        <TextView
-                            android:text="✨"
-                            android:textSize="12sp"
-                            android:layout_marginTop="-4dp"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
                     </LinearLayout>
+
                     <LinearLayout
                         android:orientation="vertical"
                         android:layout_marginStart="16dp"
                         android:layout_weight="1"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content">
+
                         <TextView
                             android:text="AI Text to Video"
                             android:textSize="17sp"
                             android:textStyle="bold"
-                            android:textColor="#1A1A1A"
+                            android:textColor="@color/text_primary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
+
                         <TextView
                             android:text="Ubah cerita jadi video otomatis"
                             android:textSize="13sp"
-                            android:textColor="#666666"
-                            android:layout_marginTop="2dp"
+                            android:textColor="@color/text_secondary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                     </LinearLayout>
+
                     <TextView
-                        android:text="›"
-                        android:textSize="32sp"
-                        android:textColor="#6C5CE7"
+                        android:text=">"
+                        android:textSize="28sp"
+                        android:textColor="@color/primary"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- AI TEXT TO VIDEO -->
-
-            <!-- AI TEXT TO VIDEO — Icon Keren -->
-
-            <!-- FILES -->
+            <!-- Files -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardFiles"
                 android:layout_marginBottom="12dp"
@@ -257,7 +263,6 @@
                 android:layout_height="wrap_content"
                 android:clickable="true"
                 android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp">
 
@@ -299,7 +304,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:text="&gt;"
+                        android:text=">"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
                         android:padding="8dp"
@@ -308,7 +313,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- PETUNJUK -->
+            <!-- Petunjuk -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardInstructions"
                 android:layout_marginBottom="12dp"
@@ -316,7 +321,6 @@
                 android:layout_height="wrap_content"
                 android:clickable="true"
                 android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp">
 
@@ -358,7 +362,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:text="&gt;"
+                        android:text=">"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
                         android:padding="8dp"
@@ -367,7 +371,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- CREDIT -->
+            <!-- Credit -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardCredit"
                 android:layout_marginBottom="12dp"
@@ -375,7 +379,6 @@
                 android:layout_height="wrap_content"
                 android:clickable="true"
                 android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp">
 
@@ -417,7 +420,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:text="&gt;"
+                        android:text=">"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
                         android:padding="8dp"
@@ -426,7 +429,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- STATISTIK -->
+            <!-- Statistik -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardStatistics"
                 android:layout_marginBottom="12dp"
@@ -434,7 +437,6 @@
                 android:layout_height="wrap_content"
                 android:clickable="true"
                 android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp">
 
@@ -476,7 +478,7 @@
                     </LinearLayout>
 
                     <TextView
-                        android:text="&gt;"
+                        android:text=">"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
                         android:padding="8dp"
@@ -485,7 +487,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- PENGATURAN -->
+            <!-- Pengaturan (untuk input token) -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardSettings"
                 android:layout_marginBottom="12dp"
@@ -493,7 +495,6 @@
                 android:layout_height="wrap_content"
                 android:clickable="true"
                 android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp">
 
@@ -535,69 +536,9 @@
                     </LinearLayout>
 
                     <TextView
-                        android:text="&gt;"
+                        android:text=">"
                         android:textSize="28sp"
                         android:textColor="@color/primary"
-                        android:padding="8dp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- ADMIN HIDDEN -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardAdminHidden"
-                android:visibility="gone"
-                android:layout_marginBottom="12dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <ImageView
-                        android:src="@drawable/ic_settings"
-                        android:background="@color/btn_red"
-                        android:padding="12dp"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"/>
-
-                    <LinearLayout
-                        android:orientation="vertical"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content">
-
-                        <TextView
-                            android:text="Admin Panel"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/danger"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"/>
-
-                        <TextView
-                            android:text="Mode admin"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"/>
-                    </LinearLayout>
-
-                    <TextView
-                        android:text="&gt;"
-                        android:textSize="28sp"
-                        android:textColor="@color/danger"
                         android:padding="8dp"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>
