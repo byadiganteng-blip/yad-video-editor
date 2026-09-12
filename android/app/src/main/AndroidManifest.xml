@@ -37,9 +37,19 @@
         <activity android:name=".FilesActivity" android:exported="false" />
         <activity android:name=".VideoEditorActivity" android:exported="false" />
         <activity android:name=".SettingsActivity" android:exported="false" />
+        <activity android:name=".DownloadActivity" android:exported="false" />
         <activity android:name=".InstructionsActivity" android:exported="false" />
         <activity android:name=".CreditActivity" android:exported="false" />
         <activity android:name=".StatisticsActivity" android:exported="false" />
 
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.yad.videoeditor.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>

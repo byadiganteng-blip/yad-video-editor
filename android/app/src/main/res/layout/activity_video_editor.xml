@@ -1,10 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="16dp"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="match_parent">
-    <TextView android:text="Video Editor" android:textSize="18sp" android:textStyle="bold"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
-    <TextView android:text="Editor - coming soon"
-        android:layout_marginTop="16dp"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
-</LinearLayout>
+    <LinearLayout android:orientation="vertical" android:padding="16dp"
+        android:layout_width="match_parent" android:layout_height="wrap_content">
+        <TextView android:text="Video Editor" android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <TextView android:id="@+id/tvSelected" android:text="Belum pilih video"
+            android:padding="8dp" android:layout_marginTop="8dp"
+            android:background="#EEEEEE"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <Button android:id="@+id/btnPickVideo" android:text="Pilih Video"
+            android:layout_marginTop="8dp"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <Button android:id="@+id/btnTrim" android:text="Trim (5s-15s)"
+            android:layout_marginTop="4dp"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <Button android:id="@+id/btnRotate" android:text="Rotate 90"
+            android:layout_marginTop="4dp"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <Button android:id="@+id/btnSpeed" android:text="Speed 2x"
+            android:layout_marginTop="4dp"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <Button android:id="@+id/btnExtractAudio" android:text="Extract Audio"
+            android:layout_marginTop="4dp"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <TextView android:id="@+id/tvStatus" android:text="Ready"
+            android:padding="8dp" android:layout_marginTop="12dp"
+            android:background="#EEEEEE"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    </LinearLayout>
+</ScrollView>
