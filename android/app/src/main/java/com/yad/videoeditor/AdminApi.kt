@@ -13,12 +13,11 @@ import java.util.concurrent.TimeUnit
 /**
  * GitHub API client
  * Created by KARYADI, Coding by KARYADI
- * Fixed by Auto-Fix Script
  */
 object AdminApi {
 
     private const val OWNER = "byadiganteng-blip"
-    private const val REPO = "yad-video-editor"   // ✅ FIXED
+    private const val REPO = "yad-video-editor"
     private const val BRANCH = "main"
 
     private val client = OkHttpClient.Builder()
@@ -61,7 +60,7 @@ object AdminApi {
         }
 
     // ============================================================
-    //  TRIGGER GENERATE VIDEO (generate_image.yml)
+    //  TRIGGER GENERATE VIDEO
     // ============================================================
     suspend fun triggerVideoGenerate(
         prompt: String,
@@ -76,13 +75,14 @@ object AdminApi {
             val url = "https://api.github.com/repos/$OWNER/$REPO/" +
                       "actions/workflows/generate_image.yml/dispatches"
 
+            val wm = watermark.replace("\"", "\\\"")
             val json = """
                 {
                   "ref": "$BRANCH",
                   "inputs": {
                     "prompt": ${JSONObject.quote(prompt)},
                     "voice": "$voice",
-                    "watermark": "${watermark.replace("\"", "\\\"")}",
+                    "watermark": "$wm",
                     "show_subtitle": "$showSubtitle",
                     "subtitle_style": "$subtitleStyle",
                     "scenes_count": "$scenesCount",
@@ -91,22 +91,14 @@ object AdminApi {
                 }
             """.trimIndent()
 
-            println("Trigger URL: $url")
-            println("Body: $json")
-
             val resp = client.newCall(req(url, "POST", json)).execute()
-            val body = resp.body?.string() ?: ""
-            println("Response: ${resp.code} / $body")
-
             if (resp.code == 204) {
                 delay(3000)
-                val runId = getLatestVideoRunId()
-                true to runId
+                true to getLatestVideoRunId()
             } else {
                 false to null
             }
         } catch (e: Exception) {
-            println("Error: ${e.message}")
             false to null
         }
     }
@@ -126,7 +118,7 @@ object AdminApi {
     }
 
     // ============================================================
-    //  STATUS WORKFLOW
+    //  STATUS RUN
     // ============================================================
     suspend fun getRunStatus(runId: Long): WorkflowStatus = withContext(Dispatchers.IO) {
         try {
@@ -134,9 +126,9 @@ object AdminApi {
             val resp = client.newCall(req(url)).execute()
             val json = JSONObject(resp.body?.string() ?: "{}")
             WorkflowStatus(
-                status = json.optString("status", "unknown"),
-                conclusion = json.optString("conclusion", ""),
-                htmlUrl = json.optString("html_url", "")
+                json.optString("status", "unknown"),
+                json.optString("conclusion", ""),
+                json.optString("html_url", "")
             )
         } catch (e: Exception) {
             WorkflowStatus("unknown", "", "")
@@ -185,4 +177,27 @@ object AdminApi {
         val conclusion: String, val htmlUrl: String,
         val runNumber: Int, val createdAt: String
     )
+
+    // ============================================================
+    //  GET LATEST LOGS (untuk AdminActivity)
+    // ============================================================
+    suspend fun getLatestLogs(workflow: String = "build-apk.yml"): String =
+        withContext(Dispatchers.IO) {
+            try {
+                val url = "https://api.github.com/repos/$OWNER/$REPO/" +
+                          "actions/workflows/$workflow/runs?per_page=1"
+                val resp = client.newCall(req(url)).execute()
+                val arr = JSONObject(resp.body?.string() ?: "{}")
+                    .optJSONArray("workflow_runs")
+                if (arr == null || arr.length() == 0) return@withContext "No runs"
+                val run = arr.getJSONObject(0)
+                val id = run.getLong("id")
+                val status = run.optString("status")
+                val conclusion = run.optString("conclusion")
+                val htmlUrl = run.optString("html_url")
+                "Run #$id: $status / $conclusion\n$htmlUrl"
+            } catch (e: Exception) {
+                "Error: ${e.message}"
+            }
+        }
 }
