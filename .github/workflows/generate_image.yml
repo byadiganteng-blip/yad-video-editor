@@ -11,7 +11,7 @@ on:
         required: false
         default: 'male_id'
       watermark:
-        description: 'Watermark (kosongkan jika tidak ada)'
+        description: 'Watermark'
         required: false
         default: ''
       show_subtitle:
@@ -27,9 +27,13 @@ on:
         required: false
         default: '8'
       image_style:
-        description: 'anime / realistic / cinematic / watercolor'
+        description: 'anime / realistic / cinematic / artistic / watercolor'
         required: false
         default: 'cinematic'
+      model_id:
+        description: 'ID model (waifu/sd15/anything/dreamshaper/sdxl/openjourney/dreamlike/trinart/realistic/majicmix)'
+        required: false
+        default: 'waifu'
 
 jobs:
   generate:
@@ -37,34 +41,23 @@ jobs:
     timeout-minutes: 90
     permissions:
       contents: write
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-
-      - name: Cache pip
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       - name: Install system deps
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-dejavu fonts-noto
-
       - name: Install Python deps
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-
       - name: Generate video
         env:
           PROMPT: ${{ github.event.inputs.prompt }}
@@ -75,8 +68,8 @@ jobs:
           SUBTITLE_STYLE: ${{ github.event.inputs.subtitle_style }}
           SCENES_COUNT: ${{ github.event.inputs.scenes_count }}
           IMAGE_STYLE: ${{ github.event.inputs.image_style }}
+          MODEL_ID: ${{ github.event.inputs.model_id }}
         run: python generate_video.py
-
       - name: Upload to Release
         if: success()
         uses: softprops/action-gh-release@v1
@@ -84,14 +77,13 @@ jobs:
           tag_name: video-${{ github.run_id }}
           name: Video ${{ github.run_id }}
           body: |
-            Video hasil generate otomatis.
+            Model: ${{ github.event.inputs.model_id }}
             Prompt: ${{ github.event.inputs.prompt }}
           files: |
             *.mp4
             scenes/*.png
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Upload Artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -101,4 +93,3 @@ jobs:
             *.mp4
             scenes/*.png
           if-no-files-found: ignore
-          retention-days: 7
