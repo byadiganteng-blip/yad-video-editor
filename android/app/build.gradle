@@ -15,20 +15,16 @@ android {
         versionName "13.0.0"
         multiDexEnabled true
 
-        // Token GitHub di-embed (GANTI DENGAN TOKEN ANDA)
-        buildConfigField "String", "GH_TOKEN",
-            "\"ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx\""
-        buildConfigField "String", "ADMIN_EMAIL",
-            "\"ynuraini686@gmail.com\""
-        buildConfigField "String", "ADMIN_PASS",
-            "\"YADIGANTENG\""
+        // Token TIDAK di-embed — user input manual
+        buildConfigField "String", "GH_TOKEN", "\"\""
+        buildConfigField "String", "ADMIN_EMAIL", "\"ynuraini686@gmail.com\""
+        buildConfigField "String", "ADMIN_PASS", "\"YADIGANTENG\""
 
         // Firebase DB URL
         buildConfigField "String", "FIREBASE_URL",
             "\"https://yad-video-editor-default-rtdb.asia-southeast1.firebasedatabase.app\""
     }
 
-    // 2 varian APK
     flavorDimensions "version"
     productFlavors {
         client {
@@ -87,7 +83,6 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-service:2.7.0'
     implementation 'com.github.bumptech.glide:glide:4.16.0'
 
-    // Firebase
     implementation platform('com.google.firebase:firebase-bom:32.7.0')
     implementation 'com.google.firebase:firebase-database-ktx'
     implementation 'com.google.firebase:firebase-auth-ktx'
