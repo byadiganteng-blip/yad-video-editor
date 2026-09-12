@@ -1,17 +1,18 @@
 package com.yad.videoeditor
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 /**
  * Wrapper untuk GitHub API — trigger generate_image.yml
  * Created by KARYADI, Coding by KARYADI
- * Fixed by Auto-Fix Script
  */
 object GitHubAiClient {
 
@@ -26,7 +27,6 @@ object GitHubAiClient {
 
     /**
      * Kirim permintaan generate video ke GitHub Actions.
-     * Return: true kalau berhasil trigger.
      */
     suspend fun dispatchVideo(
         prompt: String,
@@ -40,13 +40,14 @@ object GitHubAiClient {
             val url = "https://api.github.com/repos/$OWNER/$REPO/" +
                       "actions/workflows/$WORKFLOW/dispatches"
 
+            val wm = watermark.replace("\"", "\\\"")
             val json = """
                 {
                   "ref": "main",
                   "inputs": {
                     "prompt": ${JSONObject.quote(prompt)},
                     "voice": "$voice",
-                    "watermark": "${watermark.replace("\"", "\\\"")}",
+                    "watermark": "$wm",
                     "show_subtitle": "$showSubtitle",
                     "subtitle_style": "$subtitleStyle",
                     "scenes_count": "8",
@@ -55,9 +56,7 @@ object GitHubAiClient {
                 }
             """.trimIndent()
 
-            val body = okhttp3.RequestBody.Companion.run {
-                json.toRequestBody("application/json".toMediaTypeOrNull())
-            }
+            val body = json.toRequestBody("application/json".toMediaTypeOrNull())
 
             val req = Request.Builder()
                 .url(url)
@@ -69,21 +68,17 @@ object GitHubAiClient {
                 .build()
 
             val resp = client.newCall(req).execute()
-            println("dispatchVideo: HTTP ${resp.code}")
             resp.code == 204
         } catch (e: Exception) {
-            println("dispatchVideo error: ${e.message}")
             false
         }
     }
 
     /**
      * Cek hasil generate video via GitHub Release.
-     * Return: URL download video kalau sudah siap, null kalau belum.
      */
     suspend fun checkResult(jobId: String): String? = withContext(Dispatchers.IO) {
         try {
-            // Cek releases terbaru
             val url = "https://api.github.com/repos/$OWNER/$REPO/releases?per_page=5"
             val req = Request.Builder()
                 .url(url)
@@ -93,13 +88,11 @@ object GitHubAiClient {
 
             val resp = client.newCall(req).execute()
             val body = resp.body?.string() ?: "[]"
-            val arr = org.json.JSONArray(body)
+            val arr = JSONArray(body)
 
             for (i in 0 until arr.length()) {
                 val release = arr.getJSONObject(i)
-                val tag = release.optString("tag_name")
                 val assets = release.optJSONArray("assets") ?: continue
-
                 for (j in 0 until assets.length()) {
                     val asset = assets.getJSONObject(j)
                     val name = asset.optString("name")
@@ -110,7 +103,6 @@ object GitHubAiClient {
             }
             null
         } catch (e: Exception) {
-            println("checkResult error: ${e.message}")
             null
         }
     }
