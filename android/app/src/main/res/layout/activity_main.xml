@@ -117,7 +117,7 @@
                             android:layout_height="wrap_content"/>
 
                         <TextView
-                            android:text="Lihat & download hasil video"
+                            android:text="Lihat &amp; download hasil video"
                             android:textSize="12sp"
                             android:textColor="@color/text_secondary"
                             android:layout_width="match_parent"
