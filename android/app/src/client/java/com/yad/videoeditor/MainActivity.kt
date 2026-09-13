@@ -1,6 +1,8 @@
 package com.yad.videoeditor
 
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -9,63 +11,54 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
+import com.google.android.gms.ads.AdView
 
 /**
- * MainActivity Client — versi MINIMAL (pasti compile).
+ * MainActivity Client — FULL FITUR.
  *
- * Tidak butuh class eksternal (GenerationMode, AdMobHelper, dll).
- * Fitur yang belum ada di-stub pakai Toast.
- *
- * Setelah build hijau, tinggal tambahkan:
- *   - AdMob banner loader
- *   - Intent ke VideoListActivity, VideoEditorActivity, dll
- *   - GenerationMode enum
- *   - Generator class
+ * Pakai semua class asli dari src/main/:
+ *   - GenerationMode (enum, 10 mode)
+ *   - AdMobHelper (banner, interstitial, rewarded)
+ *   - VideoListActivity, VideoEditorActivity, TextToVideoActivity, ActionsActivity
+ *   - DirectVideoGenerator, GoogleImageGenerator
  */
 class MainActivity : AppCompatActivity() {
 
-    private val modes = listOf(
-        "Direct Video (Non-AI)",
-        "Google Image (Non-AI)",
-        "AI: Text to Video",
-        "AI: Image to Video",
-        "AI: Style Transfer",
-        "AI: Motion",
-        "AI: Upscale",
-        "AI: Background Remove",
-        "AI: Auto Subtitle",
-        "AI: Voice Over"
-    )
+    // ============================================================
+    //  STATE
+    // ============================================================
+    private var currentMode: GenerationMode = GenerationMode.DIRECT
 
-    private val descriptions = listOf(
-        "Buat video langsung dari teks tanpa AI",
-        "Ambil gambar dari Google lalu jadikan video",
-        "Generate video dari prompt teks",
-        "Animasikan gambar jadi video",
-        "Ubah gaya visual video",
-        "Tambah gerakan pada gambar statis",
-        "Naikkan resolusi video",
-        "Hapus background otomatis",
-        "Auto-generate subtitle",
-        "Buat voice over otomatis"
-    )
-
+    // ============================================================
+    //  LIFECYCLE
+    // ============================================================
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        setupSpinner()
+        // Init AdMob (sekali saja)
+        AdMobHelper.init(this)
+        AdMobHelper.loadInterstitial(this)
+        AdMobHelper.loadRewarded(this)
+
+        // Setup UI
+        setupGenerationModeSpinner()
+        setupBannerAd()
         setupCards()
     }
 
-    private fun setupSpinner() {
+    // ============================================================
+    //  SPINNER MODE — pakai GenerationMode enum
+    // ============================================================
+    private fun setupGenerationModeSpinner() {
         val spinner = findViewById<Spinner>(R.id.spinnerGenerationMode)
         val tvDesc = findViewById<TextView>(R.id.tvModeDescription)
 
+        val labels = GenerationMode.allLabels()
         val adapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_dropdown_item,
-            modes
+            labels
         )
         spinner.adapter = adapter
 
@@ -76,25 +69,116 @@ class MainActivity : AppCompatActivity() {
                 position: Int,
                 id: Long
             ) {
-                tvDesc.text = descriptions[position]
+                currentMode = GenerationMode.values()[position]
+                tvDesc?.text = currentMode.description
             }
 
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                currentMode = GenerationMode.DIRECT
+            }
         }
     }
 
+    // ============================================================
+    //  BANNER AD — pakai AdMobHelper
+    // ============================================================
+    private fun setupBannerAd() {
+        try {
+            val adView = findViewById<AdView>(R.id.bannerAd)
+            if (adView != null) {
+                AdMobHelper.loadBanner(this, adView)
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Banner error: " + e.message)
+        }
+    }
+
+    // ============================================================
+    //  CARDS — navigate ke activity asli
+    // ============================================================
     private fun setupCards() {
+        // Video Saya → VideoListActivity
         findViewById<CardView>(R.id.cardVideoSaya)?.setOnClickListener {
-            Toast.makeText(this, "Video Saya (belum tersedia)", Toast.LENGTH_SHORT).show()
+            try {
+                startActivity(Intent(this, VideoListActivity::class.java))
+            } catch (e: Exception) {
+                Toast.makeText(this, "Video Saya: " + e.message, Toast.LENGTH_SHORT).show()
+            }
         }
+
+        // Video Editor → VideoEditorActivity
         findViewById<CardView>(R.id.cardVideoEditor)?.setOnClickListener {
-            Toast.makeText(this, "Video Editor (belum tersedia)", Toast.LENGTH_SHORT).show()
+            try {
+                startActivity(Intent(this, VideoEditorActivity::class.java))
+            } catch (e: Exception) {
+                Toast.makeText(this, "Video Editor: " + e.message, Toast.LENGTH_SHORT).show()
+            }
         }
+
+        // AI Text to Video → TextToVideoActivity
         findViewById<CardView>(R.id.cardAITextToVideo)?.setOnClickListener {
-            Toast.makeText(this, "AI Text to Video (belum tersedia)", Toast.LENGTH_SHORT).show()
+            try {
+                startActivity(Intent(this, TextToVideoActivity::class.java))
+            } catch (e: Exception) {
+                Toast.makeText(this, "AI Text to Video: " + e.message, Toast.LENGTH_SHORT).show()
+            }
         }
+
+        // Actions → ActionsActivity
         findViewById<CardView>(R.id.cardActions)?.setOnClickListener {
-            Toast.makeText(this, "Actions (belum tersedia)", Toast.LENGTH_SHORT).show()
+            try {
+                startActivity(Intent(this, ActionsActivity::class.java))
+            } catch (e: Exception) {
+                Toast.makeText(this, "Actions: " + e.message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // ============================================================
+    //  GENERATE VIDEO — per mode
+    // ============================================================
+    @Suppress("unused")
+    private fun generateVideoByMode(prompt: String, outputPath: String) {
+        when (currentMode.type) {
+            ModeType.DIRECT -> {
+                DirectVideoGenerator.generateFromText(
+                    this, prompt, 5, outputPath,
+                    onSuccess = { path ->
+                        runOnUiThread {
+                            Toast.makeText(this, "Video dibuat: $path", Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    onError = { err ->
+                        runOnUiThread {
+                            Toast.makeText(this, "Error: $err", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                )
+            }
+
+            ModeType.GOOGLE_IMAGE -> {
+                GoogleImageGenerator.generateFromText(
+                    this, prompt, 5, outputPath,
+                    onSuccess = { path ->
+                        runOnUiThread {
+                            Toast.makeText(this, "Video dari Google: $path", Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    onError = { err ->
+                        runOnUiThread {
+                            Toast.makeText(this, "Error: $err", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                )
+            }
+
+            ModeType.AI_MODEL -> {
+                Toast.makeText(
+                    this,
+                    "Pakai model AI: " + currentMode.label,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 }
