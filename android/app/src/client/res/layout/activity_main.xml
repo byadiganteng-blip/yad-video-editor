@@ -71,7 +71,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Lihat & kelola video yang sudah dibuat"
+                    android:text="Lihat &amp; kelola video yang sudah dibuat"
                     android:textSize="12sp"
                     android:textColor="#666666" />
             </LinearLayout>
