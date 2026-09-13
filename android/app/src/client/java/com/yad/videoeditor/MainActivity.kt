@@ -1,6 +1,5 @@
 package com.yad.videoeditor
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
@@ -10,82 +9,63 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
-import com.google.android.gms.ads.AdView
 
 /**
- * MainActivity Client — versi bersih (rewrite).
- * Fitur:
- *   - Spinner 10 mode generate (2 non-AI + 8 AI)
- *   - Card ke Video Saya, Video Editor, AI Text to Video, dll
- *   - Banner Ad di bawah (AdMob)
+ * MainActivity Client — versi MINIMAL (pasti compile).
+ *
+ * Tidak butuh class eksternal (GenerationMode, AdMobHelper, dll).
+ * Fitur yang belum ada di-stub pakai Toast.
+ *
+ * Setelah build hijau, tinggal tambahkan:
+ *   - AdMob banner loader
+ *   - Intent ke VideoListActivity, VideoEditorActivity, dll
+ *   - GenerationMode enum
+ *   - Generator class
  */
 class MainActivity : AppCompatActivity() {
 
-    // Mode yang dipilih user di spinner
-    private var currentMode: GenerationMode = GenerationMode.DIRECT
+    private val modes = listOf(
+        "Direct Video (Non-AI)",
+        "Google Image (Non-AI)",
+        "AI: Text to Video",
+        "AI: Image to Video",
+        "AI: Style Transfer",
+        "AI: Motion",
+        "AI: Upscale",
+        "AI: Background Remove",
+        "AI: Auto Subtitle",
+        "AI: Voice Over"
+    )
+
+    private val descriptions = listOf(
+        "Buat video langsung dari teks tanpa AI",
+        "Ambil gambar dari Google lalu jadikan video",
+        "Generate video dari prompt teks",
+        "Animasikan gambar jadi video",
+        "Ubah gaya visual video",
+        "Tambah gerakan pada gambar statis",
+        "Naikkan resolusi video",
+        "Hapus background otomatis",
+        "Auto-generate subtitle",
+        "Buat voice over otomatis"
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // ==== SPINNER MODE ====
-        setupGenerationModeSpinner()
-
-        // ==== BANNER AD ====
-        try {
-            val adView = findViewById<AdView>(R.id.bannerAd)
-            adView?.let { AdMobHelper.loadBanner(this, it) }
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Banner error: ${e.message}")
-        }
-
-        // ==== CARDS ====
-        // Video Saya
-        try {
-            val cardVideo = findViewById<CardView>(R.id.cardVideoSaya)
-            cardVideo?.setOnClickListener {
-                startActivity(Intent(this, VideoListActivity::class.java))
-            }
-        } catch (_: Exception) {}
-
-        // Video Editor
-        try {
-            val cardEditor = findViewById<CardView>(R.id.cardVideoEditor)
-            cardEditor?.setOnClickListener {
-                startActivity(Intent(this, VideoEditorActivity::class.java))
-            }
-        } catch (_: Exception) {}
-
-        // AI Text to Video
-        try {
-            val cardAI = findViewById<CardView>(R.id.cardAITextToVideo)
-            cardAI?.setOnClickListener {
-                startActivity(Intent(this, TextToVideoActivity::class.java))
-            }
-        } catch (_: Exception) {}
-
-        // Actions
-        try {
-            val cardActions = findViewById<CardView>(R.id.cardActions)
-            cardActions?.setOnClickListener {
-                startActivity(Intent(this, ActionsActivity::class.java))
-            }
-        } catch (_: Exception) {}
+        setupSpinner()
+        setupCards()
     }
 
-    // ============================================================
-    //  SPINNER MODE GENERATE — 10 opsi
-    // ============================================================
-    private fun setupGenerationModeSpinner() {
+    private fun setupSpinner() {
         val spinner = findViewById<Spinner>(R.id.spinnerGenerationMode)
         val tvDesc = findViewById<TextView>(R.id.tvModeDescription)
-
-        val labels = GenerationMode.allLabels()
 
         val adapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_dropdown_item,
-            labels
+            modes
         )
         spinner.adapter = adapter
 
@@ -96,76 +76,25 @@ class MainActivity : AppCompatActivity() {
                 position: Int,
                 id: Long
             ) {
-                currentMode = GenerationMode.values()[position]
-                tvDesc?.text = currentMode.description
+                tvDesc.text = descriptions[position]
             }
 
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                currentMode = GenerationMode.DIRECT
-            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
 
-    // ============================================================
-    //  GENERATE VIDEO — dipanggil dari tombol
-    // ============================================================
-    private fun generateVideoByMode(prompt: String, outputPath: String) {
-        when (currentMode.type) {
-            ModeType.DIRECT -> {
-                DirectVideoGenerator.generateFromText(
-                    this, prompt, 5, outputPath,
-                    onSuccess = { path ->
-                        runOnUiThread {
-                            Toast.makeText(
-                                this,
-                                "Video dibuat: $path",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    },
-                    onError = { err ->
-                        runOnUiThread {
-                            Toast.makeText(
-                                this,
-                                "Error: $err",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
-                )
-            }
-
-            ModeType.GOOGLE_IMAGE -> {
-                GoogleImageGenerator.generateFromText(
-                    this, prompt, 5, outputPath,
-                    onSuccess = { path ->
-                        runOnUiThread {
-                            Toast.makeText(
-                                this,
-                                "Video dari Google: $path",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    },
-                    onError = { err ->
-                        runOnUiThread {
-                            Toast.makeText(
-                                this,
-                                "Error: $err",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
-                )
-            }
-
-            ModeType.AI_MODEL -> {
-                Toast.makeText(
-                    this,
-                    "Pakai model AI: ${currentMode.label}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+    private fun setupCards() {
+        findViewById<CardView>(R.id.cardVideoSaya)?.setOnClickListener {
+            Toast.makeText(this, "Video Saya (belum tersedia)", Toast.LENGTH_SHORT).show()
+        }
+        findViewById<CardView>(R.id.cardVideoEditor)?.setOnClickListener {
+            Toast.makeText(this, "Video Editor (belum tersedia)", Toast.LENGTH_SHORT).show()
+        }
+        findViewById<CardView>(R.id.cardAITextToVideo)?.setOnClickListener {
+            Toast.makeText(this, "AI Text to Video (belum tersedia)", Toast.LENGTH_SHORT).show()
+        }
+        findViewById<CardView>(R.id.cardActions)?.setOnClickListener {
+            Toast.makeText(this, "Actions (belum tersedia)", Toast.LENGTH_SHORT).show()
         }
     }
 }
