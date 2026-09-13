@@ -209,10 +209,12 @@ class TextToVideoActivity : AppCompatActivity() {
         // ============================================================
         if (mode.type == ModeType.DIRECT) {
             // Mode DIRECT: panggil DirectVideoGenerator
+            val outDir = getExternalFilesDir(null) ?: cacheDir
             val outputPath = java.io.File(
-                getExternalFilesDir(null),
+                outDir,
                 "direct_${System.currentTimeMillis()}.mp4"
             ).absolutePath
+            AutoLogSaver.log("TextToVideo", "DIRECT output: $outputPath")
 
             DirectVideoGenerator.generateFromText(
                 this, story, 5, outputPath,
@@ -228,6 +230,7 @@ class TextToVideoActivity : AppCompatActivity() {
                 onError = { err ->
                     runOnUiThread {
                         progressContainer.visibility = View.GONE
+                        AutoLogSaver.logError("TextToVideo", "Generate error", Exception(err))
                         tvStatus.text = "Error: $err"
                         GeneratorState.saveRunning(this, false)
                     }
@@ -238,10 +241,12 @@ class TextToVideoActivity : AppCompatActivity() {
 
         if (mode.type == ModeType.GOOGLE_IMAGE) {
             // Mode GOOGLE_IMAGE: panggil GoogleImageGenerator
+            val outDir = getExternalFilesDir(null) ?: cacheDir
             val outputPath = java.io.File(
-                getExternalFilesDir(null),
+                outDir,
                 "google_${System.currentTimeMillis()}.mp4"
             ).absolutePath
+            AutoLogSaver.log("TextToVideo", "GOOGLE_IMAGE output: $outputPath")
 
             GoogleImageGenerator.generateFromText(
                 this, story, 5, outputPath,
@@ -257,6 +262,7 @@ class TextToVideoActivity : AppCompatActivity() {
                 onError = { err ->
                     runOnUiThread {
                         progressContainer.visibility = View.GONE
+                        AutoLogSaver.logError("TextToVideo", "Generate error", Exception(err))
                         tvStatus.text = "Error: $err"
                         GeneratorState.saveRunning(this, false)
                     }
