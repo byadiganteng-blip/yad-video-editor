@@ -23,9 +23,6 @@ class MainActivity : AppCompatActivity() {
         try { setContentView(R.layout.activity_main)
         // Admin panel tidak perlu iklan — hindari risiko suspend AdMob
         try {
-            val bannerAd = findViewById<android.view.View>(R.id.bannerAd)
-            bannerAd?.visibility = android.view.View.GONE
-        } catch (e: Exception) {
             // Banner tidak ada di admin layout — aman
         }
         }
