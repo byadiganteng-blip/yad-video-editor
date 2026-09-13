@@ -2,6 +2,9 @@ package com.yad.videoeditor
 
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -16,21 +19,21 @@ import android.view.WindowManager
 import android.view.animation.LinearInterpolator
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.core.app.NotificationCompat
 
 /**
- * FloatingProgressService — floating progress bar yang:
- *   - Berputar (spinner rotate)
- *   - Bergerak pelan (auto animation)
- *   - Bisa digeser (drag)
- *   - Tampil di atas semua app
+ * FloatingProgressService — floating progress bar.
+ *
+ * FIX: Panggil startForeground() di onStartCommand() untuk Android 8+.
+ * Tanpa ini, Android akan crash: "did not then call Service.startForeground()"
  */
 class FloatingProgressService : Service() {
 
-    // ============================================================
-    //  COMPANION OBJECT — konstanta + helper (HANYA 1!)
-    // ============================================================
     companion object {
         private const val TAG = "FloatingProgress"
+        private const val CHANNEL_ID = "floating_progress_channel"
+        private const val NOTIFICATION_ID = 9999
+
         const val ACTION_SHOW = "com.yad.videoeditor.SHOW_PROGRESS"
         const val ACTION_UPDATE = "com.yad.videoeditor.UPDATE_PROGRESS"
         const val ACTION_HIDE = "com.yad.videoeditor.HIDE_PROGRESS"
@@ -42,9 +45,6 @@ class FloatingProgressService : Service() {
         var isRunning = false
             private set
 
-        // ============================================================
-        //  STATIC HELPERS — cara pakai dari Activity
-        // ============================================================
         fun show(context: Context, percent: Int = 0, message: String = "Memproses...") {
             try {
                 val intent = Intent(context, FloatingProgressService::class.java).apply {
@@ -87,9 +87,6 @@ class FloatingProgressService : Service() {
         }
     }
 
-    // ============================================================
-    //  STATE
-    // ============================================================
     private var windowManager: WindowManager? = null
     private var floatingView: View? = null
     private var progressBar: ProgressBar? = null
@@ -99,9 +96,8 @@ class FloatingProgressService : Service() {
     private var rotateAnimator: ObjectAnimator? = null
     private var floatAnimator: ObjectAnimator? = null
 
-    // ============================================================
-    //  LIFECYCLE
-    // ============================================================
+    private var foregroundStarted = false
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -111,19 +107,35 @@ class FloatingProgressService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // === WAJIB: Panggil startForeground() untuk Android 8+ ===
+        // Kalau tidak, Android akan crash service dalam 5 detik.
+        try {
+            ensureNotificationChannel()
+            val notification = buildNotification("Memproses video...", 0)
+            startForeground(NOTIFICATION_ID, notification)
+            foregroundStarted = true
+            AutoLogSaver.log(TAG, "startForeground called OK")
+        } catch (e: Exception) {
+            AutoLogSaver.logError(TAG, "startForeground failed", e)
+        }
+
         when (intent?.action) {
             ACTION_SHOW -> {
                 val percent = intent.getIntExtra(EXTRA_PERCENT, 0)
                 val message = intent.getStringExtra(EXTRA_MESSAGE) ?: "Memproses..."
+                updateForegroundNotification(message, percent)
                 showFloating(percent, message)
             }
             ACTION_UPDATE -> {
                 val percent = intent.getIntExtra(EXTRA_PERCENT, 0)
                 val message = intent.getStringExtra(EXTRA_MESSAGE) ?: ""
+                updateForegroundNotification(message, percent)
                 updateProgress(percent, message)
             }
             ACTION_HIDE -> {
                 hideFloating()
+                stopForeground(true)
+                foregroundStarted = false
                 stopSelf()
             }
         }
@@ -131,7 +143,48 @@ class FloatingProgressService : Service() {
     }
 
     // ============================================================
-    //  SHOW / UPDATE / HIDE
+    //  NOTIFICATION
+    // ============================================================
+    private fun ensureNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Video Generation",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Progress generate video"
+                setShowBadge(false)
+            }
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.createNotificationChannel(channel)
+        }
+    }
+
+    private fun buildNotification(message: String, percent: Int): Notification {
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("YAD Video Editor")
+            .setContentText(message)
+            .setSmallIcon(android.R.drawable.stat_sys_download)
+            .setProgress(100, percent, false)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+
+        return builder.build()
+    }
+
+    private fun updateForegroundNotification(message: String, percent: Int) {
+        if (!foregroundStarted) return
+        try {
+            val notification = buildNotification(message, percent)
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.notify(NOTIFICATION_ID, notification)
+        } catch (e: Exception) {
+            AutoLogSaver.logError(TAG, "updateForegroundNotification failed", e)
+        }
+    }
+
+    // ============================================================
+    //  FLOATING VIEW
     // ============================================================
     private fun showFloating(percent: Int, message: String) {
         if (floatingView != null) {
@@ -261,6 +314,10 @@ class FloatingProgressService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         hideFloating()
+        if (foregroundStarted) {
+            try { stopForeground(true) } catch (_: Exception) {}
+            foregroundStarted = false
+        }
         isRunning = false
         AutoLogSaver.log(TAG, "Service destroyed")
     }
