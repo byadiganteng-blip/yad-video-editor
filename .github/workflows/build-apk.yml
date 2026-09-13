@@ -18,6 +18,9 @@ jobs:
     name: Build Client APK
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.build_target == 'client' || github.event.inputs.build_target == 'both' }}
+    defaults:
+      run:
+        working-directory: android
     
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +40,7 @@ jobs:
       - uses: gradle/gradle-build-action@v3
         with:
           gradle-version: 8.2
+          build-root-directory: android
       
       - name: Setup Gradle Wrapper
         run: |
@@ -52,19 +56,22 @@ jobs:
       - name: Copy Client APK
         run: |
           mkdir -p output
-          find android/app/build/outputs/apk/client/debug -name "*.apk" -exec cp {} output/AI-TXT-to-Video-Editor-v14.apk \;
+          find app/build/outputs/apk/client/debug -name "*.apk" -exec cp {} output/AI-TXT-to-Video-Editor-v14.apk \;
       
       - name: Upload Client APK
         uses: actions/upload-artifact@v4
         with:
           name: client-apk
-          path: output/*.apk
+          path: android/output/*.apk
           if-no-files-found: error
 
   build-admin:
     name: Build Admin APK
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.build_target == 'admin' || github.event.inputs.build_target == 'both' }}
+    defaults:
+      run:
+        working-directory: android
     
     steps:
       - uses: actions/checkout@v4
@@ -84,6 +91,7 @@ jobs:
       - uses: gradle/gradle-build-action@v3
         with:
           gradle-version: 8.2
+          build-root-directory: android
       
       - name: Setup Gradle Wrapper
         run: |
@@ -99,11 +107,11 @@ jobs:
       - name: Copy Admin APK
         run: |
           mkdir -p output
-          find android/app/build/outputs/apk/admin/debug -name "*.apk" -exec cp {} output/YAD-Admin-v14.apk \;
+          find app/build/outputs/apk/admin/debug -name "*.apk" -exec cp {} output/YAD-Admin-v14.apk \;
       
       - name: Upload Admin APK
         uses: actions/upload-artifact@v4
         with:
           name: admin-apk
-          path: output/*.apk
+          path: android/output/*.apk
           if-no-files-found: error
