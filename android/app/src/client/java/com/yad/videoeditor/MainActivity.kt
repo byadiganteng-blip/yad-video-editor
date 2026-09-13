@@ -24,6 +24,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Auto minta izin storage
+        PermissionHelper.requestAllPermissions(this)
+
         // Init AdMob
         AdMobHelper.init(this)
         AdMobHelper.loadInterstitial(this)
@@ -32,6 +35,24 @@ class MainActivity : AppCompatActivity() {
         // Setup UI
         setupBannerAd()
         setupCards()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PermissionHelper.REQ_CODE_STORAGE) {
+            val granted = grantResults.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED }
+            if (granted) {
+                android.util.Log.d("MainActivity", "Semua izin diberikan")
+            } else {
+                android.widget.Toast.makeText(this,
+                    "Izin diperlukan untuk menyimpan video",
+                    android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     // ============================================================
