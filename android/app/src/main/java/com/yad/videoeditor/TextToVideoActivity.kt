@@ -215,68 +215,16 @@ class TextToVideoActivity : AppCompatActivity() {
         //  HANDLE NON-AI: DIRECT & GOOGLE_IMAGE
         // ============================================================
         if (mode.type == ModeType.DIRECT) {
-            // Mode DIRECT: panggil DirectVideoGenerator
-            val outDir = getExternalFilesDir(null) ?: cacheDir
-            val outputPath = java.io.File(
-                outDir,
-                "direct_${System.currentTimeMillis()}.mp4"
-            ).absolutePath
-            AutoLogSaver.log("TextToVideo", "DIRECT output: $outputPath")
-
-            DirectVideoGenerator.generateFromText(
-                this, story, 5, outputPath,
-                onSuccess = { path ->
-                    runOnUiThread {
-                        lastVideoPath = path
-                        FloatingProgressService.hide(this)
-                        progressContainer.visibility = View.GONE
-                        tvStatus.text = "Selesai: $path"
-                        btnDownloadNow.visibility = View.VISIBLE
-                        GeneratorState.saveRunning(this, false)
-                    }
-                },
-                onError = { err ->
-                    runOnUiThread {
-                        progressContainer.visibility = View.GONE
-                        AutoLogSaver.logError("TextToVideo", "Generate error", Exception(err))
-                        tvStatus.text = "Error: $err"
-                        GeneratorState.saveRunning(this, false)
-                    }
-                }
-            )
+            // Mode DIRECT: trigger GitHub workflow (bukan generate lokal)
+            AutoLogSaver.log("TextToVideo", "DIRECT mode — trigger GitHub workflow")
+            triggerGithubWorkflow("direct", story, voice, watermark, showSubtitle, subtitleStyle)
             return
         }
 
         if (mode.type == ModeType.GOOGLE_IMAGE) {
-            // Mode GOOGLE_IMAGE: panggil GoogleImageGenerator
-            val outDir = getExternalFilesDir(null) ?: cacheDir
-            val outputPath = java.io.File(
-                outDir,
-                "google_${System.currentTimeMillis()}.mp4"
-            ).absolutePath
-            AutoLogSaver.log("TextToVideo", "GOOGLE_IMAGE output: $outputPath")
-
-            GoogleImageGenerator.generateFromText(
-                this, story, 5, outputPath,
-                onSuccess = { path ->
-                    runOnUiThread {
-                        lastVideoPath = path
-                        FloatingProgressService.hide(this)
-                        progressContainer.visibility = View.GONE
-                        tvStatus.text = "Selesai: $path"
-                        btnDownloadNow.visibility = View.VISIBLE
-                        GeneratorState.saveRunning(this, false)
-                    }
-                },
-                onError = { err ->
-                    runOnUiThread {
-                        progressContainer.visibility = View.GONE
-                        AutoLogSaver.logError("TextToVideo", "Generate error", Exception(err))
-                        tvStatus.text = "Error: $err"
-                        GeneratorState.saveRunning(this, false)
-                    }
-                }
-            )
+            // Mode GOOGLE_IMAGE: trigger GitHub workflow
+            AutoLogSaver.log("TextToVideo", "GOOGLE_IMAGE mode — trigger GitHub workflow")
+            triggerGithubWorkflow("google_image", story, voice, watermark, showSubtitle, subtitleStyle)
             return
         }
 
