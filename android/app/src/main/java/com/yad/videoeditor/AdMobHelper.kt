@@ -7,6 +7,8 @@ import android.widget.Toast
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
@@ -29,6 +31,7 @@ object AdMobHelper {
     // Test IDs dari Google (boleh dipakai untuk testing):
     private const val REWARDED_AD_UNIT = "ca-app-pub-2515513620924097/1056594580"
     private const val INTERSTITIAL_AD_UNIT = "ca-app-pub-2515513620924097/6892596385"
+    private const val BANNER_AD_UNIT = "ca-app-pub-2515513620924097/4725211004"
 
     // State
     private var rewardedAd: RewardedAd? = null
@@ -42,8 +45,22 @@ object AdMobHelper {
     //  INIT — load rewarded + interstitial
     // ============================================================
     fun init(context: Context) {
-        loadRewarded(context)
-        loadInterstitial(context)
+        Log.d(TAG, "AdMobHelper initialized")
+    }
+
+
+    // ============================================================
+    //  BANNER AD
+    // ============================================================
+    fun loadBanner(activity: Activity, adView: AdView) {
+        try {
+            adView.adUnitId = BANNER_AD_UNIT
+            adView.setAdSize(AdSize.BANNER)
+            adView.loadAd(AdRequest.Builder().build())
+            Log.d(TAG, "✅ Banner loading: $BANNER_AD_UNIT")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Banner error: ${e.message}")
+        }
     }
 
     // ============================================================
