@@ -2,7 +2,7 @@ package com.yad.videoeditor
 
 /**
  * GenerationMode — semua opsi yang bisa dipilih di spinner.
- * Urutan: 2 non-AI dulu, lalu 8 model AI.
+ * Urutan: 2 non-AI dulu, lalu 10 model AI.
  */
 enum class GenerationMode(
     val id: String,
@@ -15,66 +15,78 @@ enum class GenerationMode(
     // ============================================================
     DIRECT(
         "direct",
-        "🎬 Generate Langsung (Tanpa Gambar)",
+        "\uD83C\uDFAC Generate Langsung (Tanpa Gambar)",
         "Buat video dari teks langsung — tanpa AI, tanpa gambar",
         ModeType.DIRECT
     ),
     GOOGLE_IMAGE(
         "google_image",
-        "🔍 Cari Gambar Google + Video",
+        "\uD83D\uDD0D Cari Gambar Google + Video",
         "Cari gambar dari Google lalu jadikan video",
         ModeType.GOOGLE_IMAGE
     ),
 
     // ============================================================
-    //  8 MODEL AI
+    //  10 MODEL AI
     // ============================================================
     WAIFU_DIFFUSION(
         "waifu",
-        "🌸 Waifu Diffusion (Klasik)",
+        "\uD83C\uDF38 Waifu Diffusion (Klasik)",
         "Model anime klasik — bagus untuk karakter anime",
         ModeType.AI_MODEL
     ),
     SD_15(
         "sd15",
-        "🎨 Stable Diffusion 1.5",
+        "\uD83C\uDFA8 Stable Diffusion 1.5",
         "Model dasar SD 1.5 — serba bisa",
         ModeType.AI_MODEL
     ),
     ANYTHING_V4(
         "anything",
-        "✨ Anything v4.0",
+        "\u2728 Anything v4.0",
         "Model anime modern — kualitas tinggi",
         ModeType.AI_MODEL
     ),
     DREAMSHAPER(
         "dreamshaper",
-        "🌈 DreamShaper",
+        "\uD83C\uDF08 DreamShaper",
         "Model artistik — warna cerah",
         ModeType.AI_MODEL
     ),
     SDXL_BASE(
         "sdxl",
-        "🏆 SDXL Base 1.0",
+        "\uD83C\uDFC6 SDXL Base 1.0",
         "Model terbaru — resolusi tinggi, lambat",
         ModeType.AI_MODEL
     ),
     OPENJOURNEY(
         "openjourney",
-        "🧑 OpenJourney",
+        "\uD83E\uDDD1 OpenJourney",
         "Model bergaya Midjourney",
         ModeType.AI_MODEL
     ),
     DREAMLIKE(
         "dreamlike",
-        "🌙 Dreamlike",
+        "\uD83C\uDF19 Dreamlike",
         "Model cinematic — untuk cerita horor/dramatis",
         ModeType.AI_MODEL
     ),
     TRINART_V2(
         "trinart",
-        "🎯 Trinart v2",
+        "\uD83C\uDFAF Trinart v2",
         "Model semi-realistic",
+        ModeType.AI_MODEL
+    ),
+    REALISTIC_VISION(
+        "realistic",
+        "\uD83D\uDCF7 Realistic Vision",
+        "Realistis natural — foto-like",
+        ModeType.AI_MODEL
+    ),
+    MAJICMIX(
+        "majicmix",
+        "\uD83C\uDF3A MajicMix",
+        "Realistis detail tajam — kualitas tinggi",
         ModeType.AI_MODEL
     );
 
