@@ -11,13 +11,18 @@ android {
     defaultConfig {
         minSdk 21
         targetSdk 34
-        versionCode 13
-        versionName "13.0.0"
+        versionCode 14
+        versionName "14.0.0"
         multiDexEnabled true
 
         buildConfigField "String", "GH_TOKEN", "\"\""
         buildConfigField "String", "ADMIN_EMAIL", "\"ynuraini686@gmail.com\""
         buildConfigField "String", "ADMIN_PASS", "\"YADIGANTENG\""
+
+        // AdMob App ID (TEST — ganti dengan ID asli nanti)
+        manifestPlaceholders = [
+            admobAppId: "ca-app-pub-3940256099942544~3347511713"
+        ]
     }
 
     flavorDimensions "version"
@@ -78,10 +83,13 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-service:2.7.0'
     implementation 'com.github.bumptech.glide:glide:4.16.0'
 
-    // Firebase Firestore + Auth
+    // Firebase
     implementation platform('com.google.firebase:firebase-bom:32.7.0')
     implementation 'com.google.firebase:firebase-firestore-ktx'
     implementation 'com.google.firebase:firebase-auth-ktx'
+
+    // AdMob
+    implementation 'com.google.android.gms:play-services-ads:22.6.0'
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 }
