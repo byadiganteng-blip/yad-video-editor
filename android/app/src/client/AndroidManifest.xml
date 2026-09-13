@@ -27,6 +27,12 @@
             android:value="ca-app-pub-3940256099942544~3347511713"
             tools:replace="android:value" />
 
+        <!-- HAPUS SplashActivity dari client build -->
+        <activity
+            android:name=".SplashActivity"
+            tools:node="remove" />
+
+        <!-- MainActivity = LAUNCHER tunggal -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
