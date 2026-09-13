@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # ============================================================
 #  AI STORY-TO-VIDEO GENERATOR
-#  - TTS: Piper (offline, tanpa API)
-#  - Fallback: tanpa audio jika model tidak ada
+#  - Piper TTS (offline)
+#  - Pillow 9.5.0 compatible
 # ============================================================
 
-import os, re, subprocess, wave, textwrap, time
+import os, re, subprocess, textwrap, time, urllib.request
 from pathlib import Path
 import torch
 from diffusers import StableDiffusionPipeline
@@ -102,17 +102,15 @@ def generate_image(scene_text, idx, style):
 
 
 # ============================================================
-#  PIPER TTS — OFFLINE, TANPA API
+#  PIPER TTS — PATH YANG BENAR
 # ============================================================
 PIPER_MODEL_MAP = {
-    # Indonesia
-    "male_id":   "id_ID-male",
-    "female_id": "id_ID-female",
-    "child_id":  "id_ID-male",
-    # English
-    "male_en":   "en_US-male",
-    "female_en": "en_US-female",
-    "robot":     "en_US-male",
+    "male_id":   "id_ID-ardi-medium",      # ← path benar
+    "female_id": "id_ID-gadis-medium",     # ← path benar
+    "child_id":  "id_ID-ardi-medium",
+    "male_en":   "en_US-ryan-medium",
+    "female_en": "en_US-amy-medium",
+    "robot":     "en_US-ryan-medium",
 }
 
 PIPER_BASE_URL = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
@@ -121,33 +119,34 @@ PIPER_MODEL_DIR.mkdir(exist_ok=True)
 VOICE_FILE = "voice.wav"
 
 
-def download_piper_model(voice_name):
-    """Download model Piper jika belum ada."""
-    PIPER_MODEL_DIR.mkdir(exist_ok=True)
+def download_piper_model(model_name):
+    """Download model Piper dengan path yang benar."""
+    # Pisahkan: id_ID-ardi-medium
+    # → lang=id, locale=id_ID, speaker=ardi, quality=medium
+    parts = model_name.split("-")
+    locale = parts[0]   # id_ID
+    speaker = parts[1]  # ardi
+    quality = parts[2]  # medium
+    lang = locale.split("_")[0]  # id
 
-    # Contoh: id_ID-male → id/id_ID/male/id_ID-male-medium.onnx
-    parts = voice_name.split("-")
-    lang_full = parts[0]   # id_ID
-    gender = parts[1]      # male
-    lang_short = lang_full.split("_")[0]  # id
+    base = f"{PIPER_BASE_URL}/{lang}/{locale}/{speaker}/{quality}/{model_name}"
+    onnx_url = f"{base}.onnx"
+    json_url = f"{base}.onnx.json"
 
-    # Path HuggingFace
-    base = f"{PIPER_BASE_URL}/{lang_short}/{lang_full}/{gender}/{voice_name}"
-    onnx_url = f"{base}-medium.onnx"
-    json_url = f"{base}-medium.onnx.json"
+    onnx_path = PIPER_MODEL_DIR / f"{model_name}.onnx"
+    json_path = PIPER_MODEL_DIR / f"{model_name}.onnx.json"
 
-    onnx_path = PIPER_MODEL_DIR / f"{voice_name}.onnx"
-    json_path = PIPER_MODEL_DIR / f"{voice_name}.onnx.json"
+    print(f"  URL: {onnx_url}")
 
-    import urllib.request
     for url, path in [(onnx_url, onnx_path), (json_url, json_path)]:
         if not path.exists():
             print(f"  📥 Download: {url}")
             try:
                 urllib.request.urlretrieve(url, path)
-                print(f"  ✅ Saved: {path}")
+                size_mb = path.stat().st_size / 1024 / 1024
+                print(f"  ✅ Saved: {path} ({size_mb:.1f} MB)")
             except Exception as e:
-                print(f"  ❌ Gagal download {url}: {e}")
+                print(f"  ❌ Gagal: {e}")
                 return None, None
 
     return str(onnx_path), str(json_path)
@@ -156,36 +155,28 @@ def download_piper_model(voice_name):
 def make_voice_piper(text):
     """Generate voice dengan Piper TTS."""
     if VOICE not in PIPER_MODEL_MAP:
-        print(f"⚠️  Voice '{VOICE}' tidak ada di Piper map")
+        print(f"⚠️  Voice '{VOICE}' tidak ada")
         return None
 
-    voice_name = PIPER_MODEL_MAP[VOICE]
-    print(f"\n🎤 Generating voice-over (Piper: {voice_name})...")
+    model_name = PIPER_MODEL_MAP[VOICE]
+    print(f"\n🎤 Generating voice-over (Piper: {model_name})...")
 
-    onnx_path, json_path = download_piper_model(voice_name)
+    onnx_path, json_path = download_piper_model(model_name)
     if not onnx_path or not os.path.exists(onnx_path):
         print("  ❌ Model Piper tidak tersedia")
         return None
 
-    # Pakai piper via command line (lebih reliable)
+    # Coba pakai piper binary
     try:
         import shutil
         piper_bin = shutil.which("piper")
-        if not piper_bin:
-            # Coba lewat python module
-            cmd = [
-                "python", "-m", "piper",
-                "--model", onnx_path,
-                "--config", json_path,
-                "--output_file", VOICE_FILE,
-            ]
+
+        if piper_bin:
+            cmd = [piper_bin, "--model", onnx_path,
+                   "--config", json_path, "--output_file", VOICE_FILE]
         else:
-            cmd = [
-                piper_bin,
-                "--model", onnx_path,
-                "--config", json_path,
-                "--output_file", VOICE_FILE,
-            ]
+            cmd = ["python", "-m", "piper", "--model", onnx_path,
+                   "--config", json_path, "--output_file", VOICE_FILE]
 
         result = subprocess.run(
             cmd, input=text.encode("utf-8"),
@@ -197,20 +188,15 @@ def make_voice_piper(text):
             if size > 1000:
                 print(f"  ✅ Saved: {VOICE_FILE} ({size} bytes)")
                 return VOICE_FILE
-            else:
-                print(f"  ⚠️  File terlalu kecil: {size} bytes")
-                return None
-        else:
-            print(f"  ❌ Piper error: {result.stderr.decode()[:200]}")
-            return None
 
+        print(f"  ❌ Piper error: {result.stderr.decode()[:300]}")
+        return None
     except Exception as e:
         print(f"  ❌ Exception: {type(e).__name__}: {e}")
         return None
 
 
 def make_voice(text):
-    """Wrapper — coba Piper, fallback ke tanpa audio."""
     return make_voice_piper(text)
 
 
@@ -225,7 +211,12 @@ def get_subtitle_opts(style):
 
 def make_scene_clip(image_path, scene_text, duration, subtitle_style):
     img_clip = ImageClip(image_path).set_duration(duration)
-    img_clip = img_clip.resize(lambda t: 1 + 0.04 * t)
+    # FIX: pakai resize sederhana (kompatibel Pillow 9.5)
+    try:
+        img_clip = img_clip.resize(lambda t: 1 + 0.04 * t)
+    except Exception as e:
+        print(f"⚠️  Resize gagal: {e}")
+
     clips = [img_clip]
     if SHOW_SUBTITLE and scene_text.strip():
         wrapped = "\n".join(textwrap.wrap(scene_text, width=38))
@@ -245,7 +236,7 @@ def make_scene_clip(image_path, scene_text, duration, subtitle_style):
 def main():
     print("=" * 70)
     print(f"MODEL: {MODEL_ID} | STYLE: {IMAGE_STYLE} | SCENES: {SCENES_COUNT}")
-    print(f"TTS: Piper (offline) | VOICE: {VOICE}")
+    print(f"TTS: Piper | VOICE: {VOICE}")
     print("=" * 70)
 
     scenes = split_story_into_scenes(PROMPT, SCENES_COUNT)
@@ -258,7 +249,6 @@ def main():
 
     if not image_paths: raise SystemExit("Tidak ada gambar di-generate.")
 
-    # TTS Piper
     voice_path = make_voice(PROMPT)
 
     if voice_path and os.path.exists(voice_path):
