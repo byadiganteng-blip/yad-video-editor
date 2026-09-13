@@ -288,6 +288,66 @@ object GitHubApiClient {
     }
 
     /**
+     * Hapus artifact dari GitHub setelah berhasil didownload.
+     */
+    fun cleanupArtifact(token: String, runId: Long) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Ambil daftar artifact
+                val url = "https://api.github.com/repos/$OWNER/$REPO/actions/runs/$runId/artifacts"
+                val request = Request.Builder()
+                    .url(url)
+                    .header("Authorization", "Bearer $token")
+                    .header("Accept", "application/vnd.github+json")
+                    .build()
+
+                val response = client.newCall(request).execute()
+                val body = response.body?.string() ?: ""
+                response.close()
+
+                val json = JSONObject(body)
+                val artifacts = json.getJSONArray("artifacts")
+
+                for (i in 0 until artifacts.length()) {
+                    val artifact = artifacts.getJSONObject(i)
+                    val artifactId = artifact.getLong("id")
+                    
+                    val delUrl = "https://api.github.com/repos/$OWNER/$REPO/actions/artifacts/$artifactId"
+                    val delReq = Request.Builder()
+                        .url(delUrl)
+                        .header("Authorization", "Bearer $token")
+                        .header("Accept", "application/vnd.github+json")
+                        .delete()
+                        .build()
+                    
+                    val delResp = client.newCall(delReq).execute()
+                    val code = delResp.code
+                    delResp.close()
+                    
+                    AutoLogSaver.log(TAG, "Artifact deleted: $artifactId (HTTP $code)")
+                }
+
+                // Hapus workflow run
+                val runDelUrl = "https://api.github.com/repos/$OWNER/$REPO/actions/runs/$runId"
+                val runDelReq = Request.Builder()
+                    .url(runDelUrl)
+                    .header("Authorization", "Bearer $token")
+                    .header("Accept", "application/vnd.github+json")
+                    .delete()
+                    .build()
+                
+                val runDelResp = client.newCall(runDelReq).execute()
+                val runCode = runDelResp.code
+                runDelResp.close()
+                
+                AutoLogSaver.log(TAG, "Workflow run deleted: $runId (HTTP $runCode)")
+            } catch (e: Exception) {
+                AutoLogSaver.logError(TAG, "cleanupArtifact failed", e)
+            }
+        }
+    }
+
+    /**
      * Unzip artifact — cari file .mp4.
      */
     private fun unzipArtifact(zipFile: File, destDir: File): File? {
