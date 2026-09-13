@@ -2,7 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
@@ -21,26 +20,24 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.YadVideoEditor"
-        tools:replace="android:allowBackup,android:label">
+        tools:replace="android:allowBackup,android:label,android:name">
 
-        <!-- AdMob App ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713"
             tools:replace="android:value" />
 
-        <!-- MainActivity = LAUNCHER -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.YadVideoEditor">
+            android:theme="@style/Theme.YadVideoEditor"
+            tools:replace="android:exported,android:theme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- ActionsActivity — perlu didaftarkan karena tidak ada di main manifest -->
         <activity
             android:name=".ActionsActivity"
             android:exported="false"
