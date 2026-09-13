@@ -27,7 +27,6 @@ class MainActivity : AppCompatActivity() {
     // ============================================================
     //  STATE
     // ============================================================
-    private var currentMode: GenerationMode = GenerationMode.DIRECT
 
     // ============================================================
     //  LIFECYCLE
@@ -42,7 +41,6 @@ class MainActivity : AppCompatActivity() {
         AdMobHelper.loadRewarded(this)
 
         // Setup UI
-        setupGenerationModeSpinner()
         setupBannerAd()
         setupCards()
     }
@@ -50,7 +48,6 @@ class MainActivity : AppCompatActivity() {
     // ============================================================
     //  SPINNER MODE — pakai GenerationMode enum
     // ============================================================
-    private fun setupGenerationModeSpinner() {
         val spinner = findViewById<Spinner>(R.id.spinnerGenerationMode)
         val tvDesc = findViewById<TextView>(R.id.tvModeDescription)
 
@@ -138,47 +135,4 @@ class MainActivity : AppCompatActivity() {
     //  GENERATE VIDEO — per mode
     // ============================================================
     @Suppress("unused")
-    private fun generateVideoByMode(prompt: String, outputPath: String) {
-        when (currentMode.type) {
-            ModeType.DIRECT -> {
-                DirectVideoGenerator.generateFromText(
-                    this, prompt, 5, outputPath,
-                    onSuccess = { path ->
-                        runOnUiThread {
-                            Toast.makeText(this, "Video dibuat: $path", Toast.LENGTH_LONG).show()
-                        }
-                    },
-                    onError = { err ->
-                        runOnUiThread {
-                            Toast.makeText(this, "Error: $err", Toast.LENGTH_LONG).show()
-                        }
-                    }
-                )
-            }
-
-            ModeType.GOOGLE_IMAGE -> {
-                GoogleImageGenerator.generateFromText(
-                    this, prompt, 5, outputPath,
-                    onSuccess = { path ->
-                        runOnUiThread {
-                            Toast.makeText(this, "Video dari Google: $path", Toast.LENGTH_LONG).show()
-                        }
-                    },
-                    onError = { err ->
-                        runOnUiThread {
-                            Toast.makeText(this, "Error: $err", Toast.LENGTH_LONG).show()
-                        }
-                    }
-                )
-            }
-
-            ModeType.AI_MODEL -> {
-                Toast.makeText(
-                    this,
-                    "Pakai model AI: " + currentMode.label,
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
 }
