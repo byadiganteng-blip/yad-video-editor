@@ -50,8 +50,10 @@ object GoogleImageGenerator {
 
                 if (downloaded) {
                     Log.d(TAG, "Gambar berhasil di-download: ${imageFile.length()} bytes")
+                    AutoLogSaver.log(TAG, "Gambar OK: ${imageFile.length()} bytes")
                 } else {
-                    Log.w(TAG, "Gagal download gambar, fallback ke DirectVideoGenerator tanpa background")
+                    Log.w(TAG, "Gagal download gambar, fallback")
+                    AutoLogSaver.warn(TAG, "Gagal download gambar — fallback ke DirectVideoGenerator")
                 }
 
                 // 2. Generate video (dengan atau tanpa background)
@@ -63,11 +65,13 @@ object GoogleImageGenerator {
                     },
                     onError = { err ->
                         Log.e(TAG, "DirectVideoGenerator error: $err")
+                        AutoLogSaver.logError(TAG, "DirectVideoGenerator error", Exception(err))
                         onError(err)
                     }
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Fatal error", e)
+                AutoLogSaver.logError(TAG, "Fatal error", e)
                 onError("Error: ${e.message}")
             }
         }.start()
