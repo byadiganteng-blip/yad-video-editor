@@ -21,8 +21,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         SecureConfig.init(this)
         try { setContentView(R.layout.activity_main)
-
-        // === SEMBUNYIKAN IKLAN DI ADMIN APK ===
         // Admin panel tidak perlu iklan — hindari risiko suspend AdMob
         try {
             val bannerAd = findViewById<android.view.View>(R.id.bannerAd)
