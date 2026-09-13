@@ -1,0 +1,135 @@
+name: Generate Video
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Mode generate'
+        required: true
+        default: 'direct'
+        type: choice
+        options:
+          - direct
+          - google_image
+          - ai_model
+      prompt:
+        description: 'Teks/cerita untuk video'
+        required: true
+        type: string
+      voice:
+        description: 'Suara narasi'
+        required: false
+        default: 'id-ID-Standard-A'
+        type: string
+      watermark:
+        description: 'Watermark (opsional)'
+        required: false
+        default: ''
+        type: string
+      show_subtitle:
+        description: 'Tampilkan subtitle'
+        required: false
+        default: 'false'
+        type: string
+      subtitle_style:
+        description: 'Style subtitle'
+        required: false
+        default: 'gradient'
+        type: string
+      model_id:
+        description: 'AI Model ID (untuk mode ai_model)'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  generate:
+    name: Generate Video
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu
+          pip install --quiet edge-tts requests pillow
+      
+      - name: Generate TTS
+        run: |
+          mkdir -p output
+          echo "=== Generating TTS ==="
+          python3 -c "
+          import asyncio, edge_tts, sys
+          
+          async def main():
+              text = '${{ github.event.inputs.prompt }}'
+              voice = '${{ github.event.inputs.voice }}' or 'id-ID-Standard-A'
+              output = 'output/narration.mp3'
+              communicate = edge_tts.Communicate(text, voice)
+              await communicate.save(output)
+              print(f'TTS saved: {output}')
+          
+          asyncio.run(main())
+          "
+      
+      - name: Generate Video
+        run: |
+          echo "=== Generating Video ==="
+          # Buat background gradient
+          ffmpeg -f lavfi -i "color=c=0x1E3A8A:s=1280x720:d=5" \
+                 -vf "drawtext=text='${{ github.event.inputs.prompt }}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2:box=1:boxcolor=black@0.5:boxborderw=10" \
+                 -c:v libx264 -pix_fmt yuv420p -t 5 output/video_noaudio.mp4 -y
+          
+          # Mux audio + video
+          ffmpeg -i output/video_noaudio.mp4 -i output/narration.mp3 \
+                 -c:v copy -c:a aac -shortest output/final_video.mp4 -y
+          
+          ls -la output/
+          echo "=== Video generated: $(du -h output/final_video.mp4) ==="
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-output
+          path: output/final_video.mp4
+          retention-days: 1
+          if-no-files-found: error
+      
+      - name: Cleanup Old Runs
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'generate-video.yml',
+              per_page: 100
+            });
+            
+            const now = Date.now();
+            const maxAge = 24 * 60 * 60 * 1000; // 24 jam
+            
+            for (const run of runs.data.workflow_runs) {
+              const age = now - new Date(run.created_at).getTime();
+              if (age > maxAge && run.id !== context.runId) {
+                try {
+                  await github.rest.actions.deleteWorkflowRun({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    run_id: run.id
+                  });
+                  console.log('Deleted old run: ' + run.id);
+                } catch (e) {
+                  console.log('Failed to delete: ' + e.message);
+                }
+              }
+            }
