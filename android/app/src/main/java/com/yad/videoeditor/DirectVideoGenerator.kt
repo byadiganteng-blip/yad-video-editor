@@ -115,7 +115,6 @@ object DirectVideoGenerator {
      */
     private fun findSupportedColorFormat(): Int {
         try {
-            val codecInfo = MediaCodecInfo()
             // Ambil codec AVC encoder
             val codecList = android.media.MediaCodecList(android.media.MediaCodecList.REGULAR_CODECS)
             for (info in codecList.codecInfos) {
