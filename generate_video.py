@@ -10,6 +10,35 @@ from pathlib import Path
 import torch
 from diffusers import StableDiffusionPipeline
 from moviepy.editor import (ImageClip, AudioFileClip, CompositeVideoClip,
+
+# ============================================================
+#  FALLBACK TTS — kalau Piper gagal
+# ============================================================
+def fallback_tts(text, output_path):
+    """Fallback pakai gTTS (Google TTS) kalau Piper gagal."""
+    try:
+        from gtts import gTTS
+        tts = gTTS(text=text, lang='id', slow=False)
+        tts.save(output_path)
+        print(f"  ✅ Fallback gTTS berhasil: {output_path}")
+        return True
+    except Exception as e:
+        print(f"  ❌ gTTS gagal: {e}")
+        return False
+
+def espeak_tts(text, output_path):
+    """Fallback pakai espeak-ng (offline)."""
+    try:
+        import subprocess
+        subprocess.run(['espeak-ng', '-v', 'id', '-w', output_path, text],
+                       check=True, capture_output=True)
+        print(f"  ✅ espeak-ng berhasil: {output_path}")
+        return True
+    except Exception as e:
+        print(f"  ❌ espeak-ng gagal: {e}")
+        return False
+
+
                              TextClip, concatenate_videoclips)
 
 PROMPT         = os.environ["PROMPT"]
