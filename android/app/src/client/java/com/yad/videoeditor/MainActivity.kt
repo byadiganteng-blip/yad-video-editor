@@ -109,14 +109,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Actions → ActionsActivity
-        findViewById<CardView>(R.id.cardActions)?.setOnClickListener {
-            try {
-                startActivity(Intent(this, ActionsActivity::class.java))
-            } catch (e: Exception) {
-                Toast.makeText(this, "Actions: " + e.message, Toast.LENGTH_SHORT).show()
-            }
-        }
+        // Card Aksi Cepat dihapus
+
 
         // Instructions → InstructionsActivity
         findViewById<CardView>(R.id.cardInstructions)?.setOnClickListener {
