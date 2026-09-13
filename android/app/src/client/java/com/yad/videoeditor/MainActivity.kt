@@ -6,6 +6,11 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Spinner
+import android.widget.TextView
+import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -17,6 +22,9 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
+    // Mode generate video yang dipilih user
+    private var currentMode: GenerationMode = GenerationMode.DIRECT
+
 
     private val PERMISSION_REQUEST_CODE = 1001
     private lateinit var tvBanner: TextView
@@ -26,7 +34,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         SecureConfig.init(this)
-        try { setContentView(R.layout.activity_main) }
+        try { setContentView(R.layout.activity_main)
+
+        // === SETUP SPINNER MODE GENERATE ===
+        setupGenerationModeSpinner()
+ }
         catch (e: Exception) { finish(); return }
 
         FirebaseManager.registerUser(this)
@@ -166,5 +178,87 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("Ya") { _, _ -> finish() }
             .setNegativeButton("Batal", null)
             .show()
+    }
+
+    // ============================================================
+    //  SPINNER MODE GENERATE VIDEO
+    // ============================================================
+    private fun setupGenerationModeSpinner() {
+        val spinner = findViewById<Spinner>(R.id.spinnerGenerationMode)
+        val tvDesc = findViewById<TextView>(R.id.tvModeDescription)
+
+        val modes = GenerationMode.values()
+        val labels = modes.map { it.label }
+
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            labels
+        )
+        spinner.adapter = adapter
+
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                currentMode = modes[position]
+                tvDesc?.text = currentMode.description
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                currentMode = GenerationMode.DIRECT
+            }
+        }
+    }
+
+    // ============================================================
+    //  GENERATE VIDEO SESUAI MODE
+    // ============================================================
+    private fun generateVideoByMode(prompt: String, outputPath: String) {
+        when (currentMode) {
+            GenerationMode.DIRECT -> {
+                DirectVideoGenerator.generateFromText(
+                    this, prompt, 5, outputPath,
+                    onSuccess = { path ->
+                        runOnUiThread {
+                            Toast.makeText(this, "✅ Video dibuat: $path",
+                                Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    onError = { err ->
+                        runOnUiThread {
+                            Toast.makeText(this, "❌ $err",
+                                Toast.LENGTH_LONG).show()
+                        }
+                    }
+                )
+            }
+            GenerationMode.GOOGLE_IMAGE -> {
+                GoogleImageGenerator.generateFromText(
+                    this, prompt, 5, outputPath,
+                    onSuccess = { path ->
+                        runOnUiThread {
+                            Toast.makeText(this, "✅ Video dari Google: $path",
+                                Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    onError = { err ->
+                        runOnUiThread {
+                            Toast.makeText(this, "❌ $err",
+                                Toast.LENGTH_LONG).show()
+                        }
+                    }
+                )
+            }
+            GenerationMode.AI_MODEL -> {
+                // Panggil API model AI existing
+                Toast.makeText(this, "🎨 Pakai model AI...",
+                    Toast.LENGTH_SHORT).show()
+                // TODO: panggil ApiClient.generateVideo(...)
+            }
+        }
     }
 }
