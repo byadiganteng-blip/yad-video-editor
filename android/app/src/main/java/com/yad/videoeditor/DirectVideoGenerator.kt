@@ -78,8 +78,8 @@ object DirectVideoGenerator {
                     onSuccess(outputPath)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
-                onError("Error: ${e.message}")
+                AutoLogSaver.logError("DirectVideoGenerator", "Generate failed", e)
+                onError("Error: ${e.javaClass.simpleName}: ${e.message}")
             }
         }.start()
     }
