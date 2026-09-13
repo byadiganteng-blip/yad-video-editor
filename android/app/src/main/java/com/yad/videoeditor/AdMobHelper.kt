@@ -27,8 +27,8 @@ object AdMobHelper {
 
     // ⚠️ GANTI dengan Ad Unit ID dari AdMob Anda!
     // Test IDs dari Google (boleh dipakai untuk testing):
-    private const val REWARDED_AD_UNIT = "ca-app-pub-3940256099942544/5224354917"
-    private const val INTERSTITIAL_AD_UNIT = "ca-app-pub-3940256099942544/1033173712"
+    private const val REWARDED_AD_UNIT = "ca-app-pub-2515513620924097/1056594580"
+    private const val INTERSTITIAL_AD_UNIT = "ca-app-pub-2515513620924097/6892596385"
 
     // State
     private var rewardedAd: RewardedAd? = null
