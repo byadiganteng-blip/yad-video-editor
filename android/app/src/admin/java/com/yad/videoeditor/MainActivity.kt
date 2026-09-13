@@ -2,177 +2,97 @@ package com.yad.videoeditor
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
-import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import androidx.cardview.widget.CardView
 
+/**
+ * MainActivity Admin — panel kontrol YAD Admin
+ * Versi minimal & bersih (rewrite).
+ */
 class MainActivity : AppCompatActivity() {
-    private lateinit var tvStatus: TextView
-    private lateinit var tvBanner: TextView
-    private var isForceUpdateOn = false
-    private var isMaintenanceOn = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        SecureConfig.init(this)
-        try { setContentView(R.layout.activity_main)
-        // Admin panel tidak perlu iklan — hindari risiko suspend AdMob
-        try {
-            // Banner tidak ada di admin layout — aman
+        setContentView(R.layout.activity_main)
+
+        // Card: Daftar User
+        val cardUserList = findViewById<CardView>(R.id.cardAdminUserList)
+        cardUserList?.setOnClickListener {
+            Toast.makeText(this, "Buka Daftar User", Toast.LENGTH_SHORT).show()
         }
+
+        // Card: Statistik
+        val cardStats = findViewById<CardView>(R.id.cardAdminStats)
+        cardStats?.setOnClickListener {
+            Toast.makeText(this, "Buka Statistik", Toast.LENGTH_SHORT).show()
         }
-        catch (e: Exception) { finish(); return }
 
-        if (!SecureConfig.isAdmin()) showLoginDialog()
-        else showAdminMenu()
-    }
-
-    private fun showLoginDialog() {
-        val c = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(50, 30, 50, 30)
+        // Card: Broadcast
+        val cardBroadcast = findViewById<CardView>(R.id.cardAdminBroadcast)
+        cardBroadcast?.setOnClickListener {
+            Toast.makeText(this, "Buka Broadcast", Toast.LENGTH_SHORT).show()
         }
-        val etEmail = android.widget.EditText(this).apply {
-            hint = "Email admin"
-            inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+
+        // Card: Push Notif
+        val cardPushNotif = findViewById<CardView>(R.id.cardAdminPushNotif)
+        cardPushNotif?.setOnClickListener {
+            Toast.makeText(this, "Buka Push Notif", Toast.LENGTH_SHORT).show()
         }
-        val etPass = android.widget.EditText(this).apply {
-            hint = "Kata sandi"
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or
-                        android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+
+        // Card: Force Update
+        val cardForceUpdate = findViewById<CardView>(R.id.cardAdminForceUpdate)
+        cardForceUpdate?.setOnClickListener {
+            Toast.makeText(this, "Buka Force Update", Toast.LENGTH_SHORT).show()
         }
-        c.addView(etEmail); c.addView(etPass)
 
-        AlertDialog.Builder(this)
-            .setTitle("🔐 Admin Login")
-            .setView(c)
-            .setCancelable(false)
-            .setPositiveButton("Login") { _, _ ->
-                if (SecureConfig.verifyAdminCredentials(
-                        etEmail.text.toString(), etPass.text.toString())) {
-                    Toast.makeText(this, "✅ Login berhasil", Toast.LENGTH_SHORT).show()
-                    showAdminMenu()
-                } else {
-                    Toast.makeText(this, "❌ Salah", Toast.LENGTH_LONG).show()
-                    finish()
-                }
-            }
-            .setNegativeButton("Batal") { _, _ -> finish() }
-            .show()
-    }
-
-    private fun showAdminMenu() {
-        tvStatus = findViewById(R.id.tvStatus)
-        tvBanner = findViewById(R.id.tvBanner)
-        findViewById<TextView>(R.id.tvCredit)?.text =
-            "Login: ${SecureConfig.getAdminEmail()}"
-
-        // MANAJEMEN USER
-        clickCard(R.id.cardAdminUserList) { start(AdminUserListActivity::class.java) }
-        clickCard(R.id.cardAdminStats) { start(AdminStatsActivity::class.java) }
-
-        // KOMUNIKASI
-        clickCard(R.id.cardAdminBroadcast) { start(AdminBroadcastActivity::class.java) }
-        clickCard(R.id.cardAdminPushNotif) { start(AdminPushNotifActivity::class.java) }
-
-        // KONTROL APK
-        clickCard(R.id.cardAdminForceUpdate) { toggleForceUpdate() }
-        clickCard(R.id.cardAdminMaintenance) { toggleMaintenance() }
-
-        // KONFIGURASI
-        clickCard(R.id.cardAdminToken) { start(AdminSettingsActivity::class.java) }
-        clickCard(R.id.cardAdminModels) { start(AdminModelsActivity::class.java) }
-        clickCard(R.id.cardAdminConfig) { start(AdminSettingsActivity::class.java) }
-
-        // DATA & LOG
-        clickCard(R.id.cardAdminLogs) { start(AdminLogsActivity::class.java) }
-        clickCard(R.id.cardAdminBackup) { start(AdminBackupActivity::class.java) }
-
-        // LAINNYA
-        clickCard(R.id.cardInstructions) { start(InstructionsActivity::class.java) }
-        clickCard(R.id.cardAdminLogout) { logout() }
-
-        // Listen config
-        lifecycleScope.launch {
-            FirebaseManager.configFlow().collectLatest { cfg ->
-                isForceUpdateOn = cfg.forceUpdate
-                isMaintenanceOn = cfg.maintenanceMode
-                tvStatus?.text = "🔄 Force: ${if (cfg.forceUpdate) "ON" else "OFF"} | " +
-                                 "🛠️ Maint: ${if (cfg.maintenanceMode) "ON" else "OFF"} | " +
-                                 "📢 Ads: ${if (cfg.showAds) "ON" else "OFF"}"
-            }
+        // Card: Maintenance
+        val cardMaintenance = findViewById<CardView>(R.id.cardAdminMaintenance)
+        cardMaintenance?.setOnClickListener {
+            Toast.makeText(this, "Buka Maintenance", Toast.LENGTH_SHORT).show()
         }
-        lifecycleScope.launch {
-            FirebaseManager.statsFlow().collectLatest { stats ->
-                if (stats != null) {
-                    tvBanner?.text = "📊 Users: ${stats["total_users"] ?: 0} | " +
-                                     "Videos: ${stats["total_videos"] ?: 0} | " +
-                                     "Premium: ${stats["total_premium"] ?: 0}"
-                    tvBanner?.visibility = View.VISIBLE
-                }
-            }
+
+        // Card: Set Token
+        val cardToken = findViewById<CardView>(R.id.cardAdminToken)
+        cardToken?.setOnClickListener {
+            Toast.makeText(this, "Buka Set Token", Toast.LENGTH_SHORT).show()
+        }
+
+        // Card: Manage Models
+        val cardModels = findViewById<CardView>(R.id.cardAdminModels)
+        cardModels?.setOnClickListener {
+            Toast.makeText(this, "Buka Manage Models", Toast.LENGTH_SHORT).show()
+        }
+
+        // Card: Set Config
+        val cardConfig = findViewById<CardView>(R.id.cardAdminConfig)
+        cardConfig?.setOnClickListener {
+            Toast.makeText(this, "Buka Set Config", Toast.LENGTH_SHORT).show()
+        }
+
+        // Card: Logs
+        val cardLogs = findViewById<CardView>(R.id.cardAdminLogs)
+        cardLogs?.setOnClickListener {
+            Toast.makeText(this, "Buka Logs", Toast.LENGTH_SHORT).show()
+        }
+
+        // Card: Backup
+        val cardBackup = findViewById<CardView>(R.id.cardAdminBackup)
+        cardBackup?.setOnClickListener {
+            Toast.makeText(this, "Buka Backup", Toast.LENGTH_SHORT).show()
+        }
+
+        // Card: Instructions
+        val cardInstructions = findViewById<CardView>(R.id.cardInstructions)
+        cardInstructions?.setOnClickListener {
+            Toast.makeText(this, "Buka Panduan", Toast.LENGTH_SHORT).show()
+        }
+
+        // Card: Logout
+        val cardLogout = findViewById<CardView>(R.id.cardAdminLogout)
+        cardLogout?.setOnClickListener {
+            Toast.makeText(this, "Logout", Toast.LENGTH_SHORT).show()
+            finish()
         }
     }
-
-    private fun toggleForceUpdate() {
-        val newVal = !isForceUpdateOn
-        lifecycleScope.launch {
-            val ok = FirebaseManager.updateConfig("force_update", newVal)
-            if (ok) {
-                isForceUpdateOn = newVal
-                Toast.makeText(this@MainActivity,
-                    "✅ Force Update ${if (newVal) "ON" else "OFF"}",
-                    Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this@MainActivity, "❌ Gagal", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun toggleMaintenance() {
-        val newVal = !isMaintenanceOn
-        AlertDialog.Builder(this)
-            .setTitle("Maintenance Mode")
-            .setMessage("${if (newVal) "Aktifkan" else "Matikan"} maintenance?")
-            .setPositiveButton("Ya") { _, _ ->
-                lifecycleScope.launch {
-                    val ok = FirebaseManager.updateConfig("maintenance_mode", newVal)
-                    if (ok) {
-                        isMaintenanceOn = newVal
-                        Toast.makeText(this@MainActivity,
-                            "✅ Maintenance ${if (newVal) "ON" else "OFF"}",
-                            Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this@MainActivity,
-                            "❌ Gagal", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-            .setNegativeButton("Batal", null)
-            .show()
-    }
-
-    private fun logout() {
-        SecureConfig.clearAdmin()
-        Toast.makeText(this, "Logout", Toast.LENGTH_SHORT).show()
-        finish()
-    }
-
-    private fun clickCard(id: Int, action: () -> Unit) {
-        try {
-            findViewById<View>(id)?.setOnClickListener {
-                try { action() }
-                catch (e: Exception) {
-                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
-        } catch (_: Exception) {}
-    }
-
-    private fun start(cls: Class<*>) { startActivity(Intent(this, cls)) }
 }
