@@ -1,18 +1,28 @@
 package com.yad.videoeditor
 
 import android.content.Context
-import com.arthenica.ffmpegkit.FFmpegKit
-import com.arthenica.ffmpegkit.ReturnCode
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMuxer
 import java.io.File
+import java.nio.ByteBuffer
 
 /**
- * VideoAudioMuxer — gabungkan audio ke video pakai FFmpeg
- * Fix: video hasil generate tidak ada suara
+ * VideoAudioMuxer — gabungkan audio ke video TANPA FFmpeg
+ * Pakai MediaMuxer + MediaExtractor bawaan Android (API 18+)
+ *
+ * Cara kerja:
+ *   1. Buka video source → ekstrak track video
+ *   2. Buka audio source → ekstrak track audio
+ *   3. Mux ke output baru
  */
 object VideoAudioMuxer {
 
+    private const val TIMEOUT_US = 10000L
+
     /**
-     * Gabungkan video (tanpa audio) + audio file → output video dengan suara
+     * Gabungkan video + audio jadi 1 file output
      */
     fun muxAudioToVideo(
         context: Context,
@@ -22,77 +32,130 @@ object VideoAudioMuxer {
         onSuccess: (String) -> Unit,
         onError: (String) -> Unit
     ) {
-        val videoFile = File(videoPath)
-        val audioFile = File(audioPath)
+        Thread {
+            try {
+                val videoFile = File(videoPath)
+                val audioFile = File(audioPath)
+                if (!videoFile.exists()) {
+                    onError("Video tidak ditemukan: $videoPath")
+                    return@Thread
+                }
+                if (!audioFile.exists()) {
+                    onError("Audio tidak ditemukan: $audioPath")
+                    return@Thread
+                }
 
-        if (!videoFile.exists()) {
-            onError("Video file tidak ditemukan: $videoPath")
-            return
-        }
-        if (!audioFile.exists()) {
-            onError("Audio file tidak ditemukan: $audioPath")
-            return
-        }
+                val muxer = MediaMuxer(outputPath,
+                    MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
 
-        // FFmpeg command: gabung video + audio, video di-copy, audio di-encode AAC
-        val cmd = arrayOf(
-            "-y",
-            "-i", videoPath,
-            "-i", audioPath,
-            "-c:v", "copy",           // video tidak di-reencode (cepat)
-            "-c:a", "aac",            // audio encode ke AAC
-            "-b:a", "192k",           // bitrate audio
-            "-shortest",              // potong sesuai durasi terpendek
-            "-map", "0:v:0",          // ambil video dari input 0
-            "-map", "1:a:0",          // ambil audio dari input 1
-            outputPath
-        )
+                val videoExtractor = MediaExtractor()
+                videoExtractor.setDataSource(videoPath)
 
-        FFmpegKit.executeAsync(cmd.joinToString(" ")) { session ->
-            val returnCode = session.returnCode
-            if (ReturnCode.isSuccess(returnCode)) {
+                val audioExtractor = MediaExtractor()
+                audioExtractor.setDataSource(audioPath)
+
+                // === TRACK VIDEO ===
+                var videoTrackIndex = -1
+                var videoFormat: MediaFormat? = null
+                for (i in 0 until videoExtractor.trackCount) {
+                    val fmt = videoExtractor.getTrackFormat(i)
+                    val mime = fmt.getString(MediaFormat.KEY_MIME) ?: continue
+                    if (mime.startsWith("video/")) {
+                        videoExtractor.selectTrack(i)
+                        videoFormat = fmt
+                        videoTrackIndex = muxer.addTrack(fmt)
+                        break
+                    }
+                }
+
+                // === TRACK AUDIO ===
+                var audioTrackIndex = -1
+                var audioFormat: MediaFormat? = null
+                for (i in 0 until audioExtractor.trackCount) {
+                    val fmt = audioExtractor.getTrackFormat(i)
+                    val mime = fmt.getString(MediaFormat.KEY_MIME) ?: continue
+                    if (mime.startsWith("audio/")) {
+                        audioExtractor.selectTrack(i)
+                        audioFormat = fmt
+                        audioTrackIndex = muxer.addTrack(fmt)
+                        break
+                    }
+                }
+
+                if (videoTrackIndex < 0) {
+                    muxer.release()
+                    videoExtractor.release()
+                    audioExtractor.release()
+                    onError("Video tidak punya track video")
+                    return@Thread
+                }
+                if (audioTrackIndex < 0) {
+                    muxer.release()
+                    videoExtractor.release()
+                    audioExtractor.release()
+                    onError("Audio tidak punya track audio")
+                    return@Thread
+                }
+
+                muxer.start()
+
+                // === COPY VIDEO SAMPLES ===
+                val videoBufSize = videoFormat!!.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE)
+                val videoBuf = ByteBuffer.allocate(if (videoBufSize > 0) videoBufSize else 1024 * 1024)
+                val videoInfo = MediaCodec.BufferInfo()
+                while (true) {
+                    videoInfo.offset = 0
+                    videoInfo.size = videoExtractor.readSampleData(videoBuf, 0)
+                    if (videoInfo.size < 0) break
+                    videoInfo.presentationTimeUs = videoExtractor.sampleTime
+                    videoInfo.flags = videoExtractor.sampleFlags
+                    muxer.writeSampleData(videoTrackIndex, videoBuf, videoInfo)
+                    videoExtractor.advance()
+                }
+
+                // === COPY AUDIO SAMPLES ===
+                val audioBufSize = audioFormat!!.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE)
+                val audioBuf = ByteBuffer.allocate(if (audioBufSize > 0) audioBufSize else 1024 * 1024)
+                val audioInfo = MediaCodec.BufferInfo()
+                while (true) {
+                    audioInfo.offset = 0
+                    audioInfo.size = audioExtractor.readSampleData(audioBuf, 0)
+                    if (audioInfo.size < 0) break
+                    audioInfo.presentationTimeUs = audioExtractor.sampleTime
+                    audioInfo.flags = audioExtractor.sampleFlags
+                    muxer.writeSampleData(audioTrackIndex, audioBuf, audioInfo)
+                    audioExtractor.advance()
+                }
+
+                muxer.stop()
+                muxer.release()
+                videoExtractor.release()
+                audioExtractor.release()
+
                 onSuccess(outputPath)
-            } else {
-                onError("FFmpeg gagal: ${session.failStackTrace}")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onError("Mux error: ${e.message}")
             }
-        }
-    }
-
-    /**
-     * Tambahkan audio TTS (text-to-speech) ke video
-     * Kalau video tidak punya audio sama sekali, generate dari teks
-     */
-    fun addTtsAudioToVideo(
-        context: Context,
-        videoPath: String,
-        text: String,
-        outputPath: String,
-        onSuccess: (String) -> Unit,
-        onError: (String) -> Unit
-    ) {
-        val ttsFile = File(context.cacheDir, "tts_temp.mp3")
-
-        // Generate TTS dulu
-        TtsHelper.synthesizeToFile(context, text, ttsFile.absolutePath) { success ->
-            if (!success) {
-                onError("Gagal generate TTS")
-                return@synthesizeToFile
-            }
-            // Lalu mux ke video
-            muxAudioToVideo(context, videoPath, ttsFile.absolutePath, outputPath,
-                onSuccess, onError)
-        }
+        }.start()
     }
 
     /**
      * Cek apakah video punya audio stream
      */
-    fun hasAudioStream(videoPath: String, callback: (Boolean) -> Unit) {
-        val cmd = "-i $videoPath -hide_banner"
-        FFmpegKit.executeAsync(cmd) { session ->
-            val output = session.allLogsAsString ?: ""
-            // FFmpeg print stream info ke stderr, cek ada "Audio:"
-            callback(output.contains("Audio:", ignoreCase = true))
+    fun hasAudioStream(videoPath: String): Boolean {
+        return try {
+            val ex = MediaExtractor()
+            ex.setDataSource(videoPath)
+            var has = false
+            for (i in 0 until ex.trackCount) {
+                val mime = ex.getTrackFormat(i).getString(MediaFormat.KEY_MIME) ?: continue
+                if (mime.startsWith("audio/")) { has = true; break }
+            }
+            ex.release()
+            has
+        } catch (e: Exception) {
+            false
         }
     }
 }
