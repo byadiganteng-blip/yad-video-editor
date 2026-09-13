@@ -1,560 +1,476 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:ads="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_light"
-    android:fillViewport="true">
+    android:background="@color/bg_light">
 
-    <LinearLayout
-        android:orientation="vertical"
+    <!-- Banner Ad di BOTTOM -->
+    <com.google.android.gms.ads.AdView
+        android:id="@+id/bannerAd"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        ads:adSize="BANNER"
+        ads:adUnitId="ca-app-pub-3940256099942544/6300978111"/>
 
-        <!-- HEADER -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/bannerAd"
+        android:fillViewport="true">
+
         <LinearLayout
-            android:id="@+id/headerLayout"
             android:orientation="vertical"
-            android:background="@drawable/header_gradient"
-            android:padding="32dp"
-            android:gravity="center"
-            android:clickable="true"
-            android:focusable="true"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <ImageView
-                android:src="@drawable/ic_video_editor"
-                android:layout_width="64dp"
-                android:layout_height="64dp"/>
-
-            <TextView
-                android:id="@+id/tvAppTitle"
-                android:text="@string/app_name"
-                android:textColor="@color/text_white"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:layout_marginTop="12dp"
+            <!-- HEADER -->
+            <LinearLayout
+                android:id="@+id/headerLayout"
+                android:orientation="vertical"
+                android:background="@drawable/header_gradient"
+                android:padding="32dp"
                 android:gravity="center"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-
-            <TextView
-                android:id="@+id/tvCredit"
-                android:text="Created by KARYADI"
-                android:textColor="#FFD54F"
-                android:textSize="12sp"
-                android:layout_marginTop="4dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-
-            <TextView
-                android:id="@+id/tvStatus"
-                android:text=""
-                android:textColor="#FFFFFF"
-                android:textSize="11sp"
-                android:layout_marginTop="4dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-
-            <TextView
-                android:id="@+id/tvBanner"
-                android:text=""
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:padding="8dp"
-                android:background="#33FFFFFF"
-                android:visibility="gone"
-                android:layout_marginTop="8dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:orientation="vertical"
-            android:padding="16dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <!-- Video Saya -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardVideoList"
-                android:layout_marginBottom="12dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
 
-                <LinearLayout
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical"
+                <ImageView
+                    android:src="@drawable/ic_video_editor"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"/>
+
+                <TextView
+                    android:id="@+id/tvAppTitle"
+                    android:text="@string/app_name"
+                    android:textColor="@color/text_white"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:id="@+id/tvCredit"
+                    android:text="Created by KARYADI"
+                    android:textColor="#FFD54F"
+                    android:textSize="12sp"
+                    android:layout_marginTop="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:id="@+id/tvStatus"
+                    android:text=""
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:layout_marginTop="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:id="@+id/tvBanner"
+                    android:text=""
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp"
+                    android:padding="8dp"
+                    android:background="#33FFFFFF"
+                    android:visibility="gone"
+                    android:layout_marginTop="8dp"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
 
-                    <ImageView
-                        android:src="@drawable/ic_download"
-                        android:background="@color/btn_blue"
-                        android:padding="12dp"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"/>
+            <LinearLayout
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
 
+                <!-- Video Saya -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardVideoList"
+                    android:layout_marginBottom="12dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp">
                     <LinearLayout
-                        android:orientation="vertical"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:padding="16dp"
+                        android:gravity="center_vertical"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content">
-
+                        <ImageView
+                            android:src="@drawable/ic_download"
+                            android:background="@color/btn_blue"
+                            android:padding="12dp"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"/>
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_weight="1"
+                            android:layout_marginStart="16dp"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content">
+                            <TextView
+                                android:text="Video Saya"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"/>
+                            <TextView
+                                android:text="Lihat &amp; download hasil video"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_secondary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"/>
+                        </LinearLayout>
                         <TextView
-                            android:text="Video Saya"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"/>
-
-                        <TextView
-                            android:text="Lihat &amp; download hasil video"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"/>
-                    </LinearLayout>
-
-                    <TextView
-                        android:text=">"
-                        android:textSize="28sp"
-                        android:textColor="@color/primary"
-                        android:padding="8dp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Video Editor -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardEditor"
-                android:layout_marginBottom="12dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <ImageView
-                        android:src="@drawable/ic_video_editor"
-                        android:background="@color/btn_purple"
-                        android:padding="12dp"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"/>
-
-                    <LinearLayout
-                        android:orientation="vertical"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content">
-
-                        <TextView
-                            android:text="Video Editor"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"/>
-
-                        <TextView
-                            android:text="Trim, rotate, dan lainnya"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"/>
-                    </LinearLayout>
-
-                    <TextView
-                        android:text=">"
-                        android:textSize="28sp"
-                        android:textColor="@color/primary"
-                        android:padding="8dp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- AI Text to Video -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardAiVideo"
-                android:layout_marginBottom="12dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <LinearLayout
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:background="@drawable/bg_ai_gradient"
-                        android:layout_width="64dp"
-                        android:layout_height="64dp">
-                        <TextView
-                            android:text="🎬"
+                            android:text="&gt;"
                             android:textSize="28sp"
+                            android:textColor="@color/primary"
+                            android:padding="8dp"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                     </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
+                <!-- Video Editor -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardEditor"
+                    android:layout_marginBottom="12dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp">
                     <LinearLayout
-                        android:orientation="vertical"
-                        android:layout_marginStart="16dp"
-                        android:layout_weight="1"
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:padding="16dp"
+                        android:gravity="center_vertical"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content">
-
+                        <ImageView
+                            android:src="@drawable/ic_video_editor"
+                            android:background="@color/btn_purple"
+                            android:padding="12dp"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"/>
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_weight="1"
+                            android:layout_marginStart="16dp"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content">
+                            <TextView
+                                android:text="Video Editor"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"/>
+                            <TextView
+                                android:text="Trim, rotate, dan lainnya"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_secondary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"/>
+                        </LinearLayout>
                         <TextView
-                            android:text="AI Text to Video"
-                            android:textSize="17sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary"
+                            android:text="&gt;"
+                            android:textSize="28sp"
+                            android:textColor="@color/primary"
+                            android:padding="8dp"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
+                <!-- AI Text to Video -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardAiVideo"
+                    android:layout_marginBottom="12dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp">
+                    <LinearLayout
+                        android:orientation="horizontal"
+                        android:padding="16dp"
+                        android:gravity="center_vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:background="@drawable/bg_ai_gradient"
+                            android:layout_width="64dp"
+                            android:layout_height="64dp">
+                            <TextView
+                                android:text="🎬"
+                                android:textSize="28sp"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"/>
+                        </LinearLayout>
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_marginStart="16dp"
+                            android:layout_weight="1"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content">
+                            <TextView
+                                android:text="AI Text to Video"
+                                android:textSize="17sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"/>
+                            <TextView
+                                android:text="Ubah cerita jadi video otomatis"
+                                android:textSize="13sp"
+                                android:textColor="@color/text_secondary"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"/>
+                        </LinearLayout>
                         <TextView
-                            android:text="Ubah cerita jadi video otomatis"
-                            android:textSize="13sp"
-                            android:textColor="@color/text_secondary"
+                            android:text="&gt;"
+                            android:textSize="28sp"
+                            android:textColor="@color/primary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                     </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
-                    <TextView
-                        android:text=">"
-                        android:textSize="28sp"
-                        android:textColor="@color/primary"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Files -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardFiles"
-                android:layout_marginBottom="12dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical"
+                <!-- Files -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardFiles"
+                    android:layout_marginBottom="12dp"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <ImageView
-                        android:src="@drawable/ic_files"
-                        android:background="@color/btn_green"
-                        android:padding="12dp"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"/>
-
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp">
                     <LinearLayout
-                        android:orientation="vertical"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:padding="16dp"
+                        android:gravity="center_vertical"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content">
-
+                        <ImageView
+                            android:src="@drawable/ic_files"
+                            android:background="@color/btn_green"
+                            android:padding="12dp"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"/>
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_weight="1"
+                            android:layout_marginStart="16dp"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content">
+                            <TextView
+                                android:text="Files"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"/>
+                            <TextView
+                                android:text="Kelola file di perangkat"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_secondary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"/>
+                        </LinearLayout>
                         <TextView
-                            android:text="Files"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"/>
-
-                        <TextView
-                            android:text="Kelola file di perangkat"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_width="match_parent"
+                            android:text="&gt;"
+                            android:textSize="28sp"
+                            android:textColor="@color/primary"
+                            android:padding="8dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                     </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
-                    <TextView
-                        android:text=">"
-                        android:textSize="28sp"
-                        android:textColor="@color/primary"
-                        android:padding="8dp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Petunjuk -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardInstructions"
-                android:layout_marginBottom="12dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical"
+                <!-- Petunjuk -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardInstructions"
+                    android:layout_marginBottom="12dp"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <ImageView
-                        android:src="@drawable/ic_instructions"
-                        android:background="@color/btn_orange"
-                        android:padding="12dp"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"/>
-
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp">
                     <LinearLayout
-                        android:orientation="vertical"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:padding="16dp"
+                        android:gravity="center_vertical"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content">
-
+                        <ImageView
+                            android:src="@drawable/ic_instructions"
+                            android:background="@color/btn_orange"
+                            android:padding="12dp"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"/>
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_weight="1"
+                            android:layout_marginStart="16dp"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content">
+                            <TextView
+                                android:text="Petunjuk"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"/>
+                            <TextView
+                                android:text="Cara pakai aplikasi"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_secondary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"/>
+                        </LinearLayout>
                         <TextView
-                            android:text="Petunjuk"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"/>
-
-                        <TextView
-                            android:text="Cara pakai aplikasi"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_width="match_parent"
+                            android:text="&gt;"
+                            android:textSize="28sp"
+                            android:textColor="@color/primary"
+                            android:padding="8dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                     </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
-                    <TextView
-                        android:text=">"
-                        android:textSize="28sp"
-                        android:textColor="@color/primary"
-                        android:padding="8dp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Credit -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardCredit"
-                android:layout_marginBottom="12dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical"
+                <!-- Credit -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardCredit"
+                    android:layout_marginBottom="12dp"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <ImageView
-                        android:src="@drawable/ic_credit"
-                        android:background="@color/btn_pink"
-                        android:padding="12dp"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"/>
-
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp">
                     <LinearLayout
-                        android:orientation="vertical"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:padding="16dp"
+                        android:gravity="center_vertical"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content">
-
+                        <ImageView
+                            android:src="@drawable/ic_credit"
+                            android:background="@color/btn_pink"
+                            android:padding="12dp"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"/>
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_weight="1"
+                            android:layout_marginStart="16dp"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content">
+                            <TextView
+                                android:text="Credit"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"/>
+                            <TextView
+                                android:text="Info pembuat aplikasi"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_secondary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"/>
+                        </LinearLayout>
                         <TextView
-                            android:text="Credit"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"/>
-
-                        <TextView
-                            android:text="Info pembuat aplikasi"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_width="match_parent"
+                            android:text="&gt;"
+                            android:textSize="28sp"
+                            android:textColor="@color/primary"
+                            android:padding="8dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                     </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
-                    <TextView
-                        android:text=">"
-                        android:textSize="28sp"
-                        android:textColor="@color/primary"
-                        android:padding="8dp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Statistik -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardStatistics"
-                android:layout_marginBottom="12dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical"
+                <!-- Statistik -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardStatistics"
+                    android:layout_marginBottom="12dp"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <ImageView
-                        android:src="@drawable/ic_stats"
-                        android:background="@color/btn_teal"
-                        android:padding="12dp"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"/>
-
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp">
                     <LinearLayout
-                        android:orientation="vertical"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:layout_width="0dp"
+                        android:orientation="horizontal"
+                        android:padding="16dp"
+                        android:gravity="center_vertical"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content">
-
+                        <ImageView
+                            android:src="@drawable/ic_stats"
+                            android:background="@color/btn_teal"
+                            android:padding="12dp"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"/>
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_weight="1"
+                            android:layout_marginStart="16dp"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content">
+                            <TextView
+                                android:text="Statistik"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"/>
+                            <TextView
+                                android:text="Data penggunaan aplikasi"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_secondary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"/>
+                        </LinearLayout>
                         <TextView
-                            android:text="Statistik"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"/>
-
-                        <TextView
-                            android:text="Data penggunaan aplikasi"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_width="match_parent"
+                            android:text="&gt;"
+                            android:textSize="28sp"
+                            android:textColor="@color/primary"
+                            android:padding="8dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                     </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
-                    <TextView
-                        android:text=">"
-                        android:textSize="28sp"
-                        android:textColor="@color/primary"
-                        android:padding="8dp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Pengaturan (untuk input token) -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardSettings"
-                android:layout_marginBottom="12dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical"
+                <TextView
+                    android:text="Created by KARYADI, Coding by KARYADI"
+                    android:textSize="11sp"
+                    android:textColor="@color/text_hint"
+                    android:gravity="center"
+                    android:paddingTop="16dp"
+                    android:paddingBottom="8dp"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <ImageView
-                        android:src="@drawable/ic_settings"
-                        android:background="@color/btn_indigo"
-                        android:padding="12dp"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"/>
-
-                    <LinearLayout
-                        android:orientation="vertical"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content">
-
-                        <TextView
-                            android:text="Pengaturan"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"/>
-
-                        <TextView
-                            android:text="Konfigurasi aplikasi"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"/>
-                    </LinearLayout>
-
-                    <TextView
-                        android:text=">"
-                        android:textSize="28sp"
-                        android:textColor="@color/primary"
-                        android:padding="8dp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Footer -->
-            <TextView
-                android:text="Created by KARYADI, Coding by KARYADI"
-                android:textSize="11sp"
-                android:textColor="@color/text_hint"
-                android:gravity="center"
-                android:paddingTop="16dp"
-                android:paddingBottom="8dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
         </LinearLayout>
-    </LinearLayout>
-</ScrollView>
+    </ScrollView>
+</RelativeLayout>
