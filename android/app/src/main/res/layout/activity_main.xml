@@ -85,6 +85,48 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"/>
             </LinearLayout>
+            <!-- ============================================ -->
+            <!-- MODE GENERATE VIDEO (DIRECT / GOOGLE / AI)   -->
+            <!-- ============================================ -->
+            <LinearLayout
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:background="#F0F4FF"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:text="🎬 Mode Generate Video"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary"
+                    android:layout_marginBottom="8dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+                <Spinner
+                    android:id="@+id/spinnerGenerationMode"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="#FFFFFF"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:elevation="2dp"/>
+
+                <TextView
+                    android:id="@+id/tvModeDescription"
+                    android:text="Buat video langsung dari teks tanpa model/gambar"
+                    android:textSize="11sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginTop="6dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+
 
             <LinearLayout
                 android:orientation="vertical"
