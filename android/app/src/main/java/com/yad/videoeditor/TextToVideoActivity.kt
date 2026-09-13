@@ -152,6 +152,10 @@ class TextToVideoActivity : AppCompatActivity() {
         progressBar.progress = pct
         tvPercent.text = "$pct%"
         tvStatus.text = msg
+        // Update floating progress
+        if (FloatingProgressService.isRunning) {
+            FloatingProgressService.update(this, pct, msg)
+        }
     }
 
     private fun pickTxtFile() {
@@ -203,6 +207,9 @@ class TextToVideoActivity : AppCompatActivity() {
         // Simpan state
         GeneratorState.saveRunning(this, true)
         GeneratorState.saveProgress(this, 0, "Memulai...")
+        
+        // Tampilkan floating progress
+        FloatingProgressService.show(this, 0, "Memulai...")
 
         // ============================================================
         //  HANDLE NON-AI: DIRECT & GOOGLE_IMAGE
@@ -221,6 +228,7 @@ class TextToVideoActivity : AppCompatActivity() {
                 onSuccess = { path ->
                     runOnUiThread {
                         lastVideoPath = path
+                        FloatingProgressService.hide(this)
                         progressContainer.visibility = View.GONE
                         tvStatus.text = "Selesai: $path"
                         btnDownloadNow.visibility = View.VISIBLE
@@ -253,6 +261,7 @@ class TextToVideoActivity : AppCompatActivity() {
                 onSuccess = { path ->
                     runOnUiThread {
                         lastVideoPath = path
+                        FloatingProgressService.hide(this)
                         progressContainer.visibility = View.GONE
                         tvStatus.text = "Selesai: $path"
                         btnDownloadNow.visibility = View.VISIBLE
