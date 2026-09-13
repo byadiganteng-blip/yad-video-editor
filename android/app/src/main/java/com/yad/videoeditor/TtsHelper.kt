@@ -1,6 +1,7 @@
 package com.yad.videoeditor
 
 import android.content.Context
+import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import java.io.File
@@ -8,8 +9,7 @@ import java.util.Locale
 import java.util.UUID
 
 /**
- * TtsHelper — Text-to-Speech ke file audio
- * Dipakai untuk generate suara kalau video tidak punya audio
+ * TtsHelper — Text-to-Speech ke file audio (pakai Android TTS native)
  */
 object TtsHelper {
 
@@ -21,6 +21,7 @@ object TtsHelper {
     ) {
         var tts: TextToSpeech? = null
         val utteranceId = UUID.randomUUID().toString()
+        val outFile = File(outputPath)
 
         tts = TextToSpeech(context) { status ->
             if (status != TextToSpeech.SUCCESS) {
@@ -28,9 +29,11 @@ object TtsHelper {
                 return@TextToSpeech
             }
 
-            tts?.language = Locale("id", "ID") // Bahasa Indonesia
-            if (tts?.isLanguageAvailable(Locale("id", "ID")) != TextToSpeech.LANG_AVAILABLE) {
-                tts?.language = Locale.US // fallback English
+            val idLocale = Locale("id", "ID")
+            val langResult = tts?.setLanguage(idLocale)
+            if (langResult == TextToSpeech.LANG_MISSING_DATA ||
+                langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
+                tts?.language = Locale.US
             }
             tts?.setSpeechRate(1.0f)
             tts?.setPitch(1.0f)
@@ -40,7 +43,7 @@ object TtsHelper {
 
                 override fun onDone(utteranceId: String?) {
                     tts?.shutdown()
-                    onComplete(File(outputPath).exists())
+                    onComplete(outFile.exists() && outFile.length() > 0)
                 }
 
                 @Deprecated("Deprecated in Java")
@@ -55,8 +58,8 @@ object TtsHelper {
                 }
             })
 
-            val params = android.os.Bundle()
-            tts?.synthesizeToFile(text, params, File(outputPath), utteranceId)
+            val params = Bundle()
+            tts?.synthesizeToFile(text, params, outFile, utteranceId)
         }
     }
 }
