@@ -11,6 +11,7 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import com.google.android.gms.ads.AdView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -36,6 +37,16 @@ class MainActivity : AppCompatActivity() {
 
         // === SETUP SPINNER MODE GENERATE ===
         setupGenerationModeSpinner()
+        
+        // Load Banner Ad
+        try {
+            val adView = findViewById<AdView>(R.id.bannerAd)
+            if (adView != null) {
+                AdMobHelper.loadBanner(this, adView)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Banner load error: ${e.message}")
+        }
  }
         catch (e: Exception) { finish(); return }
 
