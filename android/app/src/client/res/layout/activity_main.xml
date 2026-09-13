@@ -258,65 +258,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- CARD: AKSI CEPAT -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardActions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                app:cardBackgroundColor="@android:color/transparent"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:background="@drawable/bg_card_modern"
-                    android:padding="18dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="⚡"
-                        android:textSize="32sp"
-                        android:layout_marginEnd="16dp" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Aksi Cepat"
-                            android:textSize="17sp"
-                            android:textStyle="bold"
-                            android:textColor="#FFFFFF" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Shortcut ke fitur populer"
-                            android:textSize="12sp"
-                            android:textColor="#CBD5E1"
-                            android:layout_marginTop="2dp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="›"
-                        android:textSize="28sp"
-                        android:textColor="#F59E0B" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
+            <!-- Card Aksi Cepat DIHAPUS -->
 
             <!-- CARD: INSTRUKSI -->
             <androidx.cardview.widget.CardView
