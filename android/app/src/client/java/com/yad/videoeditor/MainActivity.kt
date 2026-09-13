@@ -3,39 +3,28 @@ package com.yad.videoeditor
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.Spinner
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.google.android.gms.ads.AdView
 
 /**
- * MainActivity Client — FULL FITUR.
+ * MainActivity Client — halaman utama.
  *
- * Pakai semua class asli dari src/main/:
- *   - GenerationMode (enum, 10 mode)
- *   - AdMobHelper (banner, interstitial, rewarded)
- *   - VideoListActivity, VideoEditorActivity, TextToVideoActivity, ActionsActivity
- *   - DirectVideoGenerator, GoogleImageGenerator
+ * Fitur:
+ *   - Banner AdMob
+ *   - Card: Video Saya, Video Editor, AI Text to Video, Aksi Cepat
+ *
+ * Tidak ada "Mode Generate" di halaman ini.
+ * Mode generate (12 mode) ada di TextToVideoActivity.
  */
 class MainActivity : AppCompatActivity() {
 
-    // ============================================================
-    //  STATE
-    // ============================================================
-
-    // ============================================================
-    //  LIFECYCLE
-    // ============================================================
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Init AdMob (sekali saja)
+        // Init AdMob
         AdMobHelper.init(this)
         AdMobHelper.loadInterstitial(this)
         AdMobHelper.loadRewarded(this)
@@ -46,38 +35,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ============================================================
-    //  SPINNER MODE — pakai GenerationMode enum
-    // ============================================================
-        val spinner = findViewById<Spinner>(R.id.spinnerGenerationMode)
-        val tvDesc = findViewById<TextView>(R.id.tvModeDescription)
-
-        val labels = GenerationMode.allLabels()
-        val adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_dropdown_item,
-            labels
-        )
-        spinner.adapter = adapter
-
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                currentMode = GenerationMode.values()[position]
-                tvDesc?.text = currentMode.description
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                currentMode = GenerationMode.DIRECT
-            }
-        }
-    }
-
-    // ============================================================
-    //  BANNER AD — pakai AdMobHelper
+    //  BANNER AD
     // ============================================================
     private fun setupBannerAd() {
         try {
@@ -112,7 +70,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // AI Text to Video → TextToVideoActivity
+        // AI Text to Video → TextToVideoActivity (di sini ada 12 mode)
         findViewById<CardView>(R.id.cardAITextToVideo)?.setOnClickListener {
             try {
                 startActivity(Intent(this, TextToVideoActivity::class.java))
@@ -130,9 +88,4 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    // ============================================================
-    //  GENERATE VIDEO — per mode
-    // ============================================================
-    @Suppress("unused")
 }
