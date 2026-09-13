@@ -1,9 +1,6 @@
 package com.yad.videoeditor
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
@@ -11,232 +8,69 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
-import com.google.android.gms.ads.AdView
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import androidx.cardview.widget.CardView
+import com.google.android.gms.ads.AdView
 
+/**
+ * MainActivity Client — versi bersih (rewrite).
+ * Fitur:
+ *   - Spinner 10 mode generate (2 non-AI + 8 AI)
+ *   - Card ke Video Saya, Video Editor, AI Text to Video, dll
+ *   - Banner Ad di bawah (AdMob)
+ */
 class MainActivity : AppCompatActivity() {
-    // Mode generate video yang dipilih user
+
+    // Mode yang dipilih user di spinner
     private var currentMode: GenerationMode = GenerationMode.DIRECT
-
-
-    private val PERMISSION_REQUEST_CODE = 1001
-    private lateinit var tvBanner: TextView
-    private lateinit var tvStatus: TextView
-    private var maintenanceShown = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        SecureConfig.init(this)
-        try { setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_main)
 
-        // === SETUP SPINNER MODE GENERATE ===
+        // ==== SPINNER MODE ====
         setupGenerationModeSpinner()
-        
-        // Load Banner Ad
+
+        // ==== BANNER AD ====
         try {
             val adView = findViewById<AdView>(R.id.bannerAd)
-            if (adView != null) {
-                AdMobHelper.loadBanner(this, adView)
-            }
+            adView?.let { AdMobHelper.loadBanner(this, it) }
         } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Banner load error: ${e.message}")
+            android.util.Log.e("MainActivity", "Banner error: ${e.message}")
         }
- }
-        catch (e: Exception) { finish(); return }
 
-        FirebaseManager.registerUser(this)
-        FirebaseManager.updateLastUsed(this)
-
-        tvBanner = findViewById(R.id.tvBanner)
-        tvStatus = findViewById(R.id.tvStatus)
-
+        // ==== CARDS ====
+        // Video Saya
         try {
-            findViewById<TextView>(R.id.tvCredit)?.text =
-                "Created by KARYADI, Coding by KARYADI"
+            val cardVideo = findViewById<CardView>(R.id.cardVideoSaya)
+            cardVideo?.setOnClickListener {
+                startActivity(Intent(this, VideoListActivity::class.java))
+            }
         } catch (_: Exception) {}
 
-        updateStatus()
-
-        // Menu CLIENT
-        clickCard(R.id.cardVideoList) { start(VideoListActivity::class.java) }
-        clickCard(R.id.cardEditor) { start(VideoEditorActivity::class.java) }
-        clickCard(R.id.cardAiVideo) { start(TextToVideoActivity::class.java) }
-        clickCard(R.id.cardFiles) { start(FilesActivity::class.java) }
-        clickCard(R.id.cardInstructions) { start(InstructionsActivity::class.java) }
-        clickCard(R.id.cardCredit) { start(CreditActivity::class.java) }
-        clickCard(R.id.cardStatistics) { start(StatisticsActivity::class.java) }
-
-        requestAllPermissions()
-        listenConfig()
-    }
-
-    private fun updateStatus() {
-        tvStatus?.text = if (SecureConfig.hasGithubToken())
-            "✅ Siap" else "⚠️ Token belum tersedia"
-    }
-
-    private fun listenConfig() {
-        lifecycleScope.launch {
-            FirebaseManager.configFlow().collectLatest { cfg ->
-                // Force update
-                if (cfg.forceUpdate && BuildConfig.VERSION_CODE < cfg.minVersionCode) {
-                    showForceUpdateDialog(cfg.updateUrl)
-                }
-                // Maintenance
-                if (cfg.maintenanceMode && !maintenanceShown) {
-                    maintenanceShown = true
-                    showMaintenanceDialog()
-                }
-                // Banner
-                if (cfg.messageBanner.isNotEmpty()) {
-                    tvBanner?.text = cfg.messageBanner
-                    tvBanner?.visibility = View.VISIBLE
-                } else {
-                    tvBanner?.visibility = View.GONE
-                }
-            }
-        }
-        lifecycleScope.launch {
-            FirebaseManager.broadcastFlow().collectLatest { b ->
-                if (b?.active == true && b.message.isNotEmpty()) {
-                    tvBanner?.text = "📢 " + b.message
-                    tvBanner?.visibility = View.VISIBLE
-                }
-            }
-        }
-    }
-
-    private fun showForceUpdateDialog(url: String) {
-        AlertDialog.Builder(this)
-            .setTitle("⚠️ Update Tersedia")
-            .setMessage("Versi baru tersedia. Silakan update untuk lanjut.")
-            .setCancelable(false)
-            .setPositiveButton("Update Sekarang") { _, _ ->
-                if (url.isNotEmpty()) {
-                    try {
-                        startActivity(Intent(Intent.ACTION_VIEW,
-                            android.net.Uri.parse(url)))
-                    } catch (e: Exception) {
-                        Toast.makeText(this, "Gagal buka link", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(this, "URL update belum di-set admin",
-                        Toast.LENGTH_LONG).show()
-                }
-            }
-            .setNegativeButton("Nanti") { _, _ -> }
-            .show()
-    }
-
-    private fun showMaintenanceDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("🛠️ Maintenance")
-            .setMessage("Aplikasi sedang dalam perbaikan.\nCoba lagi nanti.")
-            .setCancelable(false)
-            .setPositiveButton("Keluar") { _, _ -> finish() }
-            .show()
-    }
-
-    private fun clickCard(id: Int, action: () -> Unit) {
+        // Video Editor
         try {
-            findViewById<View>(id)?.setOnClickListener {
-                try { action() }
-                catch (e: Exception) {
-                    Toast.makeText(this, "Error: ${e.message}",
-                        Toast.LENGTH_SHORT).show()
-                }
+            val cardEditor = findViewById<CardView>(R.id.cardVideoEditor)
+            cardEditor?.setOnClickListener {
+                startActivity(Intent(this, VideoEditorActivity::class.java))
             }
         } catch (_: Exception) {}
-    }
 
-    private fun start(cls: Class<*>) { startActivity(Intent(this, cls)) }
-
-    private fun requestAllPermissions() {
-        val permissions = mutableListOf<String>()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(Manifest.permission.READ_MEDIA_VIDEO)
-            permissions.add(Manifest.permission.READ_MEDIA_AUDIO)
-            permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
-            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
-        } else {
-            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-                permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        // AI Text to Video
+        try {
+            val cardAI = findViewById<CardView>(R.id.cardAITextToVideo)
+            cardAI?.setOnClickListener {
+                startActivity(Intent(this, TextToVideoActivity::class.java))
             }
-        }
-        val notGranted = permissions.filter {
-            ContextCompat.checkSelfPermission(this, it) !=
-                PackageManager.PERMISSION_GRANTED
-        }
-        if (notGranted.isNotEmpty()) {
-            ActivityCompat.requestPermissions(
-                this, notGranted.toTypedArray(), PERMISSION_REQUEST_CODE)
-        }
-    }
+        } catch (_: Exception) {}
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        AlertDialog.Builder(this)
-            .setTitle("Keluar?")
-            .setPositiveButton("Ya") { _, _ -> finish() }
-            .setNegativeButton("Batal", null)
-            .show()
-    }
-
-    // ============================================================
-    //  SPINNER MODE GENERATE VIDEO
-    // ============================================================
-    // [setupGenerationModeSpinner] di-replace oleh versi baru
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                currentMode = GenerationMode.DIRECT
+        // Actions
+        try {
+            val cardActions = findViewById<CardView>(R.id.cardActions)
+            cardActions?.setOnClickListener {
+                startActivity(Intent(this, ActionsActivity::class.java))
             }
-        }
-    }
-
-    // ============================================================
-    //  GENERATE VIDEO SESUAI MODE
-    // ============================================================
-    // [generateVideoByMode] di-replace oleh versi baru
-                    },
-                    onError = { err ->
-                        runOnUiThread {
-                            Toast.makeText(this, "❌ $err",
-                                Toast.LENGTH_LONG).show()
-                        }
-                    }
-                )
-            }
-            GenerationMode.GOOGLE_IMAGE -> {
-                GoogleImageGenerator.generateFromText(
-                    this, prompt, 5, outputPath,
-                    onSuccess = { path ->
-                        runOnUiThread {
-                            Toast.makeText(this, "✅ Video dari Google: $path",
-                                Toast.LENGTH_LONG).show()
-                        }
-                    },
-                    onError = { err ->
-                        runOnUiThread {
-                            Toast.makeText(this, "❌ $err",
-                                Toast.LENGTH_LONG).show()
-                        }
-                    }
-                )
-            }
-            GenerationMode.AI_MODEL -> {
-                // Panggil API model AI existing
-                Toast.makeText(this, "🎨 Pakai model AI...",
-                    Toast.LENGTH_SHORT).show()
-                // TODO: panggil ApiClient.generateVideo(...)
-            }
-        }
+        } catch (_: Exception) {}
     }
 
     // ============================================================
@@ -273,56 +107,65 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ============================================================
-    //  GENERATE VIDEO — beda behavior per mode
+    //  GENERATE VIDEO — dipanggil dari tombol
     // ============================================================
     private fun generateVideoByMode(prompt: String, outputPath: String) {
         when (currentMode.type) {
             ModeType.DIRECT -> {
-                // Generate langsung dari teks
                 DirectVideoGenerator.generateFromText(
                     this, prompt, 5, outputPath,
                     onSuccess = { path ->
                         runOnUiThread {
-                            Toast.makeText(this, "✅ Video dibuat: $path",
-                                Toast.LENGTH_LONG).show()
+                            Toast.makeText(
+                                this,
+                                "Video dibuat: $path",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     },
                     onError = { err ->
                         runOnUiThread {
-                            Toast.makeText(this, "❌ $err",
-                                Toast.LENGTH_LONG).show()
+                            Toast.makeText(
+                                this,
+                                "Error: $err",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     }
                 )
             }
 
             ModeType.GOOGLE_IMAGE -> {
-                // Cari gambar Google lalu jadikan video
                 GoogleImageGenerator.generateFromText(
                     this, prompt, 5, outputPath,
                     onSuccess = { path ->
                         runOnUiThread {
-                            Toast.makeText(this, "✅ Video dari Google: $path",
-                                Toast.LENGTH_LONG).show()
+                            Toast.makeText(
+                                this,
+                                "Video dari Google: $path",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     },
                     onError = { err ->
                         runOnUiThread {
-                            Toast.makeText(this, "❌ $err",
-                                Toast.LENGTH_LONG).show()
+                            Toast.makeText(
+                                this,
+                                "Error: $err",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     }
                 )
             }
 
             ModeType.AI_MODEL -> {
-                // Pakai model AI (existing)
-                Toast.makeText(this,
-                    "🎨 Generate dengan model AI: ${currentMode.label}",
-                    Toast.LENGTH_SHORT).show()
-                // TODO: panggil API client sesuai model
+                Toast.makeText(
+                    this,
+                    "Pakai model AI: ${currentMode.label}",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
-}
 }
