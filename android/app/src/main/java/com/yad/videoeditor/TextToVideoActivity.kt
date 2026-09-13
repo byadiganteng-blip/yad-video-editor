@@ -246,6 +246,8 @@ class TextToVideoActivity : AppCompatActivity() {
                     runOnUiThread {
                         AutoLogSaver.log("TextToVideo", "Workflow triggered: runId=" + runId)
                         tvStatus.text = "⏳ Video sedang dibuat di server..."
+                        // JANGAN hide floating di sini!
+                        // Floating harus tetap muncul sampai download selesai.
                         pollWorkflowStatus(token, runId)
                     }
                 },
