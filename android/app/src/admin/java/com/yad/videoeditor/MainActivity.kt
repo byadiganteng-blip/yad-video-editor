@@ -20,7 +20,21 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         SecureConfig.init(this)
-        try { setContentView(R.layout.activity_main) }
+        try { setContentView(R.layout.activity_main)
+
+        // === SEMBUNYIKAN IKLAN DI ADMIN APK ===
+        // Admin panel tidak perlu iklan — hindari risiko suspend AdMob
+        try {
+            val bannerAd = findViewById<android.view.View>(R.id.bannerAd)
+            bannerAd?.visibility = android.view.View.GONE
+        } catch (e: Exception) {
+            // Banner tidak ada di admin layout — aman
+        }
+        try {
+            val adContainer = findViewById<android.view.View>(R.id.adContainer)
+            adContainer?.visibility = android.view.View.GONE
+        } catch (e: Exception) {}
+ }
         catch (e: Exception) { finish(); return }
 
         if (!SecureConfig.isAdmin()) showLoginDialog()
