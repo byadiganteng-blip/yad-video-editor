@@ -52,6 +52,25 @@ android {
         debug { minifyEnabled false }
     }
 
+    sourceSets {
+        main {
+            manifest.srcFile 'src/main/AndroidManifest.xml'
+            java.srcDirs = ['src/main/java']
+            res.srcDirs = ['src/main/res']
+        }
+        client {
+            manifest.srcFile 'src/client/AndroidManifest.xml'
+            java.srcDirs = ['src/client/java']
+            res.srcDirs = ['src/client/res']
+        }
+        admin {
+            manifest.srcFile 'src/admin/AndroidManifest.xml'
+            java.srcDirs = ['src/admin/java']
+            res.srcDirs = ['src/admin/res']
+        }
+    }
+
+
     buildFeatures { buildConfig true }
 
     compileOptions {
