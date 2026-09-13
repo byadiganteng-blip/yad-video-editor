@@ -7,8 +7,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 
 /**
- * MainActivity Admin — panel kontrol YAD Admin
- * Versi minimal & bersih (rewrite).
+ * MainActivity Admin — panel kontrol YAD Admin.
+ *
+ * Navigate ke activity admin yang sudah ada di src/main/.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -16,83 +17,90 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Card: Daftar User
-        val cardUserList = findViewById<CardView>(R.id.cardAdminUserList)
-        cardUserList?.setOnClickListener {
-            Toast.makeText(this, "Buka Daftar User", Toast.LENGTH_SHORT).show()
+        // ============================================================
+        //  CHECK ADMIN STATUS
+        // ============================================================
+        if (!SecureConfig.isAdmin()) {
+            // Belum login sebagai admin → buka AdminActivity untuk login
+            try {
+                startActivity(Intent(this, AdminActivity::class.java))
+                finish()
+                return
+            } catch (e: Exception) {
+                Toast.makeText(this, "Bukan admin: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
 
-        // Card: Statistik
-        val cardStats = findViewById<CardView>(R.id.cardAdminStats)
-        cardStats?.setOnClickListener {
-            Toast.makeText(this, "Buka Statistik", Toast.LENGTH_SHORT).show()
+        // ============================================================
+        //  CARDS — navigate ke activity asli
+        // ============================================================
+        bindCard(R.id.cardAdminUserList, AdminUserListActivity::class.java)
+        bindCard(R.id.cardAdminStats, AdminStatsActivity::class.java)
+        bindCard(R.id.cardAdminBroadcast, AdminBroadcastActivity::class.java)
+        bindCard(R.id.cardAdminPushNotif, AdminPushNotifActivity::class.java)
+        bindCard(R.id.cardAdminModels, AdminModelsActivity::class.java)
+        bindCard(R.id.cardAdminLogs, AdminLogsActivity::class.java)
+        bindCard(R.id.cardAdminBackup, AdminBackupActivity::class.java)
+        bindCard(R.id.cardInstructions, InstructionsActivity::class.java)
+
+        // Card khusus: buka AdminPanelActivity (panel utama)
+        findViewById<CardView>(R.id.cardAdminConfig)?.setOnClickListener {
+            try {
+                startActivity(Intent(this, AdminPanelActivity::class.java))
+            } catch (e: Exception) {
+                Toast.makeText(this, "Panel: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
 
-        // Card: Broadcast
-        val cardBroadcast = findViewById<CardView>(R.id.cardAdminBroadcast)
-        cardBroadcast?.setOnClickListener {
-            Toast.makeText(this, "Buka Broadcast", Toast.LENGTH_SHORT).show()
+        // Card khusus: Set Token — buka SettingsActivity
+        findViewById<CardView>(R.id.cardAdminToken)?.setOnClickListener {
+            try {
+                startActivity(Intent(this, SettingsActivity::class.java))
+            } catch (e: Exception) {
+                Toast.makeText(this, "Settings: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
 
-        // Card: Push Notif
-        val cardPushNotif = findViewById<CardView>(R.id.cardAdminPushNotif)
-        cardPushNotif?.setOnClickListener {
-            Toast.makeText(this, "Buka Push Notif", Toast.LENGTH_SHORT).show()
+        // Card khusus: Force Update — buka AdminSettingsActivity
+        findViewById<CardView>(R.id.cardAdminForceUpdate)?.setOnClickListener {
+            try {
+                startActivity(Intent(this, AdminSettingsActivity::class.java))
+            } catch (e: Exception) {
+                Toast.makeText(this, "Settings: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
 
-        // Card: Force Update
-        val cardForceUpdate = findViewById<CardView>(R.id.cardAdminForceUpdate)
-        cardForceUpdate?.setOnClickListener {
-            Toast.makeText(this, "Buka Force Update", Toast.LENGTH_SHORT).show()
-        }
-
-        // Card: Maintenance
-        val cardMaintenance = findViewById<CardView>(R.id.cardAdminMaintenance)
-        cardMaintenance?.setOnClickListener {
-            Toast.makeText(this, "Buka Maintenance", Toast.LENGTH_SHORT).show()
-        }
-
-        // Card: Set Token
-        val cardToken = findViewById<CardView>(R.id.cardAdminToken)
-        cardToken?.setOnClickListener {
-            Toast.makeText(this, "Buka Set Token", Toast.LENGTH_SHORT).show()
-        }
-
-        // Card: Manage Models
-        val cardModels = findViewById<CardView>(R.id.cardAdminModels)
-        cardModels?.setOnClickListener {
-            Toast.makeText(this, "Buka Manage Models", Toast.LENGTH_SHORT).show()
-        }
-
-        // Card: Set Config
-        val cardConfig = findViewById<CardView>(R.id.cardAdminConfig)
-        cardConfig?.setOnClickListener {
-            Toast.makeText(this, "Buka Set Config", Toast.LENGTH_SHORT).show()
-        }
-
-        // Card: Logs
-        val cardLogs = findViewById<CardView>(R.id.cardAdminLogs)
-        cardLogs?.setOnClickListener {
-            Toast.makeText(this, "Buka Logs", Toast.LENGTH_SHORT).show()
-        }
-
-        // Card: Backup
-        val cardBackup = findViewById<CardView>(R.id.cardAdminBackup)
-        cardBackup?.setOnClickListener {
-            Toast.makeText(this, "Buka Backup", Toast.LENGTH_SHORT).show()
-        }
-
-        // Card: Instructions
-        val cardInstructions = findViewById<CardView>(R.id.cardInstructions)
-        cardInstructions?.setOnClickListener {
-            Toast.makeText(this, "Buka Panduan", Toast.LENGTH_SHORT).show()
+        // Card khusus: Maintenance — buka AdminSettingsActivity juga
+        findViewById<CardView>(R.id.cardAdminMaintenance)?.setOnClickListener {
+            try {
+                startActivity(Intent(this, AdminSettingsActivity::class.java))
+            } catch (e: Exception) {
+                Toast.makeText(this, "Settings: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
 
         // Card: Logout
-        val cardLogout = findViewById<CardView>(R.id.cardAdminLogout)
-        cardLogout?.setOnClickListener {
-            Toast.makeText(this, "Logout", Toast.LENGTH_SHORT).show()
+        findViewById<CardView>(R.id.cardAdminLogout)?.setOnClickListener {
+            SecureConfig.clearAdmin()
+            Toast.makeText(this, "Logout berhasil", Toast.LENGTH_SHORT).show()
             finish()
+        }
+    }
+
+    // ============================================================
+    //  HELPER: Bind card ke activity
+    // ============================================================
+    private fun bindCard(cardId: Int, targetClass: Class<*>) {
+        try {
+            findViewById<CardView>(cardId)?.setOnClickListener {
+                try {
+                    startActivity(Intent(this, targetClass))
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: Exception) {
+            // Card tidak ada — skip
         }
     }
 }
