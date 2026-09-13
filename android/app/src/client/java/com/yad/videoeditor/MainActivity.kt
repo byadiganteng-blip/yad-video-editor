@@ -24,8 +24,17 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Auto minta izin storage
+        // Auto minta izin storage + notification
         PermissionHelper.requestAllPermissions(this)
+
+        // Minta izin floating setelah 1.5 detik (biar user lihat dialog storage dulu)
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            try {
+                if (!PermissionHelper.hasFloatingPermission(this)) {
+                    PermissionHelper.requestFloatingPermission(this)
+                }
+            } catch (_: Exception) {}
+        }, 1500)
 
         // Init AdMob
         AdMobHelper.init(this)
