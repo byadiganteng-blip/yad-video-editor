@@ -95,7 +95,7 @@ class TextToVideoActivity : AppCompatActivity() {
             SubtitleStyle.ALL.map { it.displayName })
 
         tvStatus.text = if (SecureConfig.hasGithubToken())
-            "✅ Siap membuat video" else "⚠️ Token tidak tersedia"
+            "✨ Siap membuat video" else "⚙️ Layanan sedang disiapkan..."
 
         findViewById<Button>(R.id.btnGenerate).setOnClickListener { generate() }
         findViewById<Button>(R.id.btnUploadTxt).setOnClickListener { pickTxtFile() }
@@ -186,7 +186,7 @@ class TextToVideoActivity : AppCompatActivity() {
             return
         }
         if (!SecureConfig.hasGithubToken()) {
-            Toast.makeText(this, "Token tidak tersedia", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Layanan belum siap, coba lagi sebentar", Toast.LENGTH_LONG).show()
             return
         }
 
