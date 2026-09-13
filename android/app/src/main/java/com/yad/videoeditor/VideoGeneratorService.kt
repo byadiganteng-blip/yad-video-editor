@@ -42,7 +42,18 @@ class VideoGeneratorService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent == null) return START_NOT_STICKY
+        // Cek state dari SharedPreferences
+        val savedRunning = GeneratorState.isRunning(this)
+        val savedProgress = GeneratorState.getProgress(this)
+
+        if (intent == null) {
+            // Service restart — restore state
+            if (savedRunning) {
+                startForeground(NOTIF_ID,
+                    buildNotification(savedProgress, "Memproses (background)..."))
+            }
+            return START_NOT_STICKY
+        }
 
         val prompt = intent.getStringExtra(EXTRA_PROMPT) ?: return START_NOT_STICKY
         val voice = intent.getStringExtra(EXTRA_VOICE) ?: "male_id"
@@ -52,6 +63,9 @@ class VideoGeneratorService : Service() {
         val modelId = intent.getStringExtra(EXTRA_MODEL) ?: "waifu"
 
         isRunning = true
+        GeneratorState.saveRunning(this, true)
+        GeneratorState.saveJobInfo(this, "", 0L, prompt, voice, modelId)
+
         startForeground(NOTIF_ID, buildNotification(0, "Memulai..."))
 
         currentJob?.cancel()
@@ -61,19 +75,25 @@ class VideoGeneratorService : Service() {
                     this@VideoGeneratorService,
                     prompt, voice, watermark, showSubtitle, subtitleStyle, modelId,
                     AiImageGenerator.ProgressCallback { _, _, _, pct, msg ->
+                        GeneratorState.saveProgress(this@VideoGeneratorService, pct, msg)
                         updateNotification(pct, msg)
                         sendBroadcast(ACTION_PROGRESS, pct, msg, null)
                     }
                 )
+
                 if (file != null) {
                     updateNotification(100, "Selesai!")
+                    GeneratorState.saveRunning(this@VideoGeneratorService, false)
+                    GeneratorState.saveProgress(this@VideoGeneratorService, 100, "Selesai")
                     sendBroadcast(ACTION_DONE, 100, "Video selesai", file.absolutePath)
                     showDoneNotification(file.absolutePath)
                 } else {
                     updateNotification(0, "Gagal")
+                    GeneratorState.saveRunning(this@VideoGeneratorService, false)
                     sendBroadcast(ACTION_FAILED, 0, "Gagal membuat video", null)
                 }
             } catch (e: Exception) {
+                GeneratorState.saveRunning(this@VideoGeneratorService, false)
                 sendBroadcast(ACTION_FAILED, 0, e.message ?: "Error", null)
             } finally {
                 isRunning = false
@@ -83,6 +103,7 @@ class VideoGeneratorService : Service() {
                 stopSelf()
             }
         }
+
         return START_NOT_STICKY
     }
 
@@ -108,7 +129,7 @@ class VideoGeneratorService : Service() {
             .setContentIntent(pi)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-        if (progress > 0 && progress < 100) builder.setProgress(100, progress, false)
+        if (progress in 1..99) builder.setProgress(100, progress, false)
         else if (progress >= 100) builder.setProgress(0, 0, false)
         else builder.setProgress(0, 0, true)
         return builder.build()
