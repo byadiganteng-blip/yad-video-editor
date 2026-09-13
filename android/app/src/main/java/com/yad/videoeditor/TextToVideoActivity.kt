@@ -50,7 +50,7 @@ class TextToVideoActivity : AppCompatActivity() {
                 }
                 VideoGeneratorService.ACTION_FAILED -> {
                     val msg = intent.getStringExtra(VideoGeneratorService.EXTRA_MESSAGE) ?: "Gagal"
-                    tvStatus.text = "❌ $msg"
+                    tvStatus.text = "❌ " + msg
                 }
             }
         }
@@ -76,13 +76,12 @@ class TextToVideoActivity : AppCompatActivity() {
         progressContainer = findViewById(R.id.progressContainer)
         btnDownloadNow = findViewById(R.id.btnDownloadNow)
 
-        // Spinner model pakai GenerationMode (12 mode: 2 non-AI + 10 AI)
         spModel.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
             GenerationMode.allLabels())
         spVideoSize.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
-            VideoSizePreset.ALL.map { "${it.displayName} (${it.aspectRatio})" })
+            VideoSizePreset.ALL.map { it.displayName + " (" + it.aspectRatio + ")" })
         spQuality.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
             QualityPreset.ALL.map { it.displayName })
@@ -108,9 +107,6 @@ class TextToVideoActivity : AppCompatActivity() {
             } ?: Toast.makeText(this, "Video belum siap", Toast.LENGTH_SHORT).show()
         }
 
-        // ============================================================
-        //  RESTORE STATE — kalau service masih running
-        // ============================================================
         restoreState()
     }
 
@@ -120,9 +116,9 @@ class TextToVideoActivity : AppCompatActivity() {
             val msg = GeneratorState.getMessage(this)
             progressContainer.visibility = View.VISIBLE
             progressBar.progress = pct
-            tvPercent.text = "$pct%"
+            tvPercent.text = pct.toString() + "%"
             tvStatus.text = if (msg.isNotEmpty())
-                "⏳ $msg" else "⏳ Proses berjalan di background..."
+                "⏳ " + msg else "⏳ Proses berjalan di background..."
         }
     }
 
@@ -138,7 +134,6 @@ class TextToVideoActivity : AppCompatActivity() {
         } else {
             registerReceiver(progressReceiver, filter)
         }
-        // Restore setiap kali activity kembali ke foreground
         restoreState()
     }
 
@@ -150,9 +145,8 @@ class TextToVideoActivity : AppCompatActivity() {
     private fun updateProgress(pct: Int, msg: String) {
         progressContainer.visibility = View.VISIBLE
         progressBar.progress = pct
-        tvPercent.text = "$pct%"
+        tvPercent.text = pct.toString() + "%"
         tvStatus.text = msg
-        // Update floating progress
         if (FloatingProgressService.isRunning) {
             FloatingProgressService.update(this, pct, msg)
         }
@@ -200,50 +194,140 @@ class TextToVideoActivity : AppCompatActivity() {
         progressContainer.visibility = View.VISIBLE
         progressBar.progress = 0
         tvPercent.text = "0%"
-        tvStatus.text = "Memulai dengan $modelName..."
+        tvStatus.text = "Memulai dengan " + modelName + "..."
         btnDownloadNow.visibility = View.GONE
         lastVideoPath = null
 
-        // Simpan state
         GeneratorState.saveRunning(this, true)
         GeneratorState.saveProgress(this, 0, "Memulai...")
-        
-        // Tampilkan floating progress
         FloatingProgressService.show(this, 0, "Memulai...")
 
-        // ============================================================
-        //  HANDLE NON-AI: DIRECT & GOOGLE_IMAGE
-        // ============================================================
-        if (mode.type == ModeType.DIRECT) {
-            // Mode DIRECT: trigger GitHub workflow (bukan generate lokal)
-            AutoLogSaver.log("TextToVideo", "DIRECT mode — trigger GitHub workflow")
-            triggerGithubWorkflow("direct", story, voice, watermark, showSubtitle, subtitleStyle)
-            return
+        // Semua mode via GitHub workflow
+        val modeStr = when (mode.type) {
+            ModeType.DIRECT -> "direct"
+            ModeType.GOOGLE_IMAGE -> "google_image"
+            ModeType.AI_MODEL -> "ai_model"
+        }
+        triggerGithubWorkflow(modeStr, story, voice, watermark, showSubtitle, subtitleStyle)
+    }
+
+    // ============================================================
+    //  GENERATE VIA GITHUB WORKFLOW
+    // ============================================================
+    private fun triggerGithubWorkflow(
+        mode: String,
+        prompt: String,
+        voice: String,
+        watermark: String,
+        showSubtitle: Boolean,
+        subtitleStyle: String
+    ) {
+        try {
+            AutoLogSaver.log("TextToVideo", "Trigger GitHub workflow: mode=" + mode)
+            tvStatus.text = "⏳ Mengirim ke server..."
+
+            val token = SecureConfig.getGithubToken()
+            if (token.isNullOrEmpty()) {
+                tvStatus.text = "❌ Layanan belum siap, coba lagi sebentar"
+                FloatingProgressService.hide(this)
+                return
+            }
+
+            GitHubApiClient.triggerVideoWorkflow(
+                context = this,
+                token = token,
+                mode = mode,
+                prompt = prompt,
+                voice = voice,
+                watermark = watermark,
+                showSubtitle = showSubtitle,
+                subtitleStyle = subtitleStyle,
+                onSuccess = { runId ->
+                    runOnUiThread {
+                        AutoLogSaver.log("TextToVideo", "Workflow triggered: runId=" + runId)
+                        tvStatus.text = "⏳ Video sedang dibuat di server..."
+                        pollWorkflowStatus(token, runId)
+                    }
+                },
+                onError = { err ->
+                    runOnUiThread {
+                        AutoLogSaver.logError("TextToVideo", "Trigger error", Exception(err))
+                        tvStatus.text = "❌ " + err
+                        progressContainer.visibility = View.GONE
+                        FloatingProgressService.hide(this)
+                        GeneratorState.saveRunning(this, false)
+                    }
+                }
+            )
+        } catch (e: Exception) {
+            AutoLogSaver.logError("TextToVideo", "triggerGithubWorkflow failed", e)
+            tvStatus.text = "❌ " + (e.message ?: "Unknown error")
+            FloatingProgressService.hide(this)
+        }
+    }
+
+    private fun pollWorkflowStatus(token: String, runId: Long) {
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        var attempts = 0
+        val maxAttempts = 60
+
+        val checkRunnable = object : Runnable {
+            override fun run() {
+                attempts++
+                GitHubApiClient.checkWorkflowStatus(
+                    context = this@TextToVideoActivity,
+                    token = token,
+                    runId = runId,
+                    onStatus = { status, progress ->
+                        runOnUiThread {
+                            updateProgress(progress, "⏳ " + status)
+                            FloatingProgressService.update(this@TextToVideoActivity, progress, status)
+                        }
+                    },
+                    onComplete = { downloadUrl ->
+                        runOnUiThread {
+                            AutoLogSaver.log("TextToVideo", "Workflow complete")
+                            tvStatus.text = "✅ Video siap, mengunduh..."
+                            GitHubApiClient.downloadArtifact(
+                                context = this@TextToVideoActivity,
+                                token = token,
+                                artifactUrl = downloadUrl,
+                                onSuccess = { path ->
+                                    runOnUiThread {
+                                        lastVideoPath = path
+                                        progressBar.progress = 100
+                                        tvPercent.text = "100%"
+                                        tvStatus.text = "✅ Video selesai: " + path
+                                        btnDownloadNow.visibility = View.VISIBLE
+                                        FloatingProgressService.hide(this@TextToVideoActivity)
+                                        GeneratorState.saveRunning(this@TextToVideoActivity, false)
+                                    }
+                                },
+                                onError = { err ->
+                                    runOnUiThread {
+                                        tvStatus.text = "❌ Download gagal: " + err
+                                        FloatingProgressService.hide(this@TextToVideoActivity)
+                                        GeneratorState.saveRunning(this@TextToVideoActivity, false)
+                                    }
+                                }
+                            )
+                        }
+                    },
+                    onError = { err ->
+                        runOnUiThread {
+                            if (attempts < maxAttempts) {
+                                handler.postDelayed(this, 5000)
+                            } else {
+                                tvStatus.text = "❌ Timeout: " + err
+                                FloatingProgressService.hide(this@TextToVideoActivity)
+                                GeneratorState.saveRunning(this@TextToVideoActivity, false)
+                            }
+                        }
+                    }
+                )
+            }
         }
 
-        if (mode.type == ModeType.GOOGLE_IMAGE) {
-            // Mode GOOGLE_IMAGE: trigger GitHub workflow
-            AutoLogSaver.log("TextToVideo", "GOOGLE_IMAGE mode — trigger GitHub workflow")
-            triggerGithubWorkflow("google_image", story, voice, watermark, showSubtitle, subtitleStyle)
-            return
-        }
-
-        // ============================================================
-        //  MODE AI: panggil VideoGeneratorService
-        // ============================================================
-        val si = Intent(this, VideoGeneratorService::class.java).apply {
-            putExtra(VideoGeneratorService.EXTRA_PROMPT, story)
-            putExtra(VideoGeneratorService.EXTRA_VOICE, voice)
-            putExtra(VideoGeneratorService.EXTRA_WATERMARK, watermark)
-            putExtra(VideoGeneratorService.EXTRA_SHOW_SUBTITLE, showSubtitle)
-            putExtra(VideoGeneratorService.EXTRA_SUBTITLE_STYLE, subtitleStyle)
-            putExtra("model_id", mode.id)
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            ContextCompat.startForegroundService(this, si)
-        } else {
-            startService(si)
-        }
+        handler.postDelayed(checkRunnable, 5000)
     }
 }
