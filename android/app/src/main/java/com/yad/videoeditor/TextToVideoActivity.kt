@@ -19,7 +19,6 @@ class TextToVideoActivity : AppCompatActivity() {
     private lateinit var etStory: EditText
     private lateinit var etWatermark: EditText
     private lateinit var spModel: Spinner
-    private lateinit var tvModelInfo: TextView
     private lateinit var spVideoSize: Spinner
     private lateinit var spQuality: Spinner
     private lateinit var spVoice: Spinner
@@ -46,12 +45,12 @@ class TextToVideoActivity : AppCompatActivity() {
                     lastVideoPath = path
                     progressBar.progress = 100
                     tvPercent.text = "100%"
-                    tvStatus.text = "Video selesai! Tap untuk preview"
+                    tvStatus.text = "✅ Video selesai!"
                     btnDownloadNow.visibility = View.VISIBLE
                 }
                 VideoGeneratorService.ACTION_FAILED -> {
                     val msg = intent.getStringExtra(VideoGeneratorService.EXTRA_MESSAGE) ?: "Gagal"
-                    tvStatus.text = "Error: $msg"
+                    tvStatus.text = "❌ $msg"
                 }
             }
         }
@@ -65,7 +64,6 @@ class TextToVideoActivity : AppCompatActivity() {
         etStory = findViewById(R.id.etStory)
         etWatermark = findViewById(R.id.etWatermark)
         spModel = findViewById(R.id.spModel)
-        tvModelInfo = findViewById(R.id.tvModelInfo)
         spVideoSize = findViewById(R.id.spVideoSize)
         spQuality = findViewById(R.id.spQuality)
         spVoice = findViewById(R.id.spVoice)
@@ -81,13 +79,6 @@ class TextToVideoActivity : AppCompatActivity() {
         spModel.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
             ModelPresets.ALL.map { it.displayName })
-        spModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
-                tvModelInfo.text = ModelPresets.ALL[pos].description
-            }
-            override fun onNothingSelected(p: AdapterView<*>?) {}
-        }
-
         spVideoSize.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
             VideoSizePreset.ALL.map { "${it.displayName} (${it.aspectRatio})" })
@@ -103,22 +94,34 @@ class TextToVideoActivity : AppCompatActivity() {
             SubtitleStyle.ALL.map { it.displayName })
 
         tvStatus.text = if (SecureConfig.hasGithubToken())
-            "Siap membuat video" else "Token tidak tersedia"
+            "✅ Siap membuat video" else "⚠️ Token tidak tersedia"
 
         findViewById<Button>(R.id.btnGenerate).setOnClickListener { generate() }
         findViewById<Button>(R.id.btnUploadTxt).setOnClickListener { pickTxtFile() }
 
         btnDownloadNow.setOnClickListener {
             lastVideoPath?.let { path ->
-                val i = Intent(this, VideoPreviewActivity::class.java)
-                i.putExtra("video_path", path)
-                startActivity(i)
-            }
+                val intent = Intent(this, VideoPreviewActivity::class.java)
+                intent.putExtra("video_path", path)
+                startActivity(intent)
+            } ?: Toast.makeText(this, "Video belum siap", Toast.LENGTH_SHORT).show()
         }
 
-        if (VideoGeneratorService.isRunning) {
+        // ============================================================
+        //  RESTORE STATE — kalau service masih running
+        // ============================================================
+        restoreState()
+    }
+
+    private fun restoreState() {
+        if (GeneratorState.isRunning(this) || VideoGeneratorService.isRunning) {
+            val pct = GeneratorState.getProgress(this)
+            val msg = GeneratorState.getMessage(this)
             progressContainer.visibility = View.VISIBLE
-            tvStatus.text = "Proses sedang berjalan..."
+            progressBar.progress = pct
+            tvPercent.text = "$pct%"
+            tvStatus.text = if (msg.isNotEmpty())
+                "⏳ $msg" else "⏳ Proses berjalan di background..."
         }
     }
 
@@ -134,6 +137,8 @@ class TextToVideoActivity : AppCompatActivity() {
         } else {
             registerReceiver(progressReceiver, filter)
         }
+        // Restore setiap kali activity kembali ke foreground
+        restoreState()
     }
 
     override fun onPause() {
@@ -149,11 +154,11 @@ class TextToVideoActivity : AppCompatActivity() {
     }
 
     private fun pickTxtFile() {
-        val i = Intent(Intent.ACTION_GET_CONTENT).apply {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
             type = "text/plain"
             addCategory(Intent.CATEGORY_OPENABLE)
         }
-        startActivityForResult(Intent.createChooser(i, "Pilih .txt"), REQ_PICK_TXT)
+        startActivityForResult(Intent.createChooser(intent, "Pilih .txt"), REQ_PICK_TXT)
     }
 
     @Deprecated("Deprecated in Java")
@@ -162,11 +167,10 @@ class TextToVideoActivity : AppCompatActivity() {
         if (requestCode == REQ_PICK_TXT && resultCode == Activity.RESULT_OK) {
             val uri: Uri = data?.data ?: return
             try {
-                val text = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                val text = contentResolver.openInputStream(uri)
+                    ?.bufferedReader()?.use { it.readText() }
                 if (!text.isNullOrBlank()) etStory.setText(text)
-            } catch (e: Exception) {
-                Toast.makeText(this, "Gagal: ${e.message}", Toast.LENGTH_LONG).show()
-            }
+            } catch (_: Exception) {}
         }
     }
 
@@ -193,6 +197,10 @@ class TextToVideoActivity : AppCompatActivity() {
         tvStatus.text = "Memulai dengan ${model.displayName}..."
         btnDownloadNow.visibility = View.GONE
         lastVideoPath = null
+
+        // Simpan state
+        GeneratorState.saveRunning(this, true)
+        GeneratorState.saveProgress(this, 0, "Memulai...")
 
         val si = Intent(this, VideoGeneratorService::class.java).apply {
             putExtra(VideoGeneratorService.EXTRA_PROMPT, story)
