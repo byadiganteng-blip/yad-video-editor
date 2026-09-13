@@ -80,6 +80,7 @@ class TextToVideoActivity : AppCompatActivity() {
         spModel.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
             GenerationMode.allLabels())
+        spVideoSize.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
             VideoSizePreset.ALL.map { "${it.displayName} (${it.aspectRatio})" })
         spQuality.adapter = ArrayAdapter(this,
