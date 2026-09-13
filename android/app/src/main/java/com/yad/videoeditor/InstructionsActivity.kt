@@ -4,124 +4,130 @@ import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
+/**
+ * InstructionsActivity — panduan pakai aplikasi.
+ *
+ * Semua bahasa user-friendly, tanpa sebut "GitHub" / "Firebase".
+ */
 class InstructionsActivity : AppCompatActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        try { setContentView(R.layout.activity_instructions) }
-        catch (e: Exception) { finish(); return }
+        setContentView(R.layout.activity_instructions)
 
-        // Layout activity_instructions.xml punya ID "tvInstructions"
-        val tv = findViewById<TextView>(R.id.tvInstructions)
-        tv.text = """
-📖 PANDUAN LENGKAP AI TXT TO VIDEO + EDITOR
+        // Isi text panduan
+        val tvContent = findViewById<TextView>(R.id.tvInstructionsContent)
+        tvContent.text = getInstructionsText()
+    }
 
-═══════════════════════════════════════
-🎬 CARA MEMBUAT VIDEO
-═══════════════════════════════════════
+    private fun getInstructionsText(): String {
+        return """
+        🎬 SELAMAT DATANG DI YAD VIDEO EDITOR 🎬
 
-1. Buka menu "AI Text to Video"
-2. Tulis cerita Anda (atau upload .txt)
-3. Pilih model AI yang diinginkan
-4. Atur ukuran video, suara, subtitle
-5. Klik "MEMBUAT VIDEO"
-6. Tunggu proses selesai
-7. Video otomatis siap di-download
+        Aplikasi ini dibuat untuk memudahkan kamu membuat
+        video keren dari teks, gambar, atau AI.
 
-═══════════════════════════════════════
-🎨 PILIHAN MODEL AI
-═══════════════════════════════════════
+        ═══════════════════════════════════════
+        📱 CARA PAKAI
+        ═══════════════════════════════════════
 
-🌸 Waifu Diffusion (Klasik)
-   Model lama tapi sangat bagus untuk anime.
+        1️⃣  BUAT VIDEO DARI TEKS
+           • Buka menu "AI Text to Video"
+           • Tulis cerita atau upload file .txt
+           • Pilih mode yang diinginkan:
+             - Generate Langsung (tanpa AI)
+             - Cari Gambar + Video
+             - Atau pilih model AI favoritmu
+           • Pilih ukuran video, kualitas, suara
+           • Tap "MEMBUAT VIDEO"
+           • Tunggu sampai selesai ✨
 
-🎨 Stable Diffusion 1.5
-   Model serbaguna. Cocok realistis & anime.
+        2️⃣  LIHAT VIDEO SAYA
+           • Buka menu "Video Saya"
+           • Semua video yang sudah dibuat muncul di sini
+           • Tap untuk preview
+           • Tekan lama untuk hapus / share
 
-✨ Anything v4.0
-   Anime berkualitas tinggi.
+        3️⃣  EDIT VIDEO
+           • Buka menu "Video Editor"
+           • Pilih video yang mau diedit
+           • Trim, gabung, atau tambah filter
 
-💫 DreamShaper
-   Realistis bagus untuk karakter manusia.
+        4️⃣  AKSI CEPAT
+           • Buka menu "Aksi Cepat"
+           • Shortcut ke fitur favoritmu
 
-🏆 SDXL Base 1.0
-   Kualitas tertinggi (lebih lambat).
+        ═══════════════════════════════════════
+        ✨ TIPS & TRIK
+        ═══════════════════════════════════════
 
-🎭 OpenJourney
-   Gaya artistik & surreal.
+        💡 Tulis cerita yang menarik dan detail
+           supaya hasil video lebih bagus.
 
-🌙 Dreamlike
-   Surreal & dreamy.
+        💡 Pilih ukuran video:
+           • YouTube Shorts (1080:1920) - vertikal
+           • YouTube (1920:1080) - horizontal
+           • Instagram (1080:1080) - kotak
 
-🎌 Trinart v2
-   Anime alternatif.
+        💡 Atur kualitas video:
+           • 240p - hemat kuota
+           • 720p - seimbang
+           • 1080p - kualitas terbaik
 
-📷 Realistic Vision
-   Realistis natural.
+        💡 Pilih suara narasi yang cocok:
+           • Pria Indonesia
+           • Wanita Indonesia
+           • Atau suara lain sesuai selera
 
-🌺 MajicMix
-   Realistis detail tajam.
+        💡 Tambahkan watermark:
+           • Contoh: @username_kamu
+           • Muncul di pojok video
 
-═══════════════════════════════════════
-🎙️ PILIHAN SUARA NARASI
-═══════════════════════════════════════
+        💡 Style teks video:
+           • Gradient - warna lembut
+           • Neon Glow - efek cahaya
+           • Shadow - bayangan tegas
+           • Outline - garis tepi
 
-Male ID   → Pria Indonesia
-Female ID → Wanita Indonesia
-Child ID  → Anak Indonesia
-Male EN   → Pria Inggris
-Female EN → Wanita Inggris
-Robot     → Robot
+        ═══════════════════════════════════════
+        ❓ PERTANYAAN UMUM
+        ═══════════════════════════════════════
 
-═══════════════════════════════════════
-💡 TIPS & TRIK
-═══════════════════════════════════════
+        ❔ Kenapa video saya gagal dibuat?
+        → Pastikan:
+          • Izin penyimpanan sudah diberikan
+          • Koneksi internet stabil
+          • Teks cerita tidak terlalu panjang
 
-✅ Cerita yang baik:
-   • 3-10 paragraf
-   • Ada tokoh, latar, konflik
-   • Gunakan deskripsi visual
+        ❔ Berapa lama proses pembuatan video?
+        → Tergantung panjang cerita dan mode:
+          • Generate Langsung: ~30 detik
+          • AI Model: 1-3 menit
+          • Video panjang: lebih lama
 
-✅ Untuk hasil terbaik:
-   • Pilih 4-8 scene
-   • Gunakan model sesuai tema
-   • Aktifkan subtitle
+        ❔ Video saya disimpan di mana?
+        → Buka menu "Video Saya" untuk lihat semua video.
+          Atau cek folder:
+          /Android/data/com.yad.videoeditor/files/
 
-═══════════════════════════════════════
-📥 CARA DOWNLOAD VIDEO
-═══════════════════════════════════════
+        ❔ Bisa share video ke media sosial?
+        → Ya! Buka video → tap tombol Share
+          → pilih aplikasi tujuan
 
-1. Setelah selesai, notifikasi muncul
-2. Tap notifikasi → Preview
-3. Klik tombol "Download"
-4. Video tersimpan di:
-   /Movies/YAD Video Editor/
+        ═══════════════════════════════════════
+        🎨 TENTANG APLIKASI
+        ═══════════════════════════════════════
 
-═══════════════════════════════════════
-❓ MASALAH UMUM
-═══════════════════════════════════════
+        Nama: YAD Video Editor
+        Versi: 14.0.0
+        Dibuat oleh: KARYADI CODING KARYADI
 
-❌ "Token tidak tersedia"
-   → Hubungi admin
+        Terima kasih sudah menggunakan aplikasi ini.
+        Semoga bermanfaat! 🙏
 
-❌ "Timeout"
-   → Coba lagi nanti
-
-❌ "Video tidak muncul"
-   → Cek menu Video Saya
-
-═══════════════════════════════════════
-📞 KONTAK
-═══════════════════════════════════════
-
-Email  : ynuraini686@gmail.com
-GitHub : byadiganteng-blip/yad-video-editor
-
-═══════════════════════════════════════
-
-"Dari cerita jadi karya."
-              — KARYADI
-
-═══════════════════════════════════════
+        ═══════════════════════════════════════
+        © 2026 KARYADI CODING KARYADI
+        ═══════════════════════════════════════
         """.trimIndent()
     }
 }
