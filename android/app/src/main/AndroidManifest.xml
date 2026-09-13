@@ -13,6 +13,9 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- AdMob Permission -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
     <application
         android:name=".YadApp"
         android:allowBackup="false"
@@ -24,6 +27,12 @@
         android:requestLegacyExternalStorage="true"
         tools:targetApi="34">
 
+        <!-- AdMob App ID (TEST) -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}"/>
+
+        <!-- Splash -->
         <activity
             android:name=".SplashActivity"
             android:exported="true"
