@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/floating_bg"
+    android:padding="12dp"
+    android:elevation="8dp">
+
+    <!-- Spinner berputar -->
+    <ProgressBar
+        android:id="@+id/fpSpinner"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:indeterminate="true"
+        android:indeterminateTint="#FF6B6B"
+        style="?android:attr/progressBarStyle" />
+
+    <!-- Text info -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="8dp">
+
+        <TextView
+            android:id="@+id/fpPercent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0%"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/fpMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Memproses..."
+            android:textSize="11sp"
+            android:textColor="#DDDDDD"
+            android:maxWidth="180dp"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+        <ProgressBar
+            android:id="@+id/fpProgressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="180dp"
+            android:layout_height="6dp"
+            android:layout_marginTop="4dp"
+            android:max="100"
+            android:progress="0"
+            android:progressTint="#FF6B6B"
+            android:progressBackgroundTint="#44FFFFFF" />
+    </LinearLayout>
+
+</LinearLayout>
