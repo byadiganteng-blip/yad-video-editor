@@ -76,10 +76,10 @@ class TextToVideoActivity : AppCompatActivity() {
         progressContainer = findViewById(R.id.progressContainer)
         btnDownloadNow = findViewById(R.id.btnDownloadNow)
 
+        // Spinner model pakai GenerationMode (12 mode: 2 non-AI + 10 AI)
         spModel.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
-            ModelPresets.ALL.map { it.displayName })
-        spVideoSize.adapter = ArrayAdapter(this,
+            GenerationMode.allLabels())
             android.R.layout.simple_spinner_dropdown_item,
             VideoSizePreset.ALL.map { "${it.displayName} (${it.aspectRatio})" })
         spQuality.adapter = ArrayAdapter(this,
@@ -185,7 +185,8 @@ class TextToVideoActivity : AppCompatActivity() {
             return
         }
 
-        val model = ModelPresets.ALL[spModel.selectedItemPosition]
+        val mode = GenerationMode.values()[spModel.selectedItemPosition]
+        val modelName = mode.label
         val watermark = if (swShowWatermark.isChecked) etWatermark.text.toString().trim() else ""
         val voice = VoicePreset.ALL[spVoice.selectedItemPosition].id
         val showSubtitle = swShowSubtitle.isChecked
@@ -194,7 +195,7 @@ class TextToVideoActivity : AppCompatActivity() {
         progressContainer.visibility = View.VISIBLE
         progressBar.progress = 0
         tvPercent.text = "0%"
-        tvStatus.text = "Memulai dengan ${model.displayName}..."
+        tvStatus.text = "Memulai dengan $modelName..."
         btnDownloadNow.visibility = View.GONE
         lastVideoPath = null
 
@@ -202,13 +203,77 @@ class TextToVideoActivity : AppCompatActivity() {
         GeneratorState.saveRunning(this, true)
         GeneratorState.saveProgress(this, 0, "Memulai...")
 
+        // ============================================================
+        //  HANDLE NON-AI: DIRECT & GOOGLE_IMAGE
+        // ============================================================
+        if (mode.type == ModeType.DIRECT) {
+            // Mode DIRECT: panggil DirectVideoGenerator
+            val outputPath = java.io.File(
+                getExternalFilesDir(null),
+                "direct_${System.currentTimeMillis()}.mp4"
+            ).absolutePath
+
+            DirectVideoGenerator.generateFromText(
+                this, story, 5, outputPath,
+                onSuccess = { path ->
+                    runOnUiThread {
+                        lastVideoPath = path
+                        progressContainer.visibility = View.GONE
+                        tvStatus.text = "Selesai: $path"
+                        btnDownloadNow.visibility = View.VISIBLE
+                        GeneratorState.saveRunning(this, false)
+                    }
+                },
+                onError = { err ->
+                    runOnUiThread {
+                        progressContainer.visibility = View.GONE
+                        tvStatus.text = "Error: $err"
+                        GeneratorState.saveRunning(this, false)
+                    }
+                }
+            )
+            return
+        }
+
+        if (mode.type == ModeType.GOOGLE_IMAGE) {
+            // Mode GOOGLE_IMAGE: panggil GoogleImageGenerator
+            val outputPath = java.io.File(
+                getExternalFilesDir(null),
+                "google_${System.currentTimeMillis()}.mp4"
+            ).absolutePath
+
+            GoogleImageGenerator.generateFromText(
+                this, story, 5, outputPath,
+                onSuccess = { path ->
+                    runOnUiThread {
+                        lastVideoPath = path
+                        progressContainer.visibility = View.GONE
+                        tvStatus.text = "Selesai: $path"
+                        btnDownloadNow.visibility = View.VISIBLE
+                        GeneratorState.saveRunning(this, false)
+                    }
+                },
+                onError = { err ->
+                    runOnUiThread {
+                        progressContainer.visibility = View.GONE
+                        tvStatus.text = "Error: $err"
+                        GeneratorState.saveRunning(this, false)
+                    }
+                }
+            )
+            return
+        }
+
+        // ============================================================
+        //  MODE AI: panggil VideoGeneratorService
+        // ============================================================
         val si = Intent(this, VideoGeneratorService::class.java).apply {
             putExtra(VideoGeneratorService.EXTRA_PROMPT, story)
             putExtra(VideoGeneratorService.EXTRA_VOICE, voice)
             putExtra(VideoGeneratorService.EXTRA_WATERMARK, watermark)
             putExtra(VideoGeneratorService.EXTRA_SHOW_SUBTITLE, showSubtitle)
             putExtra(VideoGeneratorService.EXTRA_SUBTITLE_STYLE, subtitleStyle)
-            putExtra("model_id", model.id)
+            putExtra("model_id", mode.id)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
