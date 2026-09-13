@@ -117,5 +117,14 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Actions: " + e.message, Toast.LENGTH_SHORT).show()
             }
         }
+
+        // Instructions → InstructionsActivity
+        findViewById<CardView>(R.id.cardInstructions)?.setOnClickListener {
+            try {
+                startActivity(Intent(this, InstructionsActivity::class.java))
+            } catch (e: Exception) {
+                Toast.makeText(this, "Panduan: " + e.message, Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }
