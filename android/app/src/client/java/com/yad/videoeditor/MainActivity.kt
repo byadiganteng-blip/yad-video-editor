@@ -192,30 +192,7 @@ class MainActivity : AppCompatActivity() {
     // ============================================================
     //  SPINNER MODE GENERATE VIDEO
     // ============================================================
-    private fun setupGenerationModeSpinner() {
-        val spinner = findViewById<Spinner>(R.id.spinnerGenerationMode)
-        val tvDesc = findViewById<TextView>(R.id.tvModeDescription)
-
-        val modes = GenerationMode.values()
-        val labels = modes.map { it.label }
-
-        val adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_dropdown_item,
-            labels
-        )
-        spinner.adapter = adapter
-
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                currentMode = modes[position]
-                tvDesc?.text = currentMode.description
-            }
+    // [setupGenerationModeSpinner] di-replace oleh versi baru
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
                 currentMode = GenerationMode.DIRECT
@@ -226,16 +203,7 @@ class MainActivity : AppCompatActivity() {
     // ============================================================
     //  GENERATE VIDEO SESUAI MODE
     // ============================================================
-    private fun generateVideoByMode(prompt: String, outputPath: String) {
-        when (currentMode) {
-            GenerationMode.DIRECT -> {
-                DirectVideoGenerator.generateFromText(
-                    this, prompt, 5, outputPath,
-                    onSuccess = { path ->
-                        runOnUiThread {
-                            Toast.makeText(this, "✅ Video dibuat: $path",
-                                Toast.LENGTH_LONG).show()
-                        }
+    // [generateVideoByMode] di-replace oleh versi baru
                     },
                     onError = { err ->
                         runOnUiThread {
@@ -270,4 +238,91 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    // ============================================================
+    //  SPINNER MODE GENERATE — 10 opsi
+    // ============================================================
+    private fun setupGenerationModeSpinner() {
+        val spinner = findViewById<Spinner>(R.id.spinnerGenerationMode)
+        val tvDesc = findViewById<TextView>(R.id.tvModeDescription)
+
+        val labels = GenerationMode.allLabels()
+
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            labels
+        )
+        spinner.adapter = adapter
+
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                currentMode = GenerationMode.values()[position]
+                tvDesc?.text = currentMode.description
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                currentMode = GenerationMode.DIRECT
+            }
+        }
+    }
+
+    // ============================================================
+    //  GENERATE VIDEO — beda behavior per mode
+    // ============================================================
+    private fun generateVideoByMode(prompt: String, outputPath: String) {
+        when (currentMode.type) {
+            ModeType.DIRECT -> {
+                // Generate langsung dari teks
+                DirectVideoGenerator.generateFromText(
+                    this, prompt, 5, outputPath,
+                    onSuccess = { path ->
+                        runOnUiThread {
+                            Toast.makeText(this, "✅ Video dibuat: $path",
+                                Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    onError = { err ->
+                        runOnUiThread {
+                            Toast.makeText(this, "❌ $err",
+                                Toast.LENGTH_LONG).show()
+                        }
+                    }
+                )
+            }
+
+            ModeType.GOOGLE_IMAGE -> {
+                // Cari gambar Google lalu jadikan video
+                GoogleImageGenerator.generateFromText(
+                    this, prompt, 5, outputPath,
+                    onSuccess = { path ->
+                        runOnUiThread {
+                            Toast.makeText(this, "✅ Video dari Google: $path",
+                                Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    onError = { err ->
+                        runOnUiThread {
+                            Toast.makeText(this, "❌ $err",
+                                Toast.LENGTH_LONG).show()
+                        }
+                    }
+                )
+            }
+
+            ModeType.AI_MODEL -> {
+                // Pakai model AI (existing)
+                Toast.makeText(this,
+                    "🎨 Generate dengan model AI: ${currentMode.label}",
+                    Toast.LENGTH_SHORT).show()
+                // TODO: panggil API client sesuai model
+            }
+        }
+    }
+}
 }
