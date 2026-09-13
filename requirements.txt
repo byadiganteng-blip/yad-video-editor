@@ -14,10 +14,11 @@ safetensors==0.4.2
 moviepy==1.0.3
 imageio-ffmpeg==0.4.9
 
-# TTS OFFLINE — Piper (gratis, tanpa API)
+# TTS OFFLINE — Piper
 piper-tts==1.2.0
 onnxruntime==1.17.0
 
-# Utils
-Pillow==10.2.0
+# PILLOW 9.5.0 (PENTING! versi 10+ hapus ANTIALIAS)
+Pillow==9.5.0
+
 requests
