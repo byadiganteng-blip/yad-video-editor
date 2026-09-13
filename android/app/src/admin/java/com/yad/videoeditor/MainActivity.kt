@@ -30,11 +30,7 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             // Banner tidak ada di admin layout — aman
         }
-        try {
-            val adContainer = findViewById<android.view.View>(R.id.adContainer)
-            adContainer?.visibility = android.view.View.GONE
-        } catch (e: Exception) {}
- }
+        }
         catch (e: Exception) { finish(); return }
 
         if (!SecureConfig.isAdmin()) showLoginDialog()
