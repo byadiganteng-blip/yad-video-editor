@@ -19,31 +19,6 @@
             android:textStyle="bold"
             android:paddingBottom="12dp" />
 
-        <!-- ===== SPINNER MODE ===== -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Mode Generate:"
-            android:textStyle="bold"
-            android:paddingTop="8dp"
-            android:paddingBottom="4dp" />
-
-        <Spinner
-            android:id="@+id/spinnerGenerationMode"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="48dp" />
-
-        <TextView
-            android:id="@+id/tvModeDescription"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="4dp"
-            android:paddingBottom="12dp"
-            android:textSize="12sp"
-            android:textColor="#666666"
-            android:text="Pilih mode untuk melihat deskripsi" />
-
         <!-- ===== CARD: VIDEO SAYA ===== -->
         <androidx.cardview.widget.CardView
             android:id="@+id/cardVideoSaya"
