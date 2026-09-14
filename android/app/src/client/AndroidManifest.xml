@@ -40,7 +40,7 @@
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"
+            android:value="ca-app-pub-2515513620924097~6524543685"
             tools:replace="android:value" />
 
         <!-- HAPUS SplashActivity dari client build -->
