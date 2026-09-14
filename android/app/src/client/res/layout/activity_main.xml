@@ -441,6 +441,15 @@
                 app:adSize="BANNER"
                 app:adUnitId="ca-app-pub-3940256099942544/6300978111" />
 
+    <!-- StartApp Banner (fallback kalau AdMob gagal) -->
+    <FrameLayout
+        android:id="@+id/startAppBannerContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:visibility="gone" />
+
             <!-- FOOTER CREDIT -->
             <TextView
                 android:layout_width="match_parent"
