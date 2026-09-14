@@ -32,6 +32,12 @@ jobs:
           ls -lh android/app/libs/
           test -f android/app/libs/ffmpeg-kit.aar || (echo "::error::AAR tidak ada" && exit 1)
 
+      - name: Decode keystore
+        run: |
+          mkdir -p /home/runner/keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /home/runner/keystore/yad-release.jks
+          ls -lh /home/runner/keystore/yad-release.jks
+
       - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.2
@@ -45,13 +51,30 @@ jobs:
           fi
           chmod +x gradlew
 
-      - name: Build Release APK
+      - name: Build Release APK (client)
         working-directory: android
+        env:
+          KEYSTORE_FILE: /home/runner/keystore/yad-release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleClientRelease --no-daemon --stacktrace
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: client-release-apk
+          name: client-release-apk-signed
           path: android/app/build/outputs/apk/client/release/*.apk
           retention-days: 30
+
+      - name: Verify APK is signed
+        run: |
+          APK=$(find android/app/build/outputs/apk/client/release -name "*.apk" | head -1)
+          echo "APK: $APK"
+          ls -lh "$APK"
+          # Cek apakah APK punya signature
+          unzip -l "$APK" | grep -E "META-INF/.*\.(RSA|DSA|EC)" && echo "✅ APK signed" || echo "⚠️  APK mungkin unsigned"
+
+      - name: Cleanup keystore
+        if: always()
+        run: rm -rf /home/runner/keystore
