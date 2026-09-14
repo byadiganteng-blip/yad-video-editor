@@ -1,0 +1,146 @@
+name: Build APK with FFmpeg
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-ffmpeg-aar:
+    name: Build FFmpeg-Kit AAR
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0 ndk;25.1.8937393 cmake;3.22.1'
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq autoconf automake libtool pkg-config \
+            cmake nasm yasm wget unzip git build-essential texinfo gperf \
+            python3 python-is-python3
+
+      - name: Clone ffmpeg-kit
+        run: |
+          git clone --depth 1 https://github.com/Javernaut/ffmpeg-kit.git ffmpeg-kit-src || \
+          git clone --depth 1 https://github.com/arthenica/ffmpeg-kit.git ffmpeg-kit-src
+          cd ffmpeg-kit-src
+          git log -1 --oneline
+
+      - name: Build AAR (arm64-v8a)
+        env:
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/25.1.8937393
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/25.1.8937393
+        run: |
+          cd ffmpeg-kit-src
+          chmod +x android.sh
+          ./android.sh \
+            --lts \
+            --disable-arm-v7a \
+            --disable-arm-v7a-neon \
+            --disable-x86 \
+            --disable-x86-64 \
+            --enable-android-media-codec \
+            --enable-android-zlib
+
+      - name: Cari AAR
+        run: |
+          find ffmpeg-kit-src -name "*.aar" -type f -exec ls -lh {} \;
+          AAR=$(find ffmpeg-kit-src -name "*.aar" -type f -printf '%s %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
+          if [ -z "$AAR" ]; then
+            echo "::error::Tidak ada AAR"
+            exit 1
+          fi
+          mkdir -p android/app/libs
+          cp "$AAR" android/app/libs/ffmpeg-kit.aar
+          ls -lh android/app/libs/
+
+      - name: Upload AAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-kit-aar
+          path: android/app/libs/ffmpeg-kit.aar
+          retention-days: 30
+
+      - name: Commit AAR ke repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add android/app/libs/ffmpeg-kit.aar
+          if git diff --cached --quiet; then
+            echo "AAR tidak berubah"
+          else
+            git commit -m "chore: update ffmpeg-kit AAR [skip ci]"
+            git push
+          fi
+
+  build-client-apk:
+    name: Build Client APK
+    needs: build-ffmpeg-aar
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Download AAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ffmpeg-kit-aar
+          path: android/app/libs/
+
+      - name: Verifikasi AAR
+        run: |
+          ls -lh android/app/libs/
+          test -f android/app/libs/ffmpeg-kit.aar || (echo "::error::AAR tidak ada" && exit 1)
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.2
+          build-root-directory: android
+
+      - name: Setup gradlew
+        working-directory: android
+        run: |
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 8.2 --distribution-type bin
+          fi
+          chmod +x gradlew
+
+      - name: Build Client Debug APK
+        working-directory: android
+        run: ./gradlew assembleClientDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-debug-apk
+          path: android/app/build/outputs/apk/client/debug/*.apk
+          retention-days: 30
