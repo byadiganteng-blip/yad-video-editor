@@ -65,21 +65,29 @@ jobs:
       - name: Generate TTS
         run: |
           mkdir -p output
-          echo "=== Generating TTS ==="
-          python3 -c "
-          import asyncio, edge_tts, sys
-          
+          cat > /tmp/tts.py << 'PYEOF'
+          import asyncio, edge_tts
+
+          TEXT = """Sinta membeli cermin antik di pasar loak dengan harga sangat murah.
+          Sejak cermin itu digantung di kamarnya, ia sering melihat bayangan bergerak di sudut matanya.
+          Suatu malam, Sinta terbangun dan melihat pantulan dirinya di cermin tidak mengikuti gerakannya.
+          Bayangan itu tersenyum, padahal Sinta sedang menangis ketakutan.
+          Ia mencoba menutup cermin dengan kain, tapi suara ketukan datang dari balik kain.
+          Sinta memberanikan diri membuka kain itu, dan tangannya sendiri keluar dari dalam cermin.
+          Keesokan harinya, tetangga menemukan Sinta duduk kaku di depan cermin dengan senyum aneh.
+          Di dalam cermin, terlihat Sinta yang asli menangis tanpa suara, terkunci selamanya."""
+
           async def main():
-              text = '${{ github.event.inputs.prompt }}'
-              voice = '${{ github.event.inputs.voice }}' or 'id-ID-Standard-A'
-              output = 'output/narration.mp3'
-              communicate = edge_tts.Communicate(text, voice)
+              voice = "id-ID-ArdiNeural"
+              output = "output/narration.mp3"
+              communicate = edge_tts.Communicate(TEXT, voice)
               await communicate.save(output)
-              print(f'TTS saved: {output}')
-          
+              print(f"TTS saved: {output}")
+
           asyncio.run(main())
-          "
-      
+          PYEOF
+          python3 /tmp/tts.py
+
       - name: Generate Video
         run: |
           echo "=== Generating Video ==="
