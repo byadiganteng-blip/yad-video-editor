@@ -57,51 +57,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupCards() {
-        // Video Saya
         findViewById<CardView>(R.id.cardVideoList)?.setOnClickListener {
             try { startActivity(Intent(this, VideoListActivity::class.java)) }
             catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
         }
 
-        // Video Editor
         findViewById<CardView>(R.id.cardEditor)?.setOnClickListener {
             try { startActivity(Intent(this, VideoEditorActivity::class.java)) }
             catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
         }
 
-        // AI Text to Video
         findViewById<CardView>(R.id.cardAiVideo)?.setOnClickListener {
             try { startActivity(Intent(this, TextToVideoActivity::class.java)) }
             catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
         }
 
-        // Files
-        findViewById<CardView>(R.id.cardFiles)?.setOnClickListener {
-            try { startActivity(Intent(this, FilesActivity::class.java)) }
-            catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
-        }
-
-        // Petunjuk / Panduan
         findViewById<CardView>(R.id.cardInstructions)?.setOnClickListener {
-            try { startActivity(Intent(this, PanduanActivity::class.java)) }
-            catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
-        }
-
-        // Penggunaan (BARU)
-        findViewById<CardView>(R.id.cardPenggunaan)?.setOnClickListener {
-            try { startActivity(Intent(this, PenggunaanActivity::class.java)) }
-            catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
-        }
-
-        // Credit
-        findViewById<CardView>(R.id.cardCredit)?.setOnClickListener {
-            try { startActivity(Intent(this, CreditActivity::class.java)) }
-            catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
-        }
-
-        // Statistik
-        findViewById<CardView>(R.id.cardStatistics)?.setOnClickListener {
-            try { startActivity(Intent(this, StatisticsActivity::class.java)) }
+            try { startActivity(Intent(this, InstructionsActivity::class.java)) }
             catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
         }
     }
