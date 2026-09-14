@@ -82,5 +82,17 @@ class MainActivity : AppCompatActivity() {
             try { startActivity(Intent(this, InstructionsActivity::class.java)) }
             catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
         }
+
+        // Credit → CreditActivity
+        findViewById<CardView>(R.id.cardCredit)?.setOnClickListener {
+            try { startActivity(Intent(this, CreditActivity::class.java)) }
+            catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
+        }
+
+        // Saweria → SaweriaActivity
+        findViewById<CardView>(R.id.cardSaweria)?.setOnClickListener {
+            try { startActivity(Intent(this, SaweriaActivity::class.java)) }
+            catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
+        }
     }
 }
