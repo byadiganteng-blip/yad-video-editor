@@ -2,7 +2,6 @@ package com.yad.videoeditor
 
 import android.app.Activity
 import android.content.Context
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import com.startapp.sdk.ads.banner.Banner
@@ -14,11 +13,6 @@ import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener
 import com.startapp.sdk.adsbase.adlisteners.AdEventListener
 import com.startapp.sdk.adsbase.model.AdPreferences
 
-/**
- * StartAppHelper — iklan StartApp (banner + interstitial).
- *
- * App ID: 208878110
- */
 object StartAppHelper {
 
     private const val TAG = "StartAppHelper"
@@ -36,9 +30,6 @@ object StartAppHelper {
         }
     }
 
-    /**
-     * Load banner ke container.
-     */
     fun loadBanner(activity: Activity, container: ViewGroup) {
         try {
             val banner = Banner(activity, AdPreferences(), object : BannerListener {
@@ -61,9 +52,6 @@ object StartAppHelper {
         }
     }
 
-    /**
-     * Show interstitial.
-     */
     fun showInterstitial(activity: Activity, onDismiss: () -> Unit = {}) {
         val now = System.currentTimeMillis()
         if (now - lastInterstitialShown < INTERSTITIAL_COOLDOWN_MS) {
@@ -75,7 +63,6 @@ object StartAppHelper {
             val ad = StartAppAd(activity)
             ad.loadAd(AdPreferences(), object : AdEventListener {
                 override fun onReceiveAd(ad: Ad) {
-                    // Ad adalah base class dari StartAppAd
                     if (ad is StartAppAd) {
                         ad.showAd(object : AdDisplayListener {
                             override fun adHidden(ad: Ad) {
@@ -92,7 +79,7 @@ object StartAppHelper {
                         onDismiss()
                     }
                 }
-                override fun onFailedToReceiveAd(ad: Ad) {
+                override fun onFailedToReceiveAd(ad: Ad?) {
                     onDismiss()
                 }
             })
