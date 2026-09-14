@@ -28,6 +28,11 @@
         tools:targetApi="34">
 
         <activity
+            android:name=".SaweriaActivity"
+            android:exported="false" />
+
+
+        <activity
             android:name=".PanduanActivity"
             android:exported="false" />
         <activity
