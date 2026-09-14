@@ -11,7 +11,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 
 class TextToVideoActivity : AppCompatActivity() {
     companion object { private const val REQ_PICK_TXT = 1001 }
@@ -45,7 +44,7 @@ class TextToVideoActivity : AppCompatActivity() {
                     lastVideoPath = path
                     progressBar.progress = 100
                     tvPercent.text = "100%"
-                    tvStatus.text = "✅ Video selesai!"
+                    tvStatus.text = "✅ Video selesai: " + (path ?: "")
                     btnDownloadNow.visibility = View.VISIBLE
                 }
                 VideoGeneratorService.ACTION_FAILED -> {
@@ -202,7 +201,6 @@ class TextToVideoActivity : AppCompatActivity() {
         GeneratorState.saveProgress(this, 0, "Memulai...")
         FloatingProgressService.show(this, 0, "Memulai...")
 
-        // Semua mode via GitHub workflow
         val modeStr = when (mode.type) {
             ModeType.DIRECT -> "direct"
             ModeType.GOOGLE_IMAGE -> "google_image"
@@ -246,9 +244,21 @@ class TextToVideoActivity : AppCompatActivity() {
                     runOnUiThread {
                         AutoLogSaver.log("TextToVideo", "Workflow triggered: runId=" + runId)
                         tvStatus.text = "⏳ Video sedang dibuat di server..."
-                        // JANGAN hide floating di sini!
-                        // Floating harus tetap muncul sampai download selesai.
-                        pollWorkflowStatus(token, runId)
+
+                        // ============================================================
+                        //  FIX: Serahkan polling ke Service — biar persist
+                        // ============================================================
+                        val intent = Intent(this@TextToVideoActivity, VideoGeneratorService::class.java).apply {
+                            action = VideoGeneratorService.ACTION_POLL_WORKFLOW
+                            putExtra(VideoGeneratorService.EXTRA_RUN_ID, runId)
+                            putExtra(VideoGeneratorService.EXTRA_TOKEN, token)
+                        }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForegroundService(intent)
+                        } else {
+                            startService(intent)
+                        }
+                        AutoLogSaver.log("TextToVideo", "Polling delegated to VideoGeneratorService")
                     }
                 },
                 onError = { err ->
@@ -266,70 +276,5 @@ class TextToVideoActivity : AppCompatActivity() {
             tvStatus.text = "❌ " + (e.message ?: "Unknown error")
             FloatingProgressService.hide(this)
         }
-    }
-
-    private fun pollWorkflowStatus(token: String, runId: Long) {
-        val handler = android.os.Handler(android.os.Looper.getMainLooper())
-        var attempts = 0
-        val maxAttempts = 60
-
-        val checkRunnable = object : Runnable {
-            override fun run() {
-                attempts++
-                GitHubApiClient.checkWorkflowStatus(
-                    context = this@TextToVideoActivity,
-                    token = token,
-                    runId = runId,
-                    onStatus = { status, progress ->
-                        runOnUiThread {
-                            updateProgress(progress, "⏳ " + status)
-                            FloatingProgressService.update(this@TextToVideoActivity, progress, status)
-                        }
-                    },
-                    onComplete = { downloadUrl ->
-                        runOnUiThread {
-                            AutoLogSaver.log("TextToVideo", "Workflow complete")
-                            tvStatus.text = "✅ Video siap, mengunduh..."
-                            GitHubApiClient.downloadArtifact(
-                                context = this@TextToVideoActivity,
-                                token = token,
-                                artifactUrl = downloadUrl,
-                                onSuccess = { path ->
-                                    runOnUiThread {
-                                        lastVideoPath = path
-                                        progressBar.progress = 100
-                                        tvPercent.text = "100%"
-                                        tvStatus.text = "✅ Video selesai: " + path
-                                        btnDownloadNow.visibility = View.VISIBLE
-                                        FloatingProgressService.hide(this@TextToVideoActivity)
-                                        GeneratorState.saveRunning(this@TextToVideoActivity, false)
-                                    }
-                                },
-                                onError = { err ->
-                                    runOnUiThread {
-                                        tvStatus.text = "❌ Download gagal: " + err
-                                        FloatingProgressService.hide(this@TextToVideoActivity)
-                                        GeneratorState.saveRunning(this@TextToVideoActivity, false)
-                                    }
-                                }
-                            )
-                        }
-                    },
-                    onError = { err ->
-                        runOnUiThread {
-                            if (attempts < maxAttempts) {
-                                handler.postDelayed(this, 5000)
-                            } else {
-                                tvStatus.text = "❌ Timeout: " + err
-                                FloatingProgressService.hide(this@TextToVideoActivity)
-                                GeneratorState.saveRunning(this@TextToVideoActivity, false)
-                            }
-                        }
-                    }
-                )
-            }
-        }
-
-        handler.postDelayed(checkRunnable, 5000)
     }
 }
