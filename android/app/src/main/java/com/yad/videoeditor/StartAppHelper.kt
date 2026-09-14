@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import com.startapp.sdk.ads.banner.Banner
 import com.startapp.sdk.ads.banner.BannerListener
+import com.startapp.sdk.adsbase.Ad
 import com.startapp.sdk.adsbase.StartAppAd
 import com.startapp.sdk.adsbase.StartAppSDK
 import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener
@@ -16,7 +17,6 @@ import com.startapp.sdk.adsbase.model.AdPreferences
 /**
  * StartAppHelper — iklan StartApp (banner + interstitial).
  *
- * Dipakai sebagai alternatif AdMob yang tidak butuh Play Store.
  * App ID: 208878110
  */
 object StartAppHelper {
@@ -27,9 +27,6 @@ object StartAppHelper {
     private var lastInterstitialShown = 0L
     private const val INTERSTITIAL_COOLDOWN_MS = 60_000L
 
-    /**
-     * Init StartApp SDK — panggil di MainActivity.onCreate()
-     */
     fun init(context: Context) {
         try {
             StartAppSDK.init(context, APP_ID, false)
@@ -40,12 +37,11 @@ object StartAppHelper {
     }
 
     /**
-     * Load banner ke container FrameLayout.
+     * Load banner ke container.
      */
     fun loadBanner(activity: Activity, container: ViewGroup) {
         try {
-            val banner = Banner(activity, 320, 50)
-            banner.setBannerListener(object : BannerListener {
+            val banner = Banner(activity, AdPreferences(), object : BannerListener {
                 override fun onReceiveAd(view: View) {
                     AutoLogSaver.log(TAG, "Banner loaded")
                     try {
@@ -66,7 +62,7 @@ object StartAppHelper {
     }
 
     /**
-     * Show interstitial — panggil setelah aksi penting.
+     * Show interstitial.
      */
     fun showInterstitial(activity: Activity, onDismiss: () -> Unit = {}) {
         val now = System.currentTimeMillis()
@@ -77,22 +73,26 @@ object StartAppHelper {
 
         try {
             val ad = StartAppAd(activity)
-            val prefs = AdPreferences()
-            ad.loadAd(prefs, object : AdEventListener {
-                override fun onReceiveAd(ad: StartAppAd) {
-                    ad.showAd(object : AdDisplayListener {
-                        override fun adHidden(ad: StartAppAd?) {
-                            lastInterstitialShown = System.currentTimeMillis()
-                            onDismiss()
-                        }
-                        override fun adDisplayed(ad: StartAppAd?) {}
-                        override fun adClicked(ad: StartAppAd?) {}
-                        override fun adNotDisplayed(ad: StartAppAd?) {
-                            onDismiss()
-                        }
-                    })
+            ad.loadAd(AdPreferences(), object : AdEventListener {
+                override fun onReceiveAd(ad: Ad) {
+                    // Ad adalah base class dari StartAppAd
+                    if (ad is StartAppAd) {
+                        ad.showAd(object : AdDisplayListener {
+                            override fun adHidden(ad: Ad) {
+                                lastInterstitialShown = System.currentTimeMillis()
+                                onDismiss()
+                            }
+                            override fun adDisplayed(ad: Ad) {}
+                            override fun adClicked(ad: Ad) {}
+                            override fun adNotDisplayed(ad: Ad) {
+                                onDismiss()
+                            }
+                        })
+                    } else {
+                        onDismiss()
+                    }
                 }
-                override fun onFailedToReceiveAd(ad: StartAppAd?) {
+                override fun onFailedToReceiveAd(ad: Ad) {
                     onDismiss()
                 }
             })
