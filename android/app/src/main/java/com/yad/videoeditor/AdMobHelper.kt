@@ -52,10 +52,24 @@ object AdMobHelper {
     // ============================================================
     //  BANNER AD
     // ============================================================
-    fun loadBanner(activity: Activity, adView: AdView) {
+    fun loadBanner(activity: Activity, adView: AdView, fallbackToStartApp: Boolean = true) {
         try {
             adView.adUnitId = BANNER_AD_UNIT
             adView.setAdSize(AdSize.BANNER)
+            
+            // Callback kalau AdMob gagal
+            adView.adListener = object : com.google.android.gms.ads.AdListener() {
+                override fun onAdLoaded() {
+                    Log.d(TAG, "✅ AdMob banner loaded")
+                }
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    Log.e(TAG, "❌ AdMob banner failed: ${error.message}")
+                    if (fallbackToStartApp) {
+                        Log.d(TAG, "→ Fallback ke StartApp")
+                    }
+                }
+            }
+            
             adView.loadAd(AdRequest.Builder().build())
             Log.d(TAG, "✅ Banner loading: $BANNER_AD_UNIT")
         } catch (e: Exception) {
