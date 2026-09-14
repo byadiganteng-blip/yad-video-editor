@@ -303,7 +303,16 @@ jobs:
                       if r.status_code == 200 and len(r.content) > 1000:
                           img = Image.open(BytesIO(r.content)).convert("RGB")
                           img = img.resize((WIDTH, HEIGHT), Image.LANCZOS)
-                          out = f"scenes/scene_{idx:02d}.png"
+                
+                # CROP WATERMARK POLLINATIONS - buang 60px bawah
+                try:
+                    w, h = img.size
+                    img = img.crop((0, 0, w, h - 60))
+                    img = img.resize((WIDTH, HEIGHT), Image.LANCZOS)
+                except Exception:
+                    pass
+                
+                                          out = f"scenes/scene_{idx:02d}.png"
                           img.save(out)
                           print(f"    ✅ OK (attempt {attempt+1})")
                           return out
