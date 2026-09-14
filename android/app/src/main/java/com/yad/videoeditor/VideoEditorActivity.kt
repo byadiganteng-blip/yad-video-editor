@@ -437,7 +437,7 @@ class VideoEditorActivity : AppCompatActivity() {
         val path = requireVideo() ?: return
         val posMs = exoPlayer?.currentPosition ?: 0L
         val sec = posMs / 1000.0
-        val ts = String.format("00:00:%05.2f", sec)
+        val ts = String.format(java.util.Locale.US, "%.2f", sec)
         runEdit("screenshot") { ok, err ->
             VideoEditorHelper.screenshot(this, path, ts, ok, err)
         }
