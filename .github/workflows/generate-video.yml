@@ -3,46 +3,14 @@ name: Generate Video
 on:
   workflow_dispatch:
     inputs:
-      mode:
-        description: 'Mode'
-        required: true
-        default: 'ai_model'
-        type: choice
-        options: [direct, google_image, ai_model]
-      style_suffix:
-        description: 'Style suffix'
-        required: false
-        default: ''
-        type: string
-      model_id:
-        description: 'Model ID'
-        required: false
-        default: ''
-        type: string
-      prompt:
-        description: 'Cerita'
-        required: true
-        type: string
-      voice:
-        description: 'Voice (id-ID-ArdiNeural / id-ID-GadisNeural)'
-        required: false
-        default: 'id-ID-ArdiNeural'
-        type: string
-      watermark:
-        description: 'Watermark'
-        required: false
-        default: ''
-        type: string
-      show_subtitle:
-        description: 'Tampilkan subtitle (true/false)'
-        required: false
-        default: 'false'
-        type: string
-      subtitle_style:
-        description: 'Style subtitle'
-        required: false
-        default: 'neon'
-        type: string
+      mode: {required: true, default: 'ai_model', type: choice, options: [direct, google_image, ai_model]}
+      style_suffix: {required: false, default: '', type: string}
+      model_id: {required: false, default: '', type: string}
+      prompt: {required: true, type: string}
+      voice: {required: false, default: 'id-ID-ArdiNeural', type: string}
+      watermark: {required: false, default: '', type: string}
+      show_subtitle: {required: false, default: 'false', type: string}
+      subtitle_style: {required: false, default: 'neon', type: string}
 
 jobs:
   generate:
@@ -50,27 +18,22 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install deps
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg fonts-dejavu fonts-noto
           pip install --quiet edge-tts requests pillow
-
       - name: Generate Video
         env:
           PROMPT: ${{ github.event.inputs.prompt }}
           VOICE: ${{ github.event.inputs.voice }}
           WATERMARK: ${{ github.event.inputs.watermark }}
           SHOW_SUBTITLE: ${{ github.event.inputs.show_subtitle }}
-          SUBTITLE_STYLE: ${{ github.event.inputs.subtitle_style }}
           STYLE_SUFFIX: ${{ github.event.inputs.style_suffix }}
           MODEL_ID: ${{ github.event.inputs.model_id }}
           MODE: ${{ github.event.inputs.mode }}
@@ -78,7 +41,7 @@ jobs:
         run: |
           mkdir -p output scenes
           cat > /tmp/generate.py << 'PYEOF'
-          import asyncio, os, re, subprocess, requests, urllib.parse, textwrap
+          import asyncio, os, re, subprocess, requests, urllib.parse, textwrap, time
           from io import BytesIO
           from PIL import Image
 
@@ -88,36 +51,61 @@ jobs:
           SHOW_SUBTITLE = os.environ.get("SHOW_SUBTITLE", "false").lower() == "true"
           STYLE_SUFFIX = os.environ.get("STYLE_SUFFIX", "")
           MODEL_ID = os.environ.get("MODEL_ID", "")
-          MODE = os.environ.get("MODE", "ai_model")
           JOB_ID = os.environ.get("JOB_ID", "0")
 
-          # ============================================================
-          #  FIX VOICE — map nama lama ke format edge-tts
-          # ============================================================
+          # Voice mapping
           VOICE_MAP = {
-              "male_id": "id-ID-ArdiNeural",
-              "female_id": "id-ID-GadisNeural",
-              "pria": "id-ID-ArdiNeural",
-              "wanita": "id-ID-GadisNeural",
-              "ardi": "id-ID-ArdiNeural",
-              "gadis": "id-ID-GadisNeural",
-              "id-ID-Standard-A": "id-ID-GadisNeural",
-              "id-ID-Standard-B": "id-ID-ArdiNeural",
+              "male_id": "id-ID-ArdiNeural", "female_id": "id-ID-GadisNeural",
+              "pria": "id-ID-ArdiNeural", "wanita": "id-ID-GadisNeural",
+              "id-ID-Standard-A": "id-ID-GadisNeural", "id-ID-Standard-B": "id-ID-ArdiNeural",
           }
           VOICE = VOICE_MAP.get(VOICE_RAW.lower(), VOICE_RAW)
-          # Validasi
-          VALID_VOICES = ["id-ID-ArdiNeural", "id-ID-GadisNeural"]
-          if VOICE not in VALID_VOICES:
-              print(f"⚠️  Voice '{VOICE_RAW}' tidak valid, pakai default")
+          if VOICE not in ["id-ID-ArdiNeural", "id-ID-GadisNeural"]:
               VOICE = "id-ID-ArdiNeural"
-
-          print(f"=== Generate Video ===")
-          print(f"Mode: {MODE}")
-          print(f"Model: {MODEL_ID}")
-          print(f"Voice input: {VOICE_RAW} → used: {VOICE}")
-          print(f"Show subtitle: {SHOW_SUBTITLE}")
+          print(f"Voice: {VOICE_RAW} → {VOICE}")
 
           WIDTH, HEIGHT = 1280, 720
+          MAX_SCENES = 10           # Maksimal 10 scene
+          MAX_CHARS_PER_SCENE = 150 # Maksimal 150 char per scene
+
+          # ============================================================
+          #  SPLIT TEKS PANJANG JADI BEBERAPA PART
+          # ============================================================
+          def split_into_scenes(text, max_scenes=10, max_chars=150):
+              # Split by kalimat
+              sentences = [s.strip() for s in re.split(r'[.!?]+', text) if s.strip()]
+              if not sentences:
+                  return [text]
+              
+              # Gabung kalimat pendek
+              scenes = []
+              current = ""
+              for s in sentences:
+                  if len(current) + len(s) + 1 <= max_chars:
+                      current = (current + " " + s).strip() if current else s
+                  else:
+                      if current: scenes.append(current)
+                      current = s
+              if current: scenes.append(current)
+              
+              # Kalau masih > max_scenes, gabung yang berdekatan
+              while len(scenes) > max_scenes:
+                  # Gabung 2 scene terpendek
+                  merged = []
+                  i = 0
+                  while i < len(scenes):
+                      if i + 1 < len(scenes) and len(merged) < max_scenes:
+                          merged.append(scenes[i] + " " + scenes[i+1])
+                          i += 2
+                      else:
+                          merged.append(scenes[i])
+                          i += 1
+                  scenes = merged
+              
+              return scenes
+
+          scenes = split_into_scenes(PROMPT, MAX_SCENES, MAX_CHARS_PER_SCENE)
+          print(f"Split into {len(scenes)} scenes")
 
           # ============================================================
           #  STORY ANALYZER
@@ -144,12 +132,9 @@ jobs:
               "cemetery": ["kuburan","makam","kubur"],
           }
           EFFECT_MAP = {
-              "rain": ["hujan","gerimis"],
-              "fog": ["kabut","berkabut","asap"],
-              "fire": ["api","kebakaran"],
-              "lightning": ["petir","kilat"],
-              "ghost": ["hantu","arwah","setan"],
-              "mirror": ["cermin","kaca","pantulan"],
+              "rain": ["hujan","gerimis"], "fog": ["kabut","berkabut"],
+              "fire": ["api","kebakaran"], "lightning": ["petir","kilat"],
+              "ghost": ["hantu","arwah","setan"], "mirror": ["cermin","kaca"],
               "shadow": ["bayangan","siluet"],
           }
 
@@ -160,103 +145,85 @@ jobs:
                   mx = max(hits.values()) if hits else 0
                   return max(hits, key=hits.get) if mx > 0 else None
               return {
-                  "mood": best(MOOD_MAP),
-                  "time": best(TIME_MAP),
-                  "loc": best(LOC_MAP),
+                  "mood": best(MOOD_MAP), "time": best(TIME_MAP), "loc": best(LOC_MAP),
                   "effects": [e for e, ws in EFFECT_MAP.items() if any(w in lower for w in ws)]
               }
 
           def build_prompt(scene_text):
               d = analyze(scene_text)
               parts = []
-              # Karakter (kata kapital)
+              # Karakter
               for w in scene_text.split():
                   clean = w.strip(".,!?")
                   if len(clean) > 2 and clean[0].isupper():
-                      parts.append(clean)
-                      break
+                      parts.append(clean); break
               # Mood
-              md = {"horror":"creepy dark","happy":"joyful bright","sad":"melancholic",
-                    "action":"dynamic action","romantic":"romantic soft","mystery":"mysterious",
+              md = {"horror":"creepy dark atmosphere","happy":"joyful bright","sad":"melancholic",
+                    "action":"dynamic action","romantic":"romantic soft","mystery":"mysterious enigmatic",
                     "magic":"magical glowing"}
               if d["mood"]: parts.append(md.get(d["mood"], "atmospheric"))
               # Time
               td = {"night":"night moonlight","day":"daytime sunlight","sunset":"golden hour"}
               if d["time"]: parts.append(td.get(d["time"], "daytime"))
               # Location
-              ld = {"house":"cozy room","forest":"dense forest","city":"city street",
-                    "beach":"beach","cemetery":"graveyard"}
+              ld = {"house":"cozy room interior","forest":"dense forest","city":"city street",
+                    "beach":"beach ocean","cemetery":"graveyard"}
               if d["loc"]: parts.append(ld.get(d["loc"], ""))
               # Effects
-              ed = {"rain":"rainy","fog":"foggy","fire":"fire","lightning":"lightning",
-                    "ghost":"ghostly","mirror":"mirror reflection","shadow":"shadows"}
+              ed = {"rain":"rainy wet","fog":"foggy misty","fire":"fire flames","lightning":"thunderstorm",
+                    "ghost":"ghostly supernatural","mirror":"mirror reflection","shadow":"shadows"}
               for e in d["effects"]:
                   if e in ed: parts.append(ed[e])
               # Style
               if STYLE_SUFFIX: parts.append(STYLE_SUFFIX)
+              # Detail
+              parts.append("high quality, detailed")
 
               prompt = ", ".join(p for p in parts if p)
-
-              # SANITASI: batasi panjang + buang karakter aneh
+              # Sanitasi
               prompt = re.sub(r'[^\w\s,\-]', '', prompt)
-              if len(prompt) > 180:
-                  prompt = prompt[:180].rsplit(",", 1)[0]
               return prompt
 
-          # Split scenes
-          sents = [s.strip() for s in PROMPT.replace("!", ".").replace("?", ".").split(".") if s.strip()]
-          if not sents: sents = [PROMPT]
-          SCENES = min(6, len(sents))
-          if len(sents) > SCENES:
-              step = len(sents) / SCENES
-              scenes = [sents[int(i*step)] for i in range(SCENES)]
-          else:
-              scenes = sents
-
-          print(f"Scenes: {len(scenes)}")
-
           # ============================================================
-          #  GENERATE IMAGES — dengan retry + fallback
+          #  GENERATE IMAGES
           # ============================================================
           def gen_image(scene_text, idx):
               prompt = build_prompt(scene_text)
-              print(f"\n  Scene {idx+1}: {prompt}")
+              # Batasi prompt (Pollinations aman sampai ~400 char)
+              if len(prompt) > 400:
+                  prompt = prompt[:400].rsplit(",", 1)[0]
+              print(f"\n  Scene {idx+1}: {prompt[:100]}...")
               
-              # Coba 3x
               for attempt in range(3):
                   try:
                       encoded = urllib.parse.quote(prompt)
                       seed = (int(JOB_ID) + idx * 100 + attempt) % 100000
                       url = f"https://image.pollinations.ai/prompt/{encoded}?width={WIDTH}&height={HEIGHT}&nologo=true&seed={seed}"
                       
-                      r = requests.get(url, timeout=60)
+                      r = requests.get(url, timeout=90)
                       if r.status_code == 200 and len(r.content) > 1000:
                           img = Image.open(BytesIO(r.content)).convert("RGB").resize((WIDTH, HEIGHT), Image.LANCZOS)
                           out = f"scenes/scene_{idx:02d}.png"
                           img.save(out)
                           print(f"    ✅ OK (attempt {attempt+1})")
                           return out
-                      print(f"    ⚠️ HTTP {r.status_code}, retry...")
+                      print(f"    ⚠️ HTTP {r.status_code}, retry {attempt+2}/3...")
                   except Exception as e:
-                      print(f"    ⚠️ {e}, retry...")
-                  
-                  import time
-                  time.sleep(3)
+                      print(f"    ⚠️ {e}, retry {attempt+2}/3...")
+                  time.sleep(5)
               
-              # Fallback: solid gradient
+              # Fallback
               print(f"    ❌ Gagal, pakai solid")
-              img = Image.new("RGB", (WIDTH, HEIGHT), (30, 58, 138))
-              out = f"scenes/scene_{idx:02d}.png"
-              img.save(out)
-              return out
+              Image.new("RGB", (WIDTH, HEIGHT), (30, 58, 138)).save(f"scenes/scene_{idx:02d}.png")
+              return f"scenes/scene_{idx:02d}.png"
 
-          print("\n=== Generate Images ===")
+          print(f"\n=== Generate {len(scenes)} Images ===")
           scene_imgs = [gen_image(s, i) for i, s in enumerate(scenes)]
 
           # ============================================================
           #  TTS
           # ============================================================
-          print(f"\n=== TTS (voice={VOICE}) ===")
+          print(f"\n=== TTS ===")
           async def gen_tts():
               import edge_tts
               c = edge_tts.Communicate(PROMPT, VOICE)
@@ -265,7 +232,7 @@ jobs:
           print("TTS OK")
 
           # ============================================================
-          #  RENDER
+          #  RENDER VIDEO
           # ============================================================
           print("\n=== Render ===")
           audio_dur = float(subprocess.check_output(
@@ -302,8 +269,6 @@ jobs:
                   "output/video_withsub.mp4"
               ], check=True)
               video_input = "output/video_withsub.mp4"
-          else:
-              print("Skipping subtitle")
 
           subprocess.run([
               "ffmpeg","-y","-i",video_input,"-i","output/narration.mp3",
@@ -322,18 +287,16 @@ jobs:
               os.replace("output/final_video_wm.mp4", "output/final_video.mp4")
 
           print(f"\n=== DONE ===")
+          print(f"Scenes: {len(scene_imgs)}")
           print(f"Size: {os.path.getsize('output/final_video.mp4')} bytes")
           PYEOF
           python3 /tmp/generate.py
-
-      - name: Upload Artifact
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: video-output
           path: output/final_video.mp4
           retention-days: 3
-          if-no-files-found: error
-
       - name: Cleanup
         if: always()
         uses: actions/github-script@v7
