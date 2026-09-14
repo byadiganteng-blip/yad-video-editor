@@ -28,6 +28,9 @@ class MainActivity : AppCompatActivity() {
         AdMobHelper.loadInterstitial(this)
         AdMobHelper.loadRewarded(this)
 
+        // Init StartApp sebagai alternatif
+        StartAppHelper.init(this)
+
         setupBannerAd()
         setupCards()
     }
