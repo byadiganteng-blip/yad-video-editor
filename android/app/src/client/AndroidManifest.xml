@@ -27,6 +27,11 @@
         tools:replace="android:allowBackup,android:label,android:name">
 
         <activity
+            android:name=".SaweriaActivity"
+            android:exported="false" />
+
+
+        <activity
             android:name=".PanduanActivity"
             android:exported="false" />
         <activity
