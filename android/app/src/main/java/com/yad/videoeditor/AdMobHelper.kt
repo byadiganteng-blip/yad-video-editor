@@ -45,7 +45,7 @@ object AdMobHelper {
     //  INIT — load rewarded + interstitial
     // ============================================================
     fun init(context: Context) {
-        Log.d(TAG, "AdMobHelper initialized")
+        AutoLogSaver.log(TAG, "AdMobHelper initialized")
     }
 
 
@@ -60,20 +60,20 @@ object AdMobHelper {
             // Callback kalau AdMob gagal
             adView.adListener = object : com.google.android.gms.ads.AdListener() {
                 override fun onAdLoaded() {
-                    Log.d(TAG, "✅ AdMob banner loaded")
+                    AutoLogSaver.log(TAG, "✅ AdMob banner loaded")
                 }
                 override fun onAdFailedToLoad(error: LoadAdError) {
-                    Log.e(TAG, "❌ AdMob banner failed: ${error.message}")
+                    AutoLogSaver.logError(TAG, "❌ AdMob banner failed: ${error.message}")
                     if (fallbackToStartApp) {
-                        Log.d(TAG, "→ Fallback ke StartApp")
+                        AutoLogSaver.log(TAG, "→ Fallback ke StartApp")
                     }
                 }
             }
             
             adView.loadAd(AdRequest.Builder().build())
-            Log.d(TAG, "✅ Banner loading: $BANNER_AD_UNIT")
+            AutoLogSaver.log(TAG, "✅ Banner loading: $BANNER_AD_UNIT")
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Banner error: ${e.message}")
+            AutoLogSaver.logError(TAG, "❌ Banner error: ${e.message}")
         }
     }
 
@@ -87,11 +87,11 @@ object AdMobHelper {
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {
                     rewardedAd = ad
-                    Log.d(TAG, "✅ Rewarded loaded")
+                    AutoLogSaver.log(TAG, "✅ Rewarded loaded")
                 }
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     rewardedAd = null
-                    Log.e(TAG, "❌ Rewarded failed: ${error.message}")
+                    AutoLogSaver.logError(TAG, "❌ Rewarded failed: ${error.message}")
                 }
             }
         )
@@ -119,7 +119,7 @@ object AdMobHelper {
         }
 
         ad.show(activity) { rewardItem ->
-            Log.d(TAG, "🎁 Reward: ${rewardItem.amount} ${rewardItem.type}")
+            AutoLogSaver.log(TAG, "🎁 Reward: ${rewardItem.amount} ${rewardItem.type}")
             onReward(true)
         }
     }
@@ -134,11 +134,11 @@ object AdMobHelper {
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
                     interstitialAd = ad
-                    Log.d(TAG, "✅ Interstitial loaded")
+                    AutoLogSaver.log(TAG, "✅ Interstitial loaded")
                 }
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     interstitialAd = null
-                    Log.e(TAG, "❌ Interstitial failed: ${error.message}")
+                    AutoLogSaver.logError(TAG, "❌ Interstitial failed: ${error.message}")
                 }
             }
         )
