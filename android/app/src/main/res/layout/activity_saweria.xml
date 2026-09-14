@@ -143,7 +143,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="• Biaya hosting & bandwidth"
+                android:text="• Biaya hosting &amp; bandwidth"
                 android:textColor="#555555"
                 android:textSize="13sp" />
 
