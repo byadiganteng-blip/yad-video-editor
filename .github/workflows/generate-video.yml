@@ -8,26 +8,23 @@ on:
         required: true
         default: 'ai_model'
         type: choice
-        options:
-          - direct
-          - google_image
-          - ai_model
+        options: [direct, google_image, ai_model]
       style_suffix:
-        description: 'Style suffix (dari APK)'
+        description: 'Style suffix'
         required: false
         default: ''
         type: string
       model_id:
-        description: 'Model ID (untuk log)'
+        description: 'Model ID'
         required: false
         default: ''
         type: string
       prompt:
-        description: 'Teks/cerita'
+        description: 'Cerita'
         required: true
         type: string
       voice:
-        description: 'Voice'
+        description: 'Voice (id-ID-ArdiNeural / id-ID-GadisNeural)'
         required: false
         default: 'id-ID-ArdiNeural'
         type: string
@@ -39,7 +36,7 @@ on:
       show_subtitle:
         description: 'Tampilkan subtitle (true/false)'
         required: false
-        default: 'false'          # ← DEFAULT FALSE
+        default: 'false'
         type: string
       subtitle_style:
         description: 'Style subtitle'
@@ -49,7 +46,6 @@ on:
 
 jobs:
   generate:
-    name: Generate Video
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -62,7 +58,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Dependencies
+      - name: Install deps
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg fonts-dejavu fonts-noto
@@ -82,173 +78,173 @@ jobs:
         run: |
           mkdir -p output scenes
           cat > /tmp/generate.py << 'PYEOF'
-          import asyncio, os, subprocess, requests, urllib.parse, textwrap
+          import asyncio, os, re, subprocess, requests, urllib.parse, textwrap
           from io import BytesIO
           from PIL import Image
 
           PROMPT = os.environ.get("PROMPT", "")
-          VOICE = os.environ.get("VOICE", "id-ID-ArdiNeural")
+          VOICE_RAW = os.environ.get("VOICE", "id-ID-ArdiNeural")
           WATERMARK = os.environ.get("WATERMARK", "")
           SHOW_SUBTITLE = os.environ.get("SHOW_SUBTITLE", "false").lower() == "true"
-          SUBTITLE_STYLE = os.environ.get("SUBTITLE_STYLE", "neon")
           STYLE_SUFFIX = os.environ.get("STYLE_SUFFIX", "")
           MODEL_ID = os.environ.get("MODEL_ID", "")
           MODE = os.environ.get("MODE", "ai_model")
           JOB_ID = os.environ.get("JOB_ID", "0")
 
+          # ============================================================
+          #  FIX VOICE — map nama lama ke format edge-tts
+          # ============================================================
+          VOICE_MAP = {
+              "male_id": "id-ID-ArdiNeural",
+              "female_id": "id-ID-GadisNeural",
+              "pria": "id-ID-ArdiNeural",
+              "wanita": "id-ID-GadisNeural",
+              "ardi": "id-ID-ArdiNeural",
+              "gadis": "id-ID-GadisNeural",
+              "id-ID-Standard-A": "id-ID-GadisNeural",
+              "id-ID-Standard-B": "id-ID-ArdiNeural",
+          }
+          VOICE = VOICE_MAP.get(VOICE_RAW.lower(), VOICE_RAW)
+          # Validasi
+          VALID_VOICES = ["id-ID-ArdiNeural", "id-ID-GadisNeural"]
+          if VOICE not in VALID_VOICES:
+              print(f"⚠️  Voice '{VOICE_RAW}' tidak valid, pakai default")
+              VOICE = "id-ID-ArdiNeural"
+
           print(f"=== Generate Video ===")
           print(f"Mode: {MODE}")
-          print(f"Style suffix: {STYLE_SUFFIX}")
-          print(f"Model ID: {MODEL_ID}")
-          print(f"Show subtitle: {SHOW_SUBTITLE}")   # ← LOG PENTING
-          print(f"Voice: {VOICE}")
+          print(f"Model: {MODEL_ID}")
+          print(f"Voice input: {VOICE_RAW} → used: {VOICE}")
+          print(f"Show subtitle: {SHOW_SUBTITLE}")
 
           WIDTH, HEIGHT = 1280, 720
 
           # ============================================================
-          # Story Analyzer (Python version)
+          #  STORY ANALYZER
           # ============================================================
           MOOD_MAP = {
-              "horror": ["seram","takut","hantu","gelap","teror","mengerikan",
-                         "horor","mayat","darah","kematian","menakutkan","panik"],
-              "happy": ["senang","bahagia","gembira","tawa","tertawa","ceria",
-                        "sukacita","riang","girang"],
-              "sad": ["sedih","menangis","tangis","duka","kehilangan","pilu",
-                      "nestapa","air mata"],
-              "action": ["kejar","lari","tembak","ledakan","perang","bertarung",
-                         "adu","pukul","tinju"],
-              "romantic": ["cinta","kasih","peluk","cium","rindu","kekasih","sayang"],
-              "mystery": ["misteri","rahasia","teka-teki","misterius","aneh","gangguan"],
-              "magic": ["sihir","ajaib","mantra","sulap","gaib","magis","sakti"],
+              "horror": ["seram","takut","hantu","gelap","teror","mengerikan","horor","mayat","darah","menakutkan"],
+              "happy": ["senang","bahagia","gembira","tawa","tertawa","ceria","riang"],
+              "sad": ["sedih","menangis","tangis","duka","kehilangan","pilu"],
+              "action": ["kejar","lari","tembak","ledakan","perang","bertarung"],
+              "romantic": ["cinta","kasih","peluk","cium","rindu","kekasih"],
+              "mystery": ["misteri","rahasia","teka-teki","misterius","aneh"],
+              "magic": ["sihir","ajaib","mantra","sulap","gaib","magis"],
           }
           TIME_MAP = {
-              "night": ["malam","gelap","tengah malam","petang","senja","bintang","bulan"],
-              "day": ["siang","pagi","terang","matahari","cerah","terik"],
-              "sunset": ["senja","maghrib","matahari terbenam","jingga","golden hour"],
-              "dawn": ["subuh","fajar","matahari terbit"],
+              "night": ["malam","gelap","tengah malam","petang","bintang","bulan"],
+              "day": ["siang","pagi","terang","matahari","cerah"],
+              "sunset": ["senja","maghrib","matahari terbenam","jingga"],
           }
           LOC_MAP = {
-              "house": ["rumah","kamar","dapur","ruang","halaman","pintu","jendela"],
-              "forest": ["hutan","pohon","rimba","belantara"],
-              "city": ["kota","jalan","gedung","mall","sekolah","pasar"],
-              "beach": ["pantai","laut","pesisir","pulau"],
-              "mountain": ["gunung","bukit","pegunungan","lembah"],
-              "cemetery": ["kuburan","makam","kubur","pemakaman"],
+              "house": ["rumah","kamar","dapur","ruang","pintu","jendela"],
+              "forest": ["hutan","pohon","rimba"],
+              "city": ["kota","jalan","gedung","sekolah","pasar"],
+              "beach": ["pantai","laut","pesisir"],
+              "cemetery": ["kuburan","makam","kubur"],
           }
           EFFECT_MAP = {
-              "rain": ["hujan","gerimis","basah"],
+              "rain": ["hujan","gerimis"],
               "fog": ["kabut","berkabut","asap"],
-              "fire": ["api","kebakaran","terbakar"],
-              "lightning": ["petir","kilat","geledek"],
-              "ghost": ["hantu","arwah","setan","iblis"],
+              "fire": ["api","kebakaran"],
+              "lightning": ["petir","kilat"],
+              "ghost": ["hantu","arwah","setan"],
               "mirror": ["cermin","kaca","pantulan"],
               "shadow": ["bayangan","siluet"],
           }
 
           def analyze(text):
               lower = text.lower()
-              mood = max(MOOD_MAP, key=lambda k: sum(1 for w in MOOD_MAP[k] if w in lower), default="neutral")
-              # Kalau tidak ada hit, set neutral
-              if sum(1 for w in MOOD_MAP.get(mood, []) if w in lower) == 0:
-                  mood = "neutral"
-              time = max(TIME_MAP, key=lambda k: sum(1 for w in TIME_MAP[k] if w in lower), default="day")
-              if sum(1 for w in TIME_MAP.get(time, []) if w in lower) == 0:
-                  time = "day"
-              loc = max(LOC_MAP, key=lambda k: sum(1 for w in LOC_MAP[k] if w in lower), default="")
-              if sum(1 for w in LOC_MAP.get(loc, []) if w in lower) == 0:
-                  loc = ""
-              effects = [e for e, ws in EFFECT_MAP.items() if any(w in lower for w in ws)]
-              return {"mood": mood, "time": time, "loc": loc, "effects": effects}
+              def best(m):
+                  hits = {k: sum(1 for w in v if w in lower) for k, v in m.items()}
+                  mx = max(hits.values()) if hits else 0
+                  return max(hits, key=hits.get) if mx > 0 else None
+              return {
+                  "mood": best(MOOD_MAP),
+                  "time": best(TIME_MAP),
+                  "loc": best(LOC_MAP),
+                  "effects": [e for e, ws in EFFECT_MAP.items() if any(w in lower for w in ws)]
+              }
 
           def build_prompt(scene_text):
               d = analyze(scene_text)
               parts = []
-              # Karakter utama (kata kapital pertama)
-              words = scene_text.split()
-              for w in words:
+              # Karakter (kata kapital)
+              for w in scene_text.split():
                   clean = w.strip(".,!?")
                   if len(clean) > 2 and clean[0].isupper():
-                      parts.append(clean); break
+                      parts.append(clean)
+                      break
               # Mood
-              mood_desc = {
-                  "horror": "creepy scary dark atmosphere",
-                  "happy": "joyful bright cheerful",
-                  "sad": "melancholic somber",
-                  "action": "dynamic action motion",
-                  "romantic": "romantic soft lighting",
-                  "mystery": "mysterious enigmatic",
-                  "magic": "magical glowing enchanted",
-                  "neutral": "atmospheric",
-              }.get(d["mood"], "atmospheric")
-              parts.append(mood_desc)
+              md = {"horror":"creepy dark","happy":"joyful bright","sad":"melancholic",
+                    "action":"dynamic action","romantic":"romantic soft","mystery":"mysterious",
+                    "magic":"magical glowing"}
+              if d["mood"]: parts.append(md.get(d["mood"], "atmospheric"))
               # Time
-              time_desc = {
-                  "night": "night moonlight stars",
-                  "day": "daytime bright sunlight",
-                  "sunset": "golden hour sunset warm light",
-                  "dawn": "dawn sunrise soft light",
-              }.get(d["time"], "daytime")
-              parts.append(time_desc)
+              td = {"night":"night moonlight","day":"daytime sunlight","sunset":"golden hour"}
+              if d["time"]: parts.append(td.get(d["time"], "daytime"))
               # Location
-              loc_desc = {
-                  "house": "inside house cozy room",
-                  "forest": "dense forest tall trees",
-                  "city": "urban city buildings",
-                  "beach": "beach ocean waves",
-                  "mountain": "mountains high altitude",
-                  "cemetery": "graveyard tombstones",
-              }.get(d["loc"], "")
-              if loc_desc: parts.append(loc_desc)
+              ld = {"house":"cozy room","forest":"dense forest","city":"city street",
+                    "beach":"beach","cemetery":"graveyard"}
+              if d["loc"]: parts.append(ld.get(d["loc"], ""))
               # Effects
-              eff_desc = {
-                  "rain": "rainy wet raindrops",
-                  "fog": "foggy misty hazy",
-                  "fire": "fire flames burning",
-                  "lightning": "lightning thunderstorm",
-                  "ghost": "ghostly supernatural spectral",
-                  "mirror": "mirror reflection glass",
-                  "shadow": "shadows silhouettes",
-              }
+              ed = {"rain":"rainy","fog":"foggy","fire":"fire","lightning":"lightning",
+                    "ghost":"ghostly","mirror":"mirror reflection","shadow":"shadows"}
               for e in d["effects"]:
-                  if e in eff_desc: parts.append(eff_desc[e])
-              # Style suffix dari APK
-              if STYLE_SUFFIX:
-                  parts.append(STYLE_SUFFIX)
-              return ", ".join(parts)
+                  if e in ed: parts.append(ed[e])
+              # Style
+              if STYLE_SUFFIX: parts.append(STYLE_SUFFIX)
 
-          # ============================================================
+              prompt = ", ".join(p for p in parts if p)
+
+              # SANITASI: batasi panjang + buang karakter aneh
+              prompt = re.sub(r'[^\w\s,\-]', '', prompt)
+              if len(prompt) > 180:
+                  prompt = prompt[:180].rsplit(",", 1)[0]
+              return prompt
+
           # Split scenes
-          # ============================================================
           sents = [s.strip() for s in PROMPT.replace("!", ".").replace("?", ".").split(".") if s.strip()]
           if not sents: sents = [PROMPT]
-          SCENES = 6
-          if len(sents) >= SCENES:
+          SCENES = min(6, len(sents))
+          if len(sents) > SCENES:
               step = len(sents) / SCENES
               scenes = [sents[int(i*step)] for i in range(SCENES)]
           else:
               scenes = sents
 
-          print(f"\nScenes: {len(scenes)}")
+          print(f"Scenes: {len(scenes)}")
 
           # ============================================================
-          # Generate images
+          #  GENERATE IMAGES — dengan retry + fallback
           # ============================================================
           def gen_image(scene_text, idx):
               prompt = build_prompt(scene_text)
-              encoded = urllib.parse.quote(prompt)
-              url = f"https://image.pollinations.ai/prompt/{encoded}?width={WIDTH}&height={HEIGHT}&nologo=true&seed={JOB_ID}_{idx}"
-              print(f"\n  Scene {idx+1}: {prompt[:80]}...")
-              try:
-                  r = requests.get(url, timeout=120)
-                  if r.status_code == 200 and len(r.content) > 1000:
-                      img = Image.open(BytesIO(r.content)).convert("RGB").resize((WIDTH, HEIGHT), Image.LANCZOS)
-                      out = f"scenes/scene_{idx:02d}.png"
-                      img.save(out)
-                      print(f"    ✅ {out}")
-                      return out
-                  print(f"    ❌ HTTP {r.status_code}")
-              except Exception as e:
-                  print(f"    ❌ {e}")
+              print(f"\n  Scene {idx+1}: {prompt}")
+              
+              # Coba 3x
+              for attempt in range(3):
+                  try:
+                      encoded = urllib.parse.quote(prompt)
+                      seed = (int(JOB_ID) + idx * 100 + attempt) % 100000
+                      url = f"https://image.pollinations.ai/prompt/{encoded}?width={WIDTH}&height={HEIGHT}&nologo=true&seed={seed}"
+                      
+                      r = requests.get(url, timeout=60)
+                      if r.status_code == 200 and len(r.content) > 1000:
+                          img = Image.open(BytesIO(r.content)).convert("RGB").resize((WIDTH, HEIGHT), Image.LANCZOS)
+                          out = f"scenes/scene_{idx:02d}.png"
+                          img.save(out)
+                          print(f"    ✅ OK (attempt {attempt+1})")
+                          return out
+                      print(f"    ⚠️ HTTP {r.status_code}, retry...")
+                  except Exception as e:
+                      print(f"    ⚠️ {e}, retry...")
+                  
+                  import time
+                  time.sleep(3)
+              
+              # Fallback: solid gradient
+              print(f"    ❌ Gagal, pakai solid")
               img = Image.new("RGB", (WIDTH, HEIGHT), (30, 58, 138))
               out = f"scenes/scene_{idx:02d}.png"
               img.save(out)
@@ -258,18 +254,18 @@ jobs:
           scene_imgs = [gen_image(s, i) for i, s in enumerate(scenes)]
 
           # ============================================================
-          # TTS
+          #  TTS
           # ============================================================
-          print("\n=== TTS ===")
+          print(f"\n=== TTS (voice={VOICE}) ===")
           async def gen_tts():
               import edge_tts
               c = edge_tts.Communicate(PROMPT, VOICE)
               await c.save("output/narration.mp3")
           asyncio.run(gen_tts())
-          print("TTS saved")
+          print("TTS OK")
 
           # ============================================================
-          # Render video
+          #  RENDER
           # ============================================================
           print("\n=== Render ===")
           audio_dur = float(subprocess.check_output(
@@ -277,7 +273,7 @@ jobs:
                "-of","default=noprint_wrappers=1:nokey=1","output/narration.mp3"]
           ).decode().strip())
           per_scene = audio_dur / len(scene_imgs)
-          print(f"Audio: {audio_dur:.1f}s, per scene: {per_scene:.1f}s")
+          print(f"Audio {audio_dur:.1f}s, per scene {per_scene:.1f}s")
 
           with open("scenes/concat.txt", "w") as f:
               for img in scene_imgs:
@@ -293,13 +289,9 @@ jobs:
               "output/video_noaudio.mp4"
           ], check=True)
 
-          # ============================================================
-          # Subtitle — HANYA kalau SHOW_SUBTITLE = true
-          # ============================================================
           video_input = "output/video_noaudio.mp4"
-
           if SHOW_SUBTITLE:
-              print("\n=== Adding Subtitle (karena dicentang) ===")
+              print("Adding subtitle...")
               lines = textwrap.wrap(PROMPT, width=40)
               sub_text = " ".join(lines[:3]).replace(":", "\\:").replace("'", "")
               subprocess.run([
@@ -311,7 +303,7 @@ jobs:
               ], check=True)
               video_input = "output/video_withsub.mp4"
           else:
-              print("\n=== Skipping Subtitle (tidak dicentang) ===")
+              print("Skipping subtitle")
 
           subprocess.run([
               "ffmpeg","-y","-i",video_input,"-i","output/narration.mp3",
@@ -330,7 +322,6 @@ jobs:
               os.replace("output/final_video_wm.mp4", "output/final_video.mp4")
 
           print(f"\n=== DONE ===")
-          print(f"Subtitle rendered: {SHOW_SUBTITLE}")
           print(f"Size: {os.path.getsize('output/final_video.mp4')} bytes")
           PYEOF
           python3 /tmp/generate.py
@@ -343,7 +334,7 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
-      - name: Cleanup Old Runs
+      - name: Cleanup
         if: always()
         uses: actions/github-script@v7
         with:
