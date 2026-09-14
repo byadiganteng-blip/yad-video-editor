@@ -47,6 +47,16 @@ class TextToVideoActivity : AppCompatActivity() {
                     tvPercent.text = "100%"
                     tvStatus.text = "✅ Video selesai: " + (path ?: "")
                     btnDownloadNow.visibility = View.VISIBLE
+                    
+                    // Tampilkan interstitial setelah video selesai
+                    try {
+                        AutoLogSaver.log("TextToVideo", "Video done, showing interstitial")
+                        StartAppHelper.showInterstitial(this@TextToVideoActivity) {
+                            AutoLogSaver.log("TextToVideo", "Interstitial closed")
+                        }
+                    } catch (e: Exception) {
+                        AutoLogSaver.logError("TextToVideo", "Interstitial failed", e)
+                    }
                 }
                 VideoGeneratorService.ACTION_FAILED -> {
                     tvStatus.text = "❌ " + (intent.getStringExtra(VideoGeneratorService.EXTRA_MESSAGE) ?: "Gagal")
