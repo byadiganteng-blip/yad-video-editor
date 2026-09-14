@@ -24,12 +24,6 @@ object DirectVideoGenerator {
     private const val BIT_RATE = 4_000_000
     private const val TIMEOUT_US = 10_000L
 
-    /**
-     * Generate video.
-     *
-     * @param styleSuffix  prompt suffix gaya visual (dari GenerationMode.styleSuffix)
-     * @param showSubtitle  true = tampilkan teks
-     */
     fun generateFromText(
         context: Context,
         text: String,
@@ -49,12 +43,17 @@ object DirectVideoGenerator {
                 val ttsFile = File(cacheDir, "direct_tts.mp3")
 
                 // Cari gambar dengan style + deteksi cerita
+                val keyword = extractKeyword(text)
+                AutoLogSaver.log(TAG, "Keyword: $keyword")
+
                 val imageFile = runBlocking {
-                    ImageSearcher.searchAndDownload(text, styleSuffix, cacheDir, 0)
+                    ImageSearcher.searchAndDownload(keyword, styleSuffix, cacheDir, 0)
                 }
 
                 if (imageFile != null) {
                     AutoLogSaver.log(TAG, "Image OK: ${imageFile.absolutePath}")
+                } else {
+                    AutoLogSaver.log(TAG, "No image — solid background")
                 }
 
                 // Encode video
@@ -107,6 +106,23 @@ object DirectVideoGenerator {
                 onError("Error: ${e.message}")
             }
         }.start()
+    }
+
+    private fun extractKeyword(text: String): String {
+        val clean = text.replace(Regex("[^a-zA-Z0-9 ]"), " ")
+            .replace(Regex("\\s+"), " ").trim()
+
+        val stopWords = setOf(
+            "yang", "dan", "di", "ke", "dari", "ini", "itu", "dengan",
+            "untuk", "pada", "adalah", "akan", "tidak", "sudah",
+            "the", "a", "an", "is", "are", "was", "were"
+        )
+
+        val words = clean.split(" ")
+            .filter { it.length > 3 && !stopWords.contains(it.lowercase()) }
+            .take(3)
+
+        return if (words.isEmpty()) "mysterious atmosphere" else words.joinToString(" ")
     }
 
     private fun encodeVideo(
@@ -225,8 +241,9 @@ object DirectVideoGenerator {
             try {
                 val img = BitmapFactory.decodeFile(imageFile.absolutePath)
                 if (img != null) {
-                    canvas.drawBitmap(img, Rect(0, 0, img.width, img.height),
-                        Rect(0, 0, WIDTH, HEIGHT), null)
+                    // Scale ke 1280x720 dengan centerCrop
+                    val srcRect = calculateCenterCropRect(img.width, img.height)
+                    canvas.drawBitmap(img, srcRect, Rect(0, 0, WIDTH, HEIGHT), null)
                     img.recycle()
                 }
             } catch (e: Exception) {
@@ -253,6 +270,26 @@ object DirectVideoGenerator {
             }
         }
         return bmp
+    }
+
+    /**
+     * Hitung Rect untuk centerCrop — crop gambar agar pas 16:9 tanpa distorsi.
+     */
+    private fun calculateCenterCropRect(imgW: Int, imgH: Int): Rect {
+        val targetRatio = WIDTH.toFloat() / HEIGHT
+        val imgRatio = imgW.toFloat() / imgH
+
+        return if (imgRatio > targetRatio) {
+            // Gambar lebih lebar → crop kiri-kanan
+            val newWidth = (imgH * targetRatio).toInt()
+            val xOffset = (imgW - newWidth) / 2
+            Rect(xOffset, 0, xOffset + newWidth, imgH)
+        } else {
+            // Gambar lebih tinggi → crop atas-bawah
+            val newHeight = (imgW / targetRatio).toInt()
+            val yOffset = (imgH - newHeight) / 2
+            Rect(0, yOffset, imgW, yOffset + newHeight)
+        }
     }
 
     private fun wrapText(text: String, paint: Paint, maxWidth: Float): List<String> {
