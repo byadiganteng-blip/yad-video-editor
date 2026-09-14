@@ -35,9 +35,10 @@ class TextToVideoActivity : AppCompatActivity() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 VideoGeneratorService.ACTION_PROGRESS -> {
-                    val pct = intent.getIntExtra(VideoGeneratorService.EXTRA_PERCENT, 0)
-                    val msg = intent.getStringExtra(VideoGeneratorService.EXTRA_MESSAGE) ?: ""
-                    updateProgress(pct, msg)
+                    updateProgress(
+                        intent.getIntExtra(VideoGeneratorService.EXTRA_PERCENT, 0),
+                        intent.getStringExtra(VideoGeneratorService.EXTRA_MESSAGE) ?: ""
+                    )
                 }
                 VideoGeneratorService.ACTION_DONE -> {
                     val path = intent.getStringExtra(VideoGeneratorService.EXTRA_FILE_PATH)
@@ -48,8 +49,7 @@ class TextToVideoActivity : AppCompatActivity() {
                     btnDownloadNow.visibility = View.VISIBLE
                 }
                 VideoGeneratorService.ACTION_FAILED -> {
-                    val msg = intent.getStringExtra(VideoGeneratorService.EXTRA_MESSAGE) ?: "Gagal"
-                    tvStatus.text = "❌ " + msg
+                    tvStatus.text = "❌ " + (intent.getStringExtra(VideoGeneratorService.EXTRA_MESSAGE) ?: "Gagal")
                 }
             }
         }
@@ -105,7 +105,6 @@ class TextToVideoActivity : AppCompatActivity() {
                 startActivity(intent)
             } ?: Toast.makeText(this, "Video belum siap", Toast.LENGTH_SHORT).show()
         }
-
         restoreState()
     }
 
@@ -115,24 +114,21 @@ class TextToVideoActivity : AppCompatActivity() {
             val msg = GeneratorState.getMessage(this)
             progressContainer.visibility = View.VISIBLE
             progressBar.progress = pct
-            tvPercent.text = pct.toString() + "%"
-            tvStatus.text = if (msg.isNotEmpty())
-                "⏳ " + msg else "⏳ Proses berjalan di background..."
+            tvPercent.text = "$pct%"
+            tvStatus.text = if (msg.isNotEmpty()) "⏳ $msg" else "⏳ Proses di background..."
         }
     }
 
     override fun onResume() {
         super.onResume()
-        val filter = IntentFilter().apply {
+        val f = IntentFilter().apply {
             addAction(VideoGeneratorService.ACTION_PROGRESS)
             addAction(VideoGeneratorService.ACTION_DONE)
             addAction(VideoGeneratorService.ACTION_FAILED)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(progressReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(progressReceiver, filter)
-        }
+            registerReceiver(progressReceiver, f, Context.RECEIVER_NOT_EXPORTED)
+        } else registerReceiver(progressReceiver, f)
         restoreState()
     }
 
@@ -144,47 +140,40 @@ class TextToVideoActivity : AppCompatActivity() {
     private fun updateProgress(pct: Int, msg: String) {
         progressContainer.visibility = View.VISIBLE
         progressBar.progress = pct
-        tvPercent.text = pct.toString() + "%"
+        tvPercent.text = "$pct%"
         tvStatus.text = msg
-        if (FloatingProgressService.isRunning) {
-            FloatingProgressService.update(this, pct, msg)
-        }
+        if (FloatingProgressService.isRunning) FloatingProgressService.update(this, pct, msg)
     }
 
     private fun pickTxtFile() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-            type = "text/plain"
-            addCategory(Intent.CATEGORY_OPENABLE)
-        }
-        startActivityForResult(Intent.createChooser(intent, "Pilih .txt"), REQ_PICK_TXT)
+        startActivityForResult(Intent.createChooser(Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "text/plain"; addCategory(Intent.CATEGORY_OPENABLE)
+        }, "Pilih .txt"), REQ_PICK_TXT)
     }
 
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQ_PICK_TXT && resultCode == Activity.RESULT_OK) {
-            val uri: Uri = data?.data ?: return
-            try {
-                val text = contentResolver.openInputStream(uri)
-                    ?.bufferedReader()?.use { it.readText() }
-                if (!text.isNullOrBlank()) etStory.setText(text)
-            } catch (_: Exception) {}
+            data?.data?.let { uri ->
+                try {
+                    val text = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                    if (!text.isNullOrBlank()) etStory.setText(text)
+                } catch (_: Exception) {}
+            }
         }
     }
 
     private fun generate() {
         val story = etStory.text.toString().trim()
         if (story.isEmpty()) {
-            Toast.makeText(this, "Masukkan cerita", Toast.LENGTH_SHORT).show()
-            return
+            Toast.makeText(this, "Masukkan cerita", Toast.LENGTH_SHORT).show(); return
         }
         if (!SecureConfig.hasGithubToken()) {
-            Toast.makeText(this, "Layanan belum siap, coba lagi sebentar", Toast.LENGTH_LONG).show()
-            return
+            Toast.makeText(this, "Layanan belum siap", Toast.LENGTH_LONG).show(); return
         }
 
         val mode = GenerationMode.values()[spModel.selectedItemPosition]
-        val modelName = mode.label
         val watermark = if (swShowWatermark.isChecked) etWatermark.text.toString().trim() else ""
         val voice = VoicePreset.ALL[spVoice.selectedItemPosition].id
         val showSubtitle = swShowSubtitle.isChecked
@@ -193,7 +182,7 @@ class TextToVideoActivity : AppCompatActivity() {
         progressContainer.visibility = View.VISIBLE
         progressBar.progress = 0
         tvPercent.text = "0%"
-        tvStatus.text = "Memulai dengan " + modelName + "..."
+        tvStatus.text = "Memulai dengan ${mode.label}..."
         btnDownloadNow.visibility = View.GONE
         lastVideoPath = null
 
@@ -201,19 +190,32 @@ class TextToVideoActivity : AppCompatActivity() {
         GeneratorState.saveProgress(this, 0, "Memulai...")
         FloatingProgressService.show(this, 0, "Memulai...")
 
+        // Analisa cerita dulu (log)
+        val detail = StoryAnalyzer.analyze(story)
+        AutoLogSaver.log("TextToVideo", "Story: mood=${detail.mood}, time=${detail.timeOfDay}, loc=${detail.location}")
+
         val modeStr = when (mode.type) {
             ModeType.DIRECT -> "direct"
             ModeType.GOOGLE_IMAGE -> "google_image"
             ModeType.AI_MODEL -> "ai_model"
         }
-        triggerGithubWorkflow(modeStr, story, voice, watermark, showSubtitle, subtitleStyle)
+
+        triggerGithubWorkflow(
+            mode = modeStr,
+            styleSuffix = mode.styleSuffix,   // ← Kirim style
+            modelId = mode.id,
+            prompt = story,
+            voice = voice,
+            watermark = watermark,
+            showSubtitle = showSubtitle,
+            subtitleStyle = subtitleStyle
+        )
     }
 
-    // ============================================================
-    //  GENERATE VIA GITHUB WORKFLOW
-    // ============================================================
     private fun triggerGithubWorkflow(
         mode: String,
+        styleSuffix: String,
+        modelId: String,
         prompt: String,
         voice: String,
         watermark: String,
@@ -221,50 +223,38 @@ class TextToVideoActivity : AppCompatActivity() {
         subtitleStyle: String
     ) {
         try {
-            AutoLogSaver.log("TextToVideo", "Trigger GitHub workflow: mode=" + mode)
+            AutoLogSaver.log("TextToVideo", "Trigger: mode=$mode, style=$styleSuffix, modelId=$modelId")
             tvStatus.text = "⏳ Mengirim ke server..."
 
             val token = SecureConfig.getGithubToken()
             if (token.isNullOrEmpty()) {
-                tvStatus.text = "❌ Layanan belum siap, coba lagi sebentar"
-                FloatingProgressService.hide(this)
-                return
+                tvStatus.text = "❌ Layanan belum siap"
+                FloatingProgressService.hide(this); return
             }
 
             GitHubApiClient.triggerVideoWorkflow(
-                context = this,
-                token = token,
-                mode = mode,
-                prompt = prompt,
-                voice = voice,
+                context = this, token = token,
+                mode = mode, modelId = modelId,
+                styleSuffix = styleSuffix,   // ← TAMBAH
+                prompt = prompt, voice = voice,
                 watermark = watermark,
                 showSubtitle = showSubtitle,
                 subtitleStyle = subtitleStyle,
                 onSuccess = { runId ->
                     runOnUiThread {
-                        AutoLogSaver.log("TextToVideo", "Workflow triggered: runId=" + runId)
-                        tvStatus.text = "⏳ Video sedang dibuat di server..."
-
-                        // ============================================================
-                        //  FIX: Serahkan polling ke Service — biar persist
-                        // ============================================================
-                        val intent = Intent(this@TextToVideoActivity, VideoGeneratorService::class.java).apply {
+                        AutoLogSaver.log("TextToVideo", "Triggered: runId=$runId")
+                        tvStatus.text = "⏳ Video sedang dibuat..."
+                        val i = Intent(this@TextToVideoActivity, VideoGeneratorService::class.java).apply {
                             action = VideoGeneratorService.ACTION_POLL_WORKFLOW
                             putExtra(VideoGeneratorService.EXTRA_RUN_ID, runId)
                             putExtra(VideoGeneratorService.EXTRA_TOKEN, token)
                         }
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            startForegroundService(intent)
-                        } else {
-                            startService(intent)
-                        }
-                        AutoLogSaver.log("TextToVideo", "Polling delegated to VideoGeneratorService")
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(i) else startService(i)
                     }
                 },
                 onError = { err ->
                     runOnUiThread {
-                        AutoLogSaver.logError("TextToVideo", "Trigger error", Exception(err))
-                        tvStatus.text = "❌ " + err
+                        tvStatus.text = "❌ $err"
                         progressContainer.visibility = View.GONE
                         FloatingProgressService.hide(this)
                         GeneratorState.saveRunning(this, false)
@@ -272,8 +262,8 @@ class TextToVideoActivity : AppCompatActivity() {
                 }
             )
         } catch (e: Exception) {
-            AutoLogSaver.logError("TextToVideo", "triggerGithubWorkflow failed", e)
-            tvStatus.text = "❌ " + (e.message ?: "Unknown error")
+            AutoLogSaver.logError("TextToVideo", "trigger failed", e)
+            tvStatus.text = "❌ ${e.message}"
             FloatingProgressService.hide(this)
         }
     }
