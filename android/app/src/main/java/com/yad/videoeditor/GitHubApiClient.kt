@@ -26,6 +26,9 @@ object GitHubApiClient {
     private const val REPO = "yad-video-editor"
     private const val WORKFLOW_FILE = "generate-video.yml"
 
+    // Progress tracking
+    private val startTimes = mutableMapOf<Long, Long>()
+
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
@@ -41,15 +44,12 @@ object GitHubApiClient {
         .followSslRedirects(false)
         .build()
 
-    // ============================================================
-    //  TRIGGER WORKFLOW — terima modelId + styleSuffix
-    // ============================================================
     fun triggerVideoWorkflow(
         context: Context,
         token: String,
         mode: String,
-        modelId: String,           // ← ADA
-        styleSuffix: String,       // ← ADA
+        modelId: String,
+        styleSuffix: String,
         prompt: String,
         voice: String,
         watermark: String,
@@ -67,7 +67,7 @@ object GitHubApiClient {
                     put("inputs", JSONObject().apply {
                         put("mode", mode)
                         put("model_id", modelId)
-                        put("style_suffix", styleSuffix)     // ← KIRIM
+                        put("style_suffix", styleSuffix)
                         put("prompt", prompt)
                         put("voice", voice)
                         put("watermark", watermark)
@@ -100,6 +100,8 @@ object GitHubApiClient {
                 if (runId == 0L) {
                     withContext(Dispatchers.Main) { onError("Gagal dapat run ID") }
                 } else {
+                    // Catat waktu mulai untuk progress
+                    startTimes[runId] = System.currentTimeMillis()
                     withContext(Dispatchers.Main) { onSuccess(runId) }
                 }
             } catch (e: Exception) {
@@ -147,6 +149,9 @@ object GitHubApiClient {
         return 0L
     }
 
+    /**
+     * Cek status + hitung progress smooth.
+     */
     fun checkStatusOnce(
         token: String,
         runId: Long,
@@ -168,24 +173,60 @@ object GitHubApiClient {
             val status = json.getString("status")
             val conclusion = json.optString("conclusion", "")
 
+            AutoLogSaver.log(TAG, "Status: $status ($conclusion)")
+
             when (status) {
-                "queued" -> { onStatus("Menunggu antrian...", 10); null }
-                "in_progress" -> { onStatus("Sedang membuat video...", 50); null }
+                "queued" -> {
+                    onStatus("Menunggu antrian...", 5)
+                    null
+                }
+                "in_progress" -> {
+                    // Progress smooth: naik perlahan dari 10 → 95
+                    val progress = calculateSmoothProgress(runId)
+                    onStatus("Sedang membuat video...", progress)
+                    null
+                }
                 "completed" -> {
                     if (conclusion == "success") {
                         val artifactUrl = getArtifactUrlSync(token, runId)
                         if (artifactUrl.isEmpty()) Triple(false, "", "Artifact tidak ditemukan")
-                        else Triple(true, artifactUrl, "")
+                        else {
+                            // Cleanup tracking
+                            startTimes.remove(runId)
+                            Triple(true, artifactUrl, "")
+                        }
                     } else {
+                        startTimes.remove(runId)
                         Triple(false, "", "Workflow gagal: $conclusion")
                     }
                 }
-                else -> { onStatus("Status: $status", 30); null }
+                else -> {
+                    onStatus("Status: $status", 30)
+                    null
+                }
             }
         } catch (e: Exception) {
             AutoLogSaver.logError(TAG, "checkStatusOnce failed", e)
             null
         }
+    }
+
+    /**
+     * Hitung progress smooth berdasarkan waktu.
+     * Estimasi total 3 menit untuk generate video.
+     */
+    private fun calculateSmoothProgress(runId: Long): Int {
+        val startTime = startTimes.getOrPut(runId) { System.currentTimeMillis() }
+        val elapsed = System.currentTimeMillis() - startTime
+
+        // Estimasi total: 3 menit (bisa disesuaikan)
+        val estimatedTotal = 180_000L
+
+        // Progress 10% → 95%
+        val ratio = elapsed.toFloat() / estimatedTotal
+        val progress = 10 + (ratio * 85).toInt()
+
+        return progress.coerceIn(10, 95)
     }
 
     private fun getArtifactUrlSync(token: String, runId: Long): String {
@@ -306,8 +347,7 @@ object GitHubApiClient {
                         .header("Accept", "application/vnd.github+json")
                         .delete()
                         .build()
-                    val delResp = client.newCall(delReq).execute()
-                    delResp.close()
+                    client.newCall(delReq).execute().close()
                 }
             } catch (e: Exception) {
                 AutoLogSaver.logError(TAG, "cleanupArtifact failed", e)
