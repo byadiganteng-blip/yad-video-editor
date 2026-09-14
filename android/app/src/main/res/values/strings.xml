@@ -2,7 +2,8 @@
 <resources>
     <string name="app_name">AI Txt to Video + Editor</string>
     <string name="app_name_short">AI Txt to Video</string>
-    <string name="credit">Created by KARYADI, Coding by KARYADI</string>
+    <string name="credit">Penulis Code: Sabrina + Karyadi | Pembuat APK: YS</string>
+    <string name="credit_short">Sabrina + Karyadi &amp; YS</string>
     <string name="loading">Memuat...</string>
     <string name="processing">Memproses...</string>
     <string name="done">Selesai</string>
