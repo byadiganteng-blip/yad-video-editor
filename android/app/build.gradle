@@ -121,6 +121,10 @@ dependencies {
 
     // AdMob
     implementation 'com.google.android.gms:play-services-ads:22.6.0'
+    // ExoPlayer (media3) untuk preview video KineMaster-style
+    implementation 'androidx.media3:media3-exoplayer:1.2.1'
+    implementation 'androidx.media3:media3-ui:1.2.1'
+    implementation 'androidx.media3:media3-common:1.2.1'
     implementation 'com.startapp:inapp-sdk:4.11.5'
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
