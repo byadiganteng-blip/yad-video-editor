@@ -19,9 +19,10 @@ class VideoGeneratorService : Service() {
         const val EXTRA_SHOW_SUBTITLE = "show_subtitle"
         const val EXTRA_SUBTITLE_STYLE = "subtitle_style"
         const val EXTRA_MODEL = "model_id"
+        const val EXTRA_RUN_ID = "runId"
+        const val EXTRA_TOKEN = "token"
 
-        var isRunning = false
-            private set
+        const val ACTION_POLL_WORKFLOW = "com.yad.videoeditor.POLL_WORKFLOW"
 
         const val ACTION_PROGRESS = "com.yad.videoeditor.PROGRESS"
         const val ACTION_DONE = "com.yad.videoeditor.DONE"
@@ -29,10 +30,15 @@ class VideoGeneratorService : Service() {
         const val EXTRA_PERCENT = "percent"
         const val EXTRA_MESSAGE = "message"
         const val EXTRA_FILE_PATH = "file_path"
+
+        @Volatile
+        var isRunning = false
+            private set
     }
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var currentJob: Job? = null
+    private var pollingJob: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -42,71 +48,162 @@ class VideoGeneratorService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Cek state dari SharedPreferences
-        val savedRunning = GeneratorState.isRunning(this)
-        val savedProgress = GeneratorState.getProgress(this)
-
         if (intent == null) {
-            // Service restart — restore state
-            if (savedRunning) {
-                startForeground(NOTIF_ID,
-                    buildNotification(savedProgress, "Memproses (background)..."))
-            }
             return START_NOT_STICKY
         }
 
-        val prompt = intent.getStringExtra(EXTRA_PROMPT) ?: return START_NOT_STICKY
-        val voice = intent.getStringExtra(EXTRA_VOICE) ?: "male_id"
-        val watermark = intent.getStringExtra(EXTRA_WATERMARK) ?: ""
-        val showSubtitle = intent.getBooleanExtra(EXTRA_SHOW_SUBTITLE, true)
-        val subtitleStyle = intent.getStringExtra(EXTRA_SUBTITLE_STYLE) ?: "neon"
-        val modelId = intent.getStringExtra(EXTRA_MODEL) ?: "waifu"
+        // ============================================================
+        //  MODE 1: POLL WORKFLOW (dari TextToVideoActivity)
+        // ============================================================
+        if (intent.action == ACTION_POLL_WORKFLOW) {
+            val runId = intent.getLongExtra(EXTRA_RUN_ID, 0L)
+            val token = intent.getStringExtra(EXTRA_TOKEN) ?: ""
+            if (runId == 0L || token.isEmpty()) {
+                AutoLogSaver.logError("VideoGeneratorService", "POLL: invalid runId/token", null)
+                return START_NOT_STICKY
+            }
 
-        isRunning = true
-        GeneratorState.saveRunning(this, true)
-        GeneratorState.saveJobInfo(this, "", 0L, prompt, voice, modelId)
+            isRunning = true
+            startForeground(NOTIF_ID, buildNotification(0, "Menunggu server..."))
+            startPolling(runId, token)
+            return START_NOT_STICKY
+        }
 
-        startForeground(NOTIF_ID, buildNotification(0, "Memulai..."))
+        // ============================================================
+        //  MODE 2: GENERATE LOKAL (via AI)
+        // ============================================================
+        val prompt = intent.getStringExtra(EXTRA_PROMPT)
+        if (prompt != null) {
+            val voice = intent.getStringExtra(EXTRA_VOICE) ?: "male_id"
+            val watermark = intent.getStringExtra(EXTRA_WATERMARK) ?: ""
+            val showSubtitle = intent.getBooleanExtra(EXTRA_SHOW_SUBTITLE, true)
+            val subtitleStyle = intent.getStringExtra(EXTRA_SUBTITLE_STYLE) ?: "neon"
+            val modelId = intent.getStringExtra(EXTRA_MODEL) ?: "waifu"
 
-        currentJob?.cancel()
-        currentJob = scope.launch {
-            try {
-                val file = AiImageGenerator.generateVideo(
-                    this@VideoGeneratorService,
-                    prompt, voice, watermark, showSubtitle, subtitleStyle, modelId,
-                    AiImageGenerator.ProgressCallback { _, _, _, pct, msg ->
-                        GeneratorState.saveProgress(this@VideoGeneratorService, pct, msg)
-                        updateNotification(pct, msg)
-                        sendBroadcast(ACTION_PROGRESS, pct, msg, null)
+            isRunning = true
+            GeneratorState.saveRunning(this, true)
+            GeneratorState.saveJobInfo(this, "", 0L, prompt, voice, modelId)
+
+            startForeground(NOTIF_ID, buildNotification(0, "Memulai..."))
+
+            currentJob?.cancel()
+            currentJob = scope.launch {
+                try {
+                    val file = AiImageGenerator.generateVideo(
+                        this@VideoGeneratorService,
+                        prompt, voice, watermark, showSubtitle, subtitleStyle, modelId,
+                        AiImageGenerator.ProgressCallback { _, _, _, pct, msg ->
+                            GeneratorState.saveProgress(this@VideoGeneratorService, pct, msg)
+                            updateNotification(pct, msg)
+                            sendBroadcast(ACTION_PROGRESS, pct, msg, null)
+                        }
+                    )
+
+                    if (file != null) {
+                        updateNotification(100, "Selesai!")
+                        GeneratorState.saveRunning(this@VideoGeneratorService, false)
+                        GeneratorState.saveProgress(this@VideoGeneratorService, 100, "Selesai")
+                        sendBroadcast(ACTION_DONE, 100, "Video selesai", file.absolutePath)
+                        showDoneNotification(file.absolutePath)
+                    } else {
+                        updateNotification(0, "Gagal")
+                        GeneratorState.saveRunning(this@VideoGeneratorService, false)
+                        sendBroadcast(ACTION_FAILED, 0, "Gagal membuat video", null)
                     }
-                )
-
-                if (file != null) {
-                    updateNotification(100, "Selesai!")
+                } catch (e: Exception) {
                     GeneratorState.saveRunning(this@VideoGeneratorService, false)
-                    GeneratorState.saveProgress(this@VideoGeneratorService, 100, "Selesai")
-                    sendBroadcast(ACTION_DONE, 100, "Video selesai", file.absolutePath)
-                    showDoneNotification(file.absolutePath)
-                } else {
-                    updateNotification(0, "Gagal")
-                    GeneratorState.saveRunning(this@VideoGeneratorService, false)
-                    sendBroadcast(ACTION_FAILED, 0, "Gagal membuat video", null)
+                    sendBroadcast(ACTION_FAILED, 0, e.message ?: "Error", null)
+                } finally {
+                    isRunning = false
+                    delay(3000)
+                    stopForeground(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+                        STOP_FOREGROUND_DETACH else 0)
+                    stopSelf()
                 }
-            } catch (e: Exception) {
-                GeneratorState.saveRunning(this@VideoGeneratorService, false)
-                sendBroadcast(ACTION_FAILED, 0, e.message ?: "Error", null)
-            } finally {
-                isRunning = false
-                delay(3000)
-                stopForeground(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-                    STOP_FOREGROUND_DETACH else 0)
-                stopSelf()
             }
         }
 
         return START_NOT_STICKY
     }
 
+    // ============================================================
+    //  POLLING WORKFLOW
+    // ============================================================
+    private fun startPolling(runId: Long, token: String) {
+        pollingJob?.cancel()
+        pollingJob = scope.launch {
+            val maxAttempts = 120   // 120 × 5s = 10 menit
+            var attempt = 0
+
+            AutoLogSaver.log("VideoGeneratorService", "Polling start: runId=$runId")
+
+            while (attempt < maxAttempts) {
+                attempt++
+                delay(5000)
+
+                val result = GitHubApiClient.checkStatusOnce(token, runId) { status, pct ->
+                    updateNotification(pct, status)
+                    sendBroadcast(ACTION_PROGRESS, pct, status, null)
+                    FloatingProgressService.update(this@VideoGeneratorService, pct, status)
+                }
+
+                if (result != null) {
+                    if (result.first) {
+                        // SUKSES → download
+                        val artifactUrl = result.second
+                        AutoLogSaver.log("VideoGeneratorService", "Run completed, downloading...")
+                        updateNotification(90, "Mengunduh video...")
+
+                        val path = GitHubApiClient.downloadArtifactSync(
+                            this@VideoGeneratorService, token, artifactUrl
+                        )
+
+                        if (path != null) {
+                            AutoLogSaver.log("VideoGeneratorService", "Download OK: $path")
+                            GeneratorState.saveRunning(this@VideoGeneratorService, false)
+                            GeneratorState.saveProgress(this@VideoGeneratorService, 100, "Selesai")
+                            updateNotification(100, "Selesai!")
+                            sendBroadcast(ACTION_DONE, 100, "Video selesai", path)
+                            showDoneNotification(path)
+                            FloatingProgressService.hide(this@VideoGeneratorService)
+                            GitHubApiClient.cleanupArtifact(token, runId)
+                        } else {
+                            AutoLogSaver.logError("VideoGeneratorService", "Download failed", null)
+                            updateNotification(0, "Download gagal")
+                            sendBroadcast(ACTION_FAILED, 0, "Download gagal", null)
+                            FloatingProgressService.hide(this@VideoGeneratorService)
+                        }
+                    } else {
+                        // GAGAL
+                        val errMsg = result.third
+                        AutoLogSaver.logError("VideoGeneratorService", "Workflow error: $errMsg", null)
+                        updateNotification(0, errMsg)
+                        sendBroadcast(ACTION_FAILED, 0, errMsg, null)
+                        FloatingProgressService.hide(this@VideoGeneratorService)
+                    }
+                    break
+                }
+                // null = masih running, lanjut poll
+            }
+
+            if (attempt >= maxAttempts) {
+                AutoLogSaver.logError("VideoGeneratorService", "Polling timeout", null)
+                updateNotification(0, "Timeout 10 menit")
+                sendBroadcast(ACTION_FAILED, 0, "Timeout 10 menit", null)
+                FloatingProgressService.hide(this@VideoGeneratorService)
+            }
+
+            isRunning = false
+            delay(2000)
+            stopForeground(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+                STOP_FOREGROUND_DETACH else 0)
+            stopSelf()
+        }
+    }
+
+    // ============================================================
+    //  NOTIFICATION
+    // ============================================================
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -177,6 +274,7 @@ class VideoGeneratorService : Service() {
         super.onDestroy()
         isRunning = false
         currentJob?.cancel()
+        pollingJob?.cancel()
         scope.cancel()
     }
 }
