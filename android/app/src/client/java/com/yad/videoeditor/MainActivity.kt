@@ -51,8 +51,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupBannerAd() {
         try {
+            // 1. Load AdMob banner (primary)
             val adView = findViewById<AdView>(R.id.bannerAd)
-            if (adView != null) AdMobHelper.loadBanner(this, adView)
+            if (adView != null) {
+                AdMobHelper.loadBanner(this, adView)
+            }
+            
+            // 2. Load StartApp banner (fallback) - tapi container disembunyikan dulu
+            // Nanti di-show kalau AdMob gagal
+            val startAppContainer = findViewById<android.widget.FrameLayout>(R.id.startAppBannerContainer)
+            if (startAppContainer != null) {
+                StartAppHelper.loadBanner(this, startAppContainer)
+                // Container visibility di-toggle oleh StartAppHelper
+                // (saat ini visible=gone, StartAppHelper akan show kalau banner dapat)
+            }
         } catch (e: Exception) {
             Log.e("MainActivity", "Banner error: " + e.message)
         }
