@@ -4,140 +4,360 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Mode generate'
+        description: 'Mode'
         required: true
-        default: 'direct'
+        default: 'ai_model'
         type: choice
         options:
           - direct
           - google_image
           - ai_model
+      style_suffix:
+        description: 'Style suffix (dari APK)'
+        required: false
+        default: ''
+        type: string
+      model_id:
+        description: 'Model ID (untuk log)'
+        required: false
+        default: ''
+        type: string
       prompt:
-        description: 'Teks/cerita untuk video'
+        description: 'Teks/cerita'
         required: true
         type: string
       voice:
-        description: 'Suara narasi'
+        description: 'Voice'
         required: false
-        default: 'id-ID-Standard-A'
+        default: 'id-ID-ArdiNeural'
         type: string
       watermark:
-        description: 'Watermark (opsional)'
+        description: 'Watermark'
         required: false
         default: ''
         type: string
       show_subtitle:
-        description: 'Tampilkan subtitle'
+        description: 'Tampilkan subtitle (true/false)'
         required: false
-        default: 'false'
+        default: 'false'          # ← DEFAULT FALSE
         type: string
       subtitle_style:
         description: 'Style subtitle'
         required: false
-        default: 'gradient'
-        type: string
-      model_id:
-        description: 'AI Model ID (untuk mode ai_model)'
-        required: false
-        default: ''
+        default: 'neon'
         type: string
 
 jobs:
   generate:
     name: Generate Video
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install Dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg fonts-dejavu
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu fonts-noto
           pip install --quiet edge-tts requests pillow
-      
-      - name: Generate TTS
-        run: |
-          mkdir -p output
-          cat > /tmp/tts.py << 'PYEOF'
-          import asyncio, edge_tts
-
-          TEXT = """Sinta membeli cermin antik di pasar loak dengan harga sangat murah.
-          Sejak cermin itu digantung di kamarnya, ia sering melihat bayangan bergerak di sudut matanya.
-          Suatu malam, Sinta terbangun dan melihat pantulan dirinya di cermin tidak mengikuti gerakannya.
-          Bayangan itu tersenyum, padahal Sinta sedang menangis ketakutan.
-          Ia mencoba menutup cermin dengan kain, tapi suara ketukan datang dari balik kain.
-          Sinta memberanikan diri membuka kain itu, dan tangannya sendiri keluar dari dalam cermin.
-          Keesokan harinya, tetangga menemukan Sinta duduk kaku di depan cermin dengan senyum aneh.
-          Di dalam cermin, terlihat Sinta yang asli menangis tanpa suara, terkunci selamanya."""
-
-          async def main():
-              voice = "id-ID-ArdiNeural"
-              output = "output/narration.mp3"
-              communicate = edge_tts.Communicate(TEXT, voice)
-              await communicate.save(output)
-              print(f"TTS saved: {output}")
-
-          asyncio.run(main())
-          PYEOF
-          python3 /tmp/tts.py
 
       - name: Generate Video
+        env:
+          PROMPT: ${{ github.event.inputs.prompt }}
+          VOICE: ${{ github.event.inputs.voice }}
+          WATERMARK: ${{ github.event.inputs.watermark }}
+          SHOW_SUBTITLE: ${{ github.event.inputs.show_subtitle }}
+          SUBTITLE_STYLE: ${{ github.event.inputs.subtitle_style }}
+          STYLE_SUFFIX: ${{ github.event.inputs.style_suffix }}
+          MODEL_ID: ${{ github.event.inputs.model_id }}
+          MODE: ${{ github.event.inputs.mode }}
+          JOB_ID: ${{ github.run_id }}
         run: |
-          echo "=== Generating Video ==="
-          # Buat background gradient
-          ffmpeg -f lavfi -i "color=c=0x1E3A8A:s=1280x720:d=5" \
-                 -vf "drawtext=text='${{ github.event.inputs.prompt }}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2:box=1:boxcolor=black@0.5:boxborderw=10" \
-                 -c:v libx264 -pix_fmt yuv420p -t 5 output/video_noaudio.mp4 -y
-          
-          # Mux audio + video
-          ffmpeg -i output/video_noaudio.mp4 -i output/narration.mp3 \
-                 -c:v copy -c:a aac -shortest output/final_video.mp4 -y
-          
-          ls -la output/
-          echo "=== Video generated: $(du -h output/final_video.mp4) ==="
-      
+          mkdir -p output scenes
+          cat > /tmp/generate.py << 'PYEOF'
+          import asyncio, os, subprocess, requests, urllib.parse, textwrap
+          from io import BytesIO
+          from PIL import Image
+
+          PROMPT = os.environ.get("PROMPT", "")
+          VOICE = os.environ.get("VOICE", "id-ID-ArdiNeural")
+          WATERMARK = os.environ.get("WATERMARK", "")
+          SHOW_SUBTITLE = os.environ.get("SHOW_SUBTITLE", "false").lower() == "true"
+          SUBTITLE_STYLE = os.environ.get("SUBTITLE_STYLE", "neon")
+          STYLE_SUFFIX = os.environ.get("STYLE_SUFFIX", "")
+          MODEL_ID = os.environ.get("MODEL_ID", "")
+          MODE = os.environ.get("MODE", "ai_model")
+          JOB_ID = os.environ.get("JOB_ID", "0")
+
+          print(f"=== Generate Video ===")
+          print(f"Mode: {MODE}")
+          print(f"Style suffix: {STYLE_SUFFIX}")
+          print(f"Model ID: {MODEL_ID}")
+          print(f"Show subtitle: {SHOW_SUBTITLE}")   # ← LOG PENTING
+          print(f"Voice: {VOICE}")
+
+          WIDTH, HEIGHT = 1280, 720
+
+          # ============================================================
+          # Story Analyzer (Python version)
+          # ============================================================
+          MOOD_MAP = {
+              "horror": ["seram","takut","hantu","gelap","teror","mengerikan",
+                         "horor","mayat","darah","kematian","menakutkan","panik"],
+              "happy": ["senang","bahagia","gembira","tawa","tertawa","ceria",
+                        "sukacita","riang","girang"],
+              "sad": ["sedih","menangis","tangis","duka","kehilangan","pilu",
+                      "nestapa","air mata"],
+              "action": ["kejar","lari","tembak","ledakan","perang","bertarung",
+                         "adu","pukul","tinju"],
+              "romantic": ["cinta","kasih","peluk","cium","rindu","kekasih","sayang"],
+              "mystery": ["misteri","rahasia","teka-teki","misterius","aneh","gangguan"],
+              "magic": ["sihir","ajaib","mantra","sulap","gaib","magis","sakti"],
+          }
+          TIME_MAP = {
+              "night": ["malam","gelap","tengah malam","petang","senja","bintang","bulan"],
+              "day": ["siang","pagi","terang","matahari","cerah","terik"],
+              "sunset": ["senja","maghrib","matahari terbenam","jingga","golden hour"],
+              "dawn": ["subuh","fajar","matahari terbit"],
+          }
+          LOC_MAP = {
+              "house": ["rumah","kamar","dapur","ruang","halaman","pintu","jendela"],
+              "forest": ["hutan","pohon","rimba","belantara"],
+              "city": ["kota","jalan","gedung","mall","sekolah","pasar"],
+              "beach": ["pantai","laut","pesisir","pulau"],
+              "mountain": ["gunung","bukit","pegunungan","lembah"],
+              "cemetery": ["kuburan","makam","kubur","pemakaman"],
+          }
+          EFFECT_MAP = {
+              "rain": ["hujan","gerimis","basah"],
+              "fog": ["kabut","berkabut","asap"],
+              "fire": ["api","kebakaran","terbakar"],
+              "lightning": ["petir","kilat","geledek"],
+              "ghost": ["hantu","arwah","setan","iblis"],
+              "mirror": ["cermin","kaca","pantulan"],
+              "shadow": ["bayangan","siluet"],
+          }
+
+          def analyze(text):
+              lower = text.lower()
+              mood = max(MOOD_MAP, key=lambda k: sum(1 for w in MOOD_MAP[k] if w in lower), default="neutral")
+              # Kalau tidak ada hit, set neutral
+              if sum(1 for w in MOOD_MAP.get(mood, []) if w in lower) == 0:
+                  mood = "neutral"
+              time = max(TIME_MAP, key=lambda k: sum(1 for w in TIME_MAP[k] if w in lower), default="day")
+              if sum(1 for w in TIME_MAP.get(time, []) if w in lower) == 0:
+                  time = "day"
+              loc = max(LOC_MAP, key=lambda k: sum(1 for w in LOC_MAP[k] if w in lower), default="")
+              if sum(1 for w in LOC_MAP.get(loc, []) if w in lower) == 0:
+                  loc = ""
+              effects = [e for e, ws in EFFECT_MAP.items() if any(w in lower for w in ws)]
+              return {"mood": mood, "time": time, "loc": loc, "effects": effects}
+
+          def build_prompt(scene_text):
+              d = analyze(scene_text)
+              parts = []
+              # Karakter utama (kata kapital pertama)
+              words = scene_text.split()
+              for w in words:
+                  clean = w.strip(".,!?")
+                  if len(clean) > 2 and clean[0].isupper():
+                      parts.append(clean); break
+              # Mood
+              mood_desc = {
+                  "horror": "creepy scary dark atmosphere",
+                  "happy": "joyful bright cheerful",
+                  "sad": "melancholic somber",
+                  "action": "dynamic action motion",
+                  "romantic": "romantic soft lighting",
+                  "mystery": "mysterious enigmatic",
+                  "magic": "magical glowing enchanted",
+                  "neutral": "atmospheric",
+              }.get(d["mood"], "atmospheric")
+              parts.append(mood_desc)
+              # Time
+              time_desc = {
+                  "night": "night moonlight stars",
+                  "day": "daytime bright sunlight",
+                  "sunset": "golden hour sunset warm light",
+                  "dawn": "dawn sunrise soft light",
+              }.get(d["time"], "daytime")
+              parts.append(time_desc)
+              # Location
+              loc_desc = {
+                  "house": "inside house cozy room",
+                  "forest": "dense forest tall trees",
+                  "city": "urban city buildings",
+                  "beach": "beach ocean waves",
+                  "mountain": "mountains high altitude",
+                  "cemetery": "graveyard tombstones",
+              }.get(d["loc"], "")
+              if loc_desc: parts.append(loc_desc)
+              # Effects
+              eff_desc = {
+                  "rain": "rainy wet raindrops",
+                  "fog": "foggy misty hazy",
+                  "fire": "fire flames burning",
+                  "lightning": "lightning thunderstorm",
+                  "ghost": "ghostly supernatural spectral",
+                  "mirror": "mirror reflection glass",
+                  "shadow": "shadows silhouettes",
+              }
+              for e in d["effects"]:
+                  if e in eff_desc: parts.append(eff_desc[e])
+              # Style suffix dari APK
+              if STYLE_SUFFIX:
+                  parts.append(STYLE_SUFFIX)
+              return ", ".join(parts)
+
+          # ============================================================
+          # Split scenes
+          # ============================================================
+          sents = [s.strip() for s in PROMPT.replace("!", ".").replace("?", ".").split(".") if s.strip()]
+          if not sents: sents = [PROMPT]
+          SCENES = 6
+          if len(sents) >= SCENES:
+              step = len(sents) / SCENES
+              scenes = [sents[int(i*step)] for i in range(SCENES)]
+          else:
+              scenes = sents
+
+          print(f"\nScenes: {len(scenes)}")
+
+          # ============================================================
+          # Generate images
+          # ============================================================
+          def gen_image(scene_text, idx):
+              prompt = build_prompt(scene_text)
+              encoded = urllib.parse.quote(prompt)
+              url = f"https://image.pollinations.ai/prompt/{encoded}?width={WIDTH}&height={HEIGHT}&nologo=true&seed={JOB_ID}_{idx}"
+              print(f"\n  Scene {idx+1}: {prompt[:80]}...")
+              try:
+                  r = requests.get(url, timeout=120)
+                  if r.status_code == 200 and len(r.content) > 1000:
+                      img = Image.open(BytesIO(r.content)).convert("RGB").resize((WIDTH, HEIGHT), Image.LANCZOS)
+                      out = f"scenes/scene_{idx:02d}.png"
+                      img.save(out)
+                      print(f"    ✅ {out}")
+                      return out
+                  print(f"    ❌ HTTP {r.status_code}")
+              except Exception as e:
+                  print(f"    ❌ {e}")
+              img = Image.new("RGB", (WIDTH, HEIGHT), (30, 58, 138))
+              out = f"scenes/scene_{idx:02d}.png"
+              img.save(out)
+              return out
+
+          print("\n=== Generate Images ===")
+          scene_imgs = [gen_image(s, i) for i, s in enumerate(scenes)]
+
+          # ============================================================
+          # TTS
+          # ============================================================
+          print("\n=== TTS ===")
+          async def gen_tts():
+              import edge_tts
+              c = edge_tts.Communicate(PROMPT, VOICE)
+              await c.save("output/narration.mp3")
+          asyncio.run(gen_tts())
+          print("TTS saved")
+
+          # ============================================================
+          # Render video
+          # ============================================================
+          print("\n=== Render ===")
+          audio_dur = float(subprocess.check_output(
+              ["ffprobe","-v","error","-show_entries","format=duration",
+               "-of","default=noprint_wrappers=1:nokey=1","output/narration.mp3"]
+          ).decode().strip())
+          per_scene = audio_dur / len(scene_imgs)
+          print(f"Audio: {audio_dur:.1f}s, per scene: {per_scene:.1f}s")
+
+          with open("scenes/concat.txt", "w") as f:
+              for img in scene_imgs:
+                  f.write(f"file '{os.path.basename(img)}'\n")
+                  f.write(f"duration {per_scene}\n")
+              f.write(f"file '{os.path.basename(scene_imgs[-1])}'\n")
+
+          subprocess.run([
+              "ffmpeg","-y","-f","concat","-safe","0",
+              "-i","scenes/concat.txt","-vsync","vfr",
+              "-vf",f"scale={WIDTH}:{HEIGHT},format=yuv420p",
+              "-c:v","libx264","-t",str(audio_dur),
+              "output/video_noaudio.mp4"
+          ], check=True)
+
+          # ============================================================
+          # Subtitle — HANYA kalau SHOW_SUBTITLE = true
+          # ============================================================
+          video_input = "output/video_noaudio.mp4"
+
+          if SHOW_SUBTITLE:
+              print("\n=== Adding Subtitle (karena dicentang) ===")
+              lines = textwrap.wrap(PROMPT, width=40)
+              sub_text = " ".join(lines[:3]).replace(":", "\\:").replace("'", "")
+              subprocess.run([
+                  "ffmpeg","-y","-i","output/video_noaudio.mp4",
+                  "-vf",f"drawtext=text='{sub_text}':fontcolor=white:fontsize=36:"
+                        f"x=(w-text_w)/2:y=h-100:box=1:boxcolor=black@0.5:boxborderw=10",
+                  "-c:v","libx264","-pix_fmt","yuv420p",
+                  "output/video_withsub.mp4"
+              ], check=True)
+              video_input = "output/video_withsub.mp4"
+          else:
+              print("\n=== Skipping Subtitle (tidak dicentang) ===")
+
+          subprocess.run([
+              "ffmpeg","-y","-i",video_input,"-i","output/narration.mp3",
+              "-c:v","copy","-c:a","aac","-shortest",
+              "output/final_video.mp4"
+          ], check=True)
+
+          if WATERMARK:
+              safe_wm = WATERMARK.replace(":", "\\:").replace("'", "")
+              subprocess.run([
+                  "ffmpeg","-y","-i","output/final_video.mp4",
+                  "-vf",f"drawtext=text='{safe_wm}':fontcolor=white@0.5:fontsize=24:"
+                        f"x=w-text_w-20:y=h-text_h-20",
+                  "-c:a","copy","output/final_video_wm.mp4"
+              ], check=True)
+              os.replace("output/final_video_wm.mp4", "output/final_video.mp4")
+
+          print(f"\n=== DONE ===")
+          print(f"Subtitle rendered: {SHOW_SUBTITLE}")
+          print(f"Size: {os.path.getsize('output/final_video.mp4')} bytes")
+          PYEOF
+          python3 /tmp/generate.py
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: video-output
           path: output/final_video.mp4
-          retention-days: 1
+          retention-days: 3
           if-no-files-found: error
-      
+
       - name: Cleanup Old Runs
         if: always()
         uses: actions/github-script@v7
         with:
           script: |
             const runs = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'generate-video.yml',
-              per_page: 100
+              owner: context.repo.owner, repo: context.repo.repo,
+              workflow_id: 'generate-video.yml', per_page: 100
             });
-            
-            const now = Date.now();
-            const maxAge = 24 * 60 * 60 * 1000; // 24 jam
-            
+            const now = Date.now(); const maxAge = 24*60*60*1000;
             for (const run of runs.data.workflow_runs) {
               const age = now - new Date(run.created_at).getTime();
               if (age > maxAge && run.id !== context.runId) {
-                try {
-                  await github.rest.actions.deleteWorkflowRun({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    run_id: run.id
-                  });
-                  console.log('Deleted old run: ' + run.id);
-                } catch (e) {
-                  console.log('Failed to delete: ' + e.message);
-                }
+                try { await github.rest.actions.deleteWorkflowRun({
+                  owner: context.repo.owner, repo: context.repo.repo, run_id: run.id
+                }); } catch (e) {}
               }
             }
