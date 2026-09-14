@@ -78,7 +78,7 @@ class ActionsActivity : AppCompatActivity() {
             try {
                 val inp = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
                 inp.timeZone = TimeZone.getTimeZone("UTC")
-                val d = inp.parse(run.createdAt)
+                val d = inp.parse(run.createdAt) ?: Date()
                 holder.tvTime.text = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()).format(d)
             } catch (_: Exception) {
                 holder.tvTime.text = run.createdAt
