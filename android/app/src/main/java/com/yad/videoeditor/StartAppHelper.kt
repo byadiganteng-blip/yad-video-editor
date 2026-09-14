@@ -32,16 +32,22 @@ object StartAppHelper {
 
     fun loadBanner(activity: Activity, container: ViewGroup) {
         try {
+            // Sembunyikan dulu, biar tidak konflik dengan AdMob
+            container.visibility = View.GONE
+            
             val banner = Banner(activity, AdPreferences(), object : BannerListener {
                 override fun onReceiveAd(view: View) {
-                    AutoLogSaver.log(TAG, "Banner loaded")
+                    AutoLogSaver.log(TAG, "StartApp banner loaded")
                     try {
                         container.removeAllViews()
                         container.addView(view)
+                        // Show container kalau banner berhasil dapat
+                        container.visibility = View.VISIBLE
                     } catch (_: Exception) {}
                 }
                 override fun onFailedToReceiveAd(view: View) {
-                    AutoLogSaver.log(TAG, "Banner failed")
+                    AutoLogSaver.log(TAG, "StartApp banner failed")
+                    container.visibility = View.GONE
                 }
                 override fun onImpression(view: View?) {}
                 override fun onClick(view: View?) {}
@@ -49,6 +55,7 @@ object StartAppHelper {
             banner.loadAd(320, 50)
         } catch (e: Exception) {
             AutoLogSaver.logError(TAG, "loadBanner failed", e)
+            container.visibility = View.GONE
         }
     }
 
