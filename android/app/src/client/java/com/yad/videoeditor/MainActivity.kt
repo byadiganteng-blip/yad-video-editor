@@ -28,7 +28,6 @@ class MainActivity : AppCompatActivity() {
         AdMobHelper.loadInterstitial(this)
         AdMobHelper.loadRewarded(this)
 
-        // Init StartApp sebagai alternatif
         StartAppHelper.init(this)
 
         setupBannerAd()
@@ -82,26 +81,6 @@ class MainActivity : AppCompatActivity() {
         findViewById<CardView>(R.id.cardInstructions)?.setOnClickListener {
             try { startActivity(Intent(this, InstructionsActivity::class.java)) }
             catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
-        }
-
-        // Credit → CreditActivity (opsional, kalau ada di layout)
-        try {
-            findViewById<CardView>(R.id.cardCredit)?.setOnClickListener {
-                try { startActivity(Intent(this, CreditActivity::class.java)) }
-                catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
-            }
-        } catch (_: Exception) {
-            // cardCredit tidak ada di layout, skip
-        }
-
-        // Saweria → SaweriaActivity (opsional, kalau ada di layout)
-        try {
-            findViewById<CardView>(R.id.cardSaweria)?.setOnClickListener {
-                try { startActivity(Intent(this, SaweriaActivity::class.java)) }
-                catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
-            }
-        } catch (_: Exception) {
-            // cardSaweria tidak ada di layout, skip
         }
     }
 }
