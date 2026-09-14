@@ -3,7 +3,11 @@ name: Generate Video
 on:
   workflow_dispatch:
     inputs:
-      mode: {required: true, default: 'ai_model', type: choice, options: [direct, google_image, ai_model]}
+      mode:
+        required: true
+        default: 'ai_model'
+        type: choice
+        options: [direct, google_image, ai_model]
       style_suffix: {required: false, default: '', type: string}
       model_id: {required: false, default: '', type: string}
       prompt: {required: true, type: string}
@@ -15,7 +19,7 @@ on:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: write
     steps:
@@ -41,9 +45,9 @@ jobs:
         run: |
           mkdir -p output scenes
           cat > /tmp/generate.py << 'PYEOF'
-          import asyncio, os, re, subprocess, requests, urllib.parse, textwrap, time
+          import asyncio, os, re, subprocess, requests, urllib.parse, textwrap, time, random
           from io import BytesIO
-          from PIL import Image
+          from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
 
           PROMPT = os.environ.get("PROMPT", "")
           VOICE_RAW = os.environ.get("VOICE", "id-ID-ArdiNeural")
@@ -62,80 +66,100 @@ jobs:
           VOICE = VOICE_MAP.get(VOICE_RAW.lower(), VOICE_RAW)
           if VOICE not in ["id-ID-ArdiNeural", "id-ID-GadisNeural"]:
               VOICE = "id-ID-ArdiNeural"
-          print(f"Voice: {VOICE_RAW} → {VOICE}")
 
           WIDTH, HEIGHT = 1280, 720
-          MAX_SCENES = 10           # Maksimal 10 scene
-          MAX_CHARS_PER_SCENE = 150 # Maksimal 150 char per scene
+          MAX_SCENES = 20          # Naik dari 10 ke 20
+          CHARS_PER_SCENE = 80     # Turun dari 150 → lebih detail per scene
+
+          print(f"=== Generate Video ===")
+          print(f"Voice: {VOICE_RAW} → {VOICE}")
+          print(f"Style: {STYLE_SUFFIX}")
+          print(f"Max scenes: {MAX_SCENES}")
 
           # ============================================================
-          #  SPLIT TEKS PANJANG JADI BEBERAPA PART
+          #  SPLIT CERITA JADI SCENE DETAIL
           # ============================================================
-          def split_into_scenes(text, max_scenes=10, max_chars=150):
-              # Split by kalimat
-              sentences = [s.strip() for s in re.split(r'[.!?]+', text) if s.strip()]
+          def split_into_scenes(text, max_scenes=20, chars_per_scene=80):
+              # Split by kalimat (titik, tanya, seru)
+              sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+              sentences = [s.strip() for s in sentences if s.strip()]
+              
               if not sentences:
                   return [text]
               
-              # Gabung kalimat pendek
+              # Kalau ada banyak kalimat, jadikan 1 scene per kalimat
+              # lalu gabung kalau terlalu pendek
               scenes = []
-              current = ""
-              for s in sentences:
-                  if len(current) + len(s) + 1 <= max_chars:
-                      current = (current + " " + s).strip() if current else s
-                  else:
-                      if current: scenes.append(current)
-                      current = s
-              if current: scenes.append(current)
+              buffer = ""
               
-              # Kalau masih > max_scenes, gabung yang berdekatan
-              while len(scenes) > max_scenes:
-                  # Gabung 2 scene terpendek
-                  merged = []
-                  i = 0
-                  while i < len(scenes):
-                      if i + 1 < len(scenes) and len(merged) < max_scenes:
-                          merged.append(scenes[i] + " " + scenes[i+1])
-                          i += 2
+              for sent in sentences:
+                  # Kalau kalimat panjang, split by koma
+                  if len(sent) > chars_per_scene * 2:
+                      parts = [p.strip() for p in sent.split(",") if p.strip()]
+                      for p in parts:
+                          if len(buffer) + len(p) < chars_per_scene:
+                              buffer = (buffer + " " + p).strip() if buffer else p
+                          else:
+                              if buffer: scenes.append(buffer)
+                              buffer = p
+                  else:
+                      if len(buffer) + len(sent) < chars_per_scene:
+                          buffer = (buffer + " " + sent).strip() if buffer else sent
                       else:
-                          merged.append(scenes[i])
-                          i += 1
-                  scenes = merged
+                          if buffer: scenes.append(buffer)
+                          buffer = sent
+              
+              if buffer: scenes.append(buffer)
+              
+              # Kalau > max_scenes, ambil merata
+              if len(scenes) > max_scenes:
+                  step = len(scenes) / max_scenes
+                  scenes = [scenes[int(i*step)] for i in range(max_scenes)]
               
               return scenes
 
-          scenes = split_into_scenes(PROMPT, MAX_SCENES, MAX_CHARS_PER_SCENE)
+          scenes = split_into_scenes(PROMPT, MAX_SCENES, CHARS_PER_SCENE)
           print(f"Split into {len(scenes)} scenes")
 
           # ============================================================
-          #  STORY ANALYZER
+          #  STORY ANALYZER — DETAIL PER SCENE
           # ============================================================
           MOOD_MAP = {
-              "horror": ["seram","takut","hantu","gelap","teror","mengerikan","horor","mayat","darah","menakutkan"],
-              "happy": ["senang","bahagia","gembira","tawa","tertawa","ceria","riang"],
-              "sad": ["sedih","menangis","tangis","duka","kehilangan","pilu"],
-              "action": ["kejar","lari","tembak","ledakan","perang","bertarung"],
-              "romantic": ["cinta","kasih","peluk","cium","rindu","kekasih"],
-              "mystery": ["misteri","rahasia","teka-teki","misterius","aneh"],
-              "magic": ["sihir","ajaib","mantra","sulap","gaib","magis"],
+              "horror": ["seram","takut","hantu","gelap","teror","mengerikan","horor",
+                         "mayat","darah","menakutkan","panik","kengerian","angker"],
+              "happy": ["senang","bahagia","gembira","tawa","tertawa","ceria","riang","girang"],
+              "sad": ["sedih","menangis","tangis","duka","kehilangan","pilu","nestapa"],
+              "action": ["kejar","lari","tembak","ledakan","perang","bertarung","adu","pukul"],
+              "romantic": ["cinta","kasih","peluk","cium","rindu","kekasih","sayang"],
+              "mystery": ["misteri","rahasia","teka-teki","misterius","aneh","gangguan"],
+              "magic": ["sihir","ajaib","mantra","sulap","gaib","magis","sakti"],
           }
           TIME_MAP = {
-              "night": ["malam","gelap","tengah malam","petang","bintang","bulan"],
-              "day": ["siang","pagi","terang","matahari","cerah"],
-              "sunset": ["senja","maghrib","matahari terbenam","jingga"],
+              "night": ["malam","gelap","tengah malam","petang","senja","bintang","bulan"],
+              "day": ["siang","pagi","terang","matahari","cerah","terik"],
+              "sunset": ["senja","maghrib","matahari terbenam","jingga","golden hour"],
+              "dawn": ["subuh","fajar","matahari terbit"],
           }
           LOC_MAP = {
-              "house": ["rumah","kamar","dapur","ruang","pintu","jendela"],
-              "forest": ["hutan","pohon","rimba"],
-              "city": ["kota","jalan","gedung","sekolah","pasar"],
-              "beach": ["pantai","laut","pesisir"],
-              "cemetery": ["kuburan","makam","kubur"],
+              "house": ["rumah","kamar","dapur","ruang","halaman","pintu","jendela"],
+              "forest": ["hutan","pohon","rimba","belantara"],
+              "city": ["kota","jalan","gedung","mall","sekolah","pasar"],
+              "beach": ["pantai","laut","pesisir","pulau"],
+              "mountain": ["gunung","bukit","pegunungan"],
+              "cemetery": ["kuburan","makam","kubur","pemakaman"],
           }
           EFFECT_MAP = {
-              "rain": ["hujan","gerimis"], "fog": ["kabut","berkabut"],
-              "fire": ["api","kebakaran"], "lightning": ["petir","kilat"],
-              "ghost": ["hantu","arwah","setan"], "mirror": ["cermin","kaca"],
+              "rain": ["hujan","gerimis","basah"],
+              "fog": ["kabut","berkabut","asap","samar"],
+              "fire": ["api","kebakaran","membara","terbakar"],
+              "wind": ["angin","ribut","badai"],
+              "lightning": ["petir","kilat","geledek"],
+              "ghost": ["hantu","arwah","setan","iblis"],
+              "mirror": ["cermin","kaca","pantulan","refleksi"],
               "shadow": ["bayangan","siluet"],
+              "scream": ["menjerit","teriak","pekik","jerit"],
+              "run": ["berlari","lari","kabur"],
+              "tears": ["menangis","air mata","tangis"],
           }
 
           def analyze(text):
@@ -149,76 +173,216 @@ jobs:
                   "effects": [e for e, ws in EFFECT_MAP.items() if any(w in lower for w in ws)]
               }
 
-          def build_prompt(scene_text):
+          def extract_characters(text):
+              # Cari nama karakter (kata kapital yang bukan kata umum)
+              stop = {"Yang","Dan","Di","Ke","Dari","Ini","Itu","Dengan","Untuk",
+                      "Pada","Adalah","Akan","Tidak","Sudah","The","A","An","Is",
+                      "Suatu","Keesokan","Harinya","Ia","Dia","Mereka","Sejak"}
+              words = re.findall(r'\b[A-Z][a-z]{2,}\b', text)
+              chars = [w for w in words if w not in stop]
+              # Hitung frekuensi
+              from collections import Counter
+              return [name for name, _ in Counter(chars).most_common(3)]
+
+          def build_detailed_prompt(scene_text, scene_index, total_scenes, main_char):
               d = analyze(scene_text)
               parts = []
-              # Karakter
-              for w in scene_text.split():
-                  clean = w.strip(".,!?")
-                  if len(clean) > 2 and clean[0].isupper():
-                      parts.append(clean); break
-              # Mood
-              md = {"horror":"creepy dark atmosphere","happy":"joyful bright","sad":"melancholic",
-                    "action":"dynamic action","romantic":"romantic soft","mystery":"mysterious enigmatic",
-                    "magic":"magical glowing"}
-              if d["mood"]: parts.append(md.get(d["mood"], "atmospheric"))
-              # Time
-              td = {"night":"night moonlight","day":"daytime sunlight","sunset":"golden hour"}
-              if d["time"]: parts.append(td.get(d["time"], "daytime"))
-              # Location
-              ld = {"house":"cozy room interior","forest":"dense forest","city":"city street",
-                    "beach":"beach ocean","cemetery":"graveyard"}
-              if d["loc"]: parts.append(ld.get(d["loc"], ""))
-              # Effects
-              ed = {"rain":"rainy wet","fog":"foggy misty","fire":"fire flames","lightning":"thunderstorm",
-                    "ghost":"ghostly supernatural","mirror":"mirror reflection","shadow":"shadows"}
+              
+              # 1. Karakter utama
+              if main_char:
+                  parts.append(main_char)
+              
+              # 2. Aksi / kata kunci dari scene
+              # Ambil 3-5 kata bermakna dari scene
+              stop_id = {"yang","dan","di","ke","dari","ini","itu","dengan","untuk",
+                         "pada","adalah","akan","tidak","sudah","juga","tapi","tapi",
+                         "sambil","lalu","kemudian","saat","ketika","sejak","oleh"}
+              words = re.findall(r'\b[a-zA-Z]{4,}\b', scene_text.lower())
+              keywords = [w for w in words if w not in stop_id][:5]
+              if keywords:
+                  parts.append(" ".join(keywords))
+              
+              # 3. Mood detail
+              mood_desc = {
+                  "horror": "dark horror atmosphere, scary, ominous, eerie, terrifying",
+                  "happy": "joyful bright, cheerful, warm sunshine, happy mood",
+                  "sad": "melancholic, somber, rainy mood, emotional, tearful",
+                  "action": "dynamic action, motion, intense, dramatic",
+                  "romantic": "romantic, soft warm lighting, intimate, loving",
+                  "mystery": "mysterious, enigmatic, suspenseful, intriguing",
+                  "magic": "magical, glowing, enchanted, mystical aura",
+              }
+              if d["mood"]:
+                  parts.append(mood_desc.get(d["mood"], "dramatic atmosphere"))
+              
+              # 4. Waktu
+              time_desc = {
+                  "night": "night time, moonlight, dark sky, stars",
+                  "day": "daytime, bright sunlight, clear sky",
+                  "sunset": "golden hour, sunset, warm orange light",
+                  "dawn": "dawn, sunrise, soft morning light",
+              }
+              if d["time"]:
+                  parts.append(time_desc.get(d["time"], "daytime"))
+              
+              # 5. Lokasi
+              loc_desc = {
+                  "house": "inside old house, wooden interior, dim room",
+                  "forest": "dense dark forest, tall trees, mysterious woods",
+                  "city": "urban city street, buildings, busy road",
+                  "beach": "beach, ocean, waves, sand",
+                  "mountain": "mountains, high altitude, cliff",
+                  "cemetery": "old graveyard, tombstones, foggy cemetery",
+              }
+              if d["loc"]:
+                  parts.append(loc_desc.get(d["loc"], ""))
+              
+              # 6. Effect khusus
+              effect_desc = {
+                  "rain": "heavy rain, raindrops, wet ground, stormy",
+                  "fog": "thick fog, misty, hazy atmosphere",
+                  "fire": "flames, fire, burning, glowing embers",
+                  "wind": "strong wind, storm, leaves flying",
+                  "lightning": "lightning bolt, thunderstorm, flashing sky",
+                  "ghost": "ghostly figure, supernatural, spectral presence",
+                  "mirror": "mirror reflection, cracked mirror, glass",
+                  "shadow": "long shadows, silhouette, dark figure",
+                  "scream": "screaming figure, terrified expression",
+                  "run": "running, motion blur, escaping",
+                  "tears": "crying, tears, sad expression",
+              }
               for e in d["effects"]:
-                  if e in ed: parts.append(ed[e])
-              # Style
-              if STYLE_SUFFIX: parts.append(STYLE_SUFFIX)
-              # Detail
-              parts.append("high quality, detailed")
-
+                  if e in effect_desc:
+                      parts.append(effect_desc[e])
+              
+              # 7. Scene position (untuk konsistensi)
+              if scene_index == 0:
+                  parts.append("opening scene, establishing shot")
+              elif scene_index == total_scenes - 1:
+                  parts.append("closing scene, dramatic final shot")
+              else:
+                  parts.append("cinematic shot")
+              
+              # 8. Style
+              if STYLE_SUFFIX:
+                  parts.append(STYLE_SUFFIX)
+              
+              # 9. Quality
+              parts.append("masterpiece, highly detailed, 8k, cinematic composition")
+              
               prompt = ", ".join(p for p in parts if p)
-              # Sanitasi
               prompt = re.sub(r'[^\w\s,\-]', '', prompt)
+              if len(prompt) > 500:
+                  prompt = prompt[:500].rsplit(",", 1)[0]
               return prompt
+
+          # Detect main character dari seluruh cerita
+          main_char = extract_characters(PROMPT)[0] if extract_characters(PROMPT) else ""
+          print(f"Main character: {main_char}")
 
           # ============================================================
           #  GENERATE IMAGES
           # ============================================================
           def gen_image(scene_text, idx):
-              prompt = build_prompt(scene_text)
-              # Batasi prompt (Pollinations aman sampai ~400 char)
-              if len(prompt) > 400:
-                  prompt = prompt[:400].rsplit(",", 1)[0]
-              print(f"\n  Scene {idx+1}: {prompt[:100]}...")
+              prompt = build_detailed_prompt(scene_text, idx, len(scenes), main_char)
+              print(f"\n  Scene {idx+1}/{len(scenes)}: {scene_text[:60]}...")
+              print(f"  Prompt: {prompt[:150]}...")
               
-              for attempt in range(3):
+              for attempt in range(4):
                   try:
                       encoded = urllib.parse.quote(prompt)
-                      seed = (int(JOB_ID) + idx * 100 + attempt) % 100000
-                      url = f"https://image.pollinations.ai/prompt/{encoded}?width={WIDTH}&height={HEIGHT}&nologo=true&seed={seed}"
+                      seed = (int(JOB_ID) + idx * 1000 + attempt * 7) % 1000000
+                      params = random.choice([
+                          "nologo=true&model=flux",
+                          "nologo=true&model=turbo",
+                          "nologo=true",
+                      ])
+                      url = f"https://image.pollinations.ai/prompt/{encoded}?width={WIDTH}&height={HEIGHT}&{params}&seed={seed}"
                       
-                      r = requests.get(url, timeout=90)
+                      r = requests.get(url, timeout=120)
                       if r.status_code == 200 and len(r.content) > 1000:
-                          img = Image.open(BytesIO(r.content)).convert("RGB").resize((WIDTH, HEIGHT), Image.LANCZOS)
+                          img = Image.open(BytesIO(r.content)).convert("RGB")
+                          img = img.resize((WIDTH, HEIGHT), Image.LANCZOS)
                           out = f"scenes/scene_{idx:02d}.png"
                           img.save(out)
                           print(f"    ✅ OK (attempt {attempt+1})")
                           return out
-                      print(f"    ⚠️ HTTP {r.status_code}, retry {attempt+2}/3...")
+                      print(f"    ⚠️ HTTP {r.status_code}")
                   except Exception as e:
-                      print(f"    ⚠️ {e}, retry {attempt+2}/3...")
-                  time.sleep(5)
+                      print(f"    ⚠️ {e}")
+                  time.sleep(3)
               
-              # Fallback
-              print(f"    ❌ Gagal, pakai solid")
-              Image.new("RGB", (WIDTH, HEIGHT), (30, 58, 138)).save(f"scenes/scene_{idx:02d}.png")
+              # Fallback: solid gradient by mood
+              d = analyze(scene_text)
+              color_map = {
+                  "horror": (20, 20, 30), "happy": (255, 220, 150),
+                  "sad": (80, 80, 120), "action": (200, 50, 50),
+                  "romantic": (255, 150, 180), "mystery": (40, 40, 60),
+                  "magic": (100, 50, 150),
+              }
+              color = color_map.get(d["mood"], (30, 58, 138))
+              Image.new("RGB", (WIDTH, HEIGHT), color).save(f"scenes/scene_{idx:02d}.png")
               return f"scenes/scene_{idx:02d}.png"
 
           print(f"\n=== Generate {len(scenes)} Images ===")
           scene_imgs = [gen_image(s, i) for i, s in enumerate(scenes)]
+
+          # ============================================================
+          #  APPLY EFFECT PER SCENE (post-process)
+          # ============================================================
+          print("\n=== Apply Effects ===")
+          for i, (scene_text, img_path) in enumerate(zip(scenes, scene_imgs)):
+              try:
+                  d = analyze(scene_text)
+                  img = Image.open(img_path)
+                  
+                  # Effect horror → darken + desaturate
+                  if d["mood"] == "horror":
+                      enhancer = ImageEnhance.Brightness(img)
+                      img = enhancer.enhance(0.7)
+                      enhancer = ImageEnhance.Color(img)
+                      img = enhancer.enhance(0.6)
+                      print(f"  Scene {i+1}: horror dark effect")
+                  
+                  # Effect sad → desaturate
+                  elif d["mood"] == "sad":
+                      enhancer = ImageEnhance.Color(img)
+                      img = enhancer.enhance(0.7)
+                      print(f"  Scene {i+1}: sad desaturate")
+                  
+                  # Effect happy → brighten
+                  elif d["mood"] == "happy":
+                      enhancer = ImageEnhance.Brightness(img)
+                      img = enhancer.enhance(1.15)
+                      enhancer = ImageEnhance.Color(img)
+                      img = enhancer.enhance(1.2)
+                      print(f"  Scene {i+1}: happy brighten")
+                  
+                  # Effect rain → add rain lines
+                  if "rain" in d["effects"]:
+                      draw = ImageDraw.Draw(img, "RGBA")
+                      for _ in range(200):
+                          x = random.randint(0, WIDTH)
+                          y = random.randint(0, HEIGHT)
+                          draw.line([(x, y), (x-3, y+15)], fill=(200, 200, 255, 100), width=1)
+                      print(f"  Scene {i+1}: rain effect")
+                  
+                  # Effect fog → blur + white overlay
+                  if "fog" in d["effects"]:
+                      img = img.filter(ImageFilter.GaussianBlur(radius=2))
+                      overlay = Image.new("RGBA", img.size, (255, 255, 255, 40))
+                      img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+                      print(f"  Scene {i+1}: fog effect")
+                  
+                  # Effect fire → warm overlay
+                  if "fire" in d["effects"]:
+                      overlay = Image.new("RGBA", img.size, (255, 100, 0, 30))
+                      img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+                      print(f"  Scene {i+1}: fire effect")
+                  
+                  img.save(img_path)
+              except Exception as e:
+                  print(f"  Scene {i+1}: effect error - {e}")
 
           # ============================================================
           #  TTS
@@ -232,7 +396,7 @@ jobs:
           print("TTS OK")
 
           # ============================================================
-          #  RENDER VIDEO
+          #  RENDER VIDEO (dengan transisi)
           # ============================================================
           print("\n=== Render ===")
           audio_dur = float(subprocess.check_output(
@@ -242,6 +406,8 @@ jobs:
           per_scene = audio_dur / len(scene_imgs)
           print(f"Audio {audio_dur:.1f}s, per scene {per_scene:.1f}s")
 
+          # Buat video dengan transisi fade antar scene
+          # Gunakan ffmpeg concat + xfade
           with open("scenes/concat.txt", "w") as f:
               for img in scene_imgs:
                   f.write(f"file '{os.path.basename(img)}'\n")
