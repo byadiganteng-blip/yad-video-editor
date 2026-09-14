@@ -13,11 +13,108 @@ on:
           - admin
           - both
 
+permissions:
+  contents: write
+
 jobs:
+  # ============================================================
+  # JOB 0 — Cek AAR
+  # ============================================================
+  check-aar:
+    name: Check AAR
+    runs-on: ubuntu-latest
+    outputs:
+      aar_exists: ${{ steps.check.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      
+      - id: check
+        run: |
+          if [ -f "android/app/libs/ffmpeg-kit.aar" ]; then
+            SIZE=$(stat -c%s "android/app/libs/ffmpeg-kit.aar")
+            echo "✅ AAR ada: $SIZE bytes"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ AAR tidak ada — perlu build"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+  # ============================================================
+  # JOB 1 — Build AAR (kalau belum ada)
+  # ============================================================
+  build-ffmpeg-aar:
+    name: Build FFmpeg-Kit AAR
+    needs: check-aar
+    if: needs.check-aar.outputs.aar_exists == 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0 ndk;25.1.8937393 cmake;3.22.1'
+      
+      - name: Install deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq autoconf automake libtool pkg-config \
+            cmake nasm yasm wget unzip git build-essential texinfo gperf \
+            python3 python-is-python3
+      
+      - name: Clone ffmpeg-kit
+        run: |
+          git clone --depth 1 https://github.com/Javernaut/ffmpeg-kit.git ffmpeg-kit-src || \
+          git clone --depth 1 https://github.com/arthenica/ffmpeg-kit.git ffmpeg-kit-src
+      
+      - name: Build AAR
+        env:
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/25.1.8937393
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/25.1.8937393
+        run: |
+          cd ffmpeg-kit-src
+          chmod +x android.sh
+          ./android.sh \
+            --lts \
+            --disable-arm-v7a \
+            --disable-arm-v7a-neon \
+            --disable-x86 \
+            --disable-x86-64 \
+            --enable-android-media-codec \
+            --enable-android-zlib
+      
+      - name: Copy AAR
+        run: |
+          AAR=$(find ffmpeg-kit-src -name "*.aar" -type f -printf '%s %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
+          mkdir -p android/app/libs
+          cp "$AAR" android/app/libs/ffmpeg-kit.aar
+          ls -lh android/app/libs/
+      
+      - name: Commit AAR
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add android/app/libs/ffmpeg-kit.aar
+          git diff --cached --quiet || (git commit -m "chore: update AAR [skip ci]" && git push)
+
+  # ============================================================
+  # JOB 2 — Build Client APK
+  # ============================================================
   build-client:
     name: Build Client APK
+    needs: [check-aar, build-ffmpeg-aar]
+    if: |
+      always() && 
+      (github.event.inputs.build_target == 'client' || github.event.inputs.build_target == 'both') &&
+      (needs.build-ffmpeg-aar.result == 'success' || needs.build-ffmpeg-aar.result == 'skipped')
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.build_target == 'client' || github.event.inputs.build_target == 'both' }}
     defaults:
       run:
         working-directory: android
@@ -36,6 +133,11 @@ jobs:
           accept-android-sdk-licenses: true
           log-accepted-android-sdk-licenses: true
           packages: tools platform-tools
+      
+      - name: Verifikasi AAR ada
+        run: |
+          ls -lh app/libs/
+          test -f app/libs/ffmpeg-kit.aar || (echo "::error::AAR tidak ada" && exit 1)
       
       - uses: gradle/gradle-build-action@v3
         with:
@@ -65,10 +167,17 @@ jobs:
           path: android/output/*.apk
           if-no-files-found: error
 
+  # ============================================================
+  # JOB 3 — Build Admin APK
+  # ============================================================
   build-admin:
     name: Build Admin APK
+    needs: [check-aar, build-ffmpeg-aar]
+    if: |
+      always() && 
+      (github.event.inputs.build_target == 'admin' || github.event.inputs.build_target == 'both') &&
+      (needs.build-ffmpeg-aar.result == 'success' || needs.build-ffmpeg-aar.result == 'skipped')
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.build_target == 'admin' || github.event.inputs.build_target == 'both' }}
     defaults:
       run:
         working-directory: android
@@ -87,6 +196,11 @@ jobs:
           accept-android-sdk-licenses: true
           log-accepted-android-sdk-licenses: true
           packages: tools platform-tools
+      
+      - name: Verifikasi AAR ada
+        run: |
+          ls -lh app/libs/
+          test -f app/libs/ffmpeg-kit.aar || (echo "::error::AAR tidak ada" && exit 1)
       
       - uses: gradle/gradle-build-action@v3
         with:
