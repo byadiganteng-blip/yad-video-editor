@@ -13,6 +13,10 @@ android {
         targetSdk 34
         versionCode 2
         versionName "2.0.0"
+
+        manifestPlaceholders = [
+            admobAppId: "ca-app-pub-2515513620924097~6524543685"
+        ]
     }
 
     // FLAVOR: client & admin
