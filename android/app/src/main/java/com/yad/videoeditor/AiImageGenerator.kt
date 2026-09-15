@@ -17,7 +17,7 @@ object AiImageGenerator {
         .readTimeout(300, TimeUnit.SECONDS)
         .build()
 
-    private const val MAX_POLL_ITERATIONS = 540  // 45 menit
+    private const val MAX_POLL_ITERATIONS = 1080  // 90 menit
 
     fun interface ProgressCallback {
         fun onProgress(sceneIndex: Int, totalScenes: Int,
@@ -60,7 +60,7 @@ object AiImageGenerator {
 
             if (url == null) {
                 callback?.onProgress(1, 1, "TIMEOUT", 90,
-                    "Masih diproses. Cek notifikasi.")
+                    "Masih diproses di server. Cek notifikasi.")
                 return@withContext null
             }
 
