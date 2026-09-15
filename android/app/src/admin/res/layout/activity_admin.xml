@@ -468,7 +468,7 @@
         </LinearLayout>
 
         <!-- ============================================ -->
-        <!-- SECTION: DATA & MONITORING                   -->
+        <!-- SECTION: DATA &amp; MONITORING                   -->
         <!-- ============================================ -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -550,7 +550,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Lihat & kelola semua user"
+                            android:text="Lihat &amp; kelola semua user"
                             android:textColor="#9A96B8"
                             android:textSize="11sp" />
                     </LinearLayout>
