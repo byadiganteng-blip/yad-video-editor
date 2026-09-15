@@ -30,6 +30,8 @@ class TextToVideoActivity : AppCompatActivity() {
     private lateinit var progressContainer: LinearLayout
     private lateinit var btnDownloadNow: Button
     private var lastVideoPath: String? = null
+    private var elapsedTimer: android.os.CountDownTimer? = null
+    private var generateStartTime: Long = 0L
 
     private val progressReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -43,6 +45,8 @@ class TextToVideoActivity : AppCompatActivity() {
                 VideoGeneratorService.ACTION_DONE -> {
                     val path = intent.getStringExtra(VideoGeneratorService.EXTRA_FILE_PATH)
                     lastVideoPath = path
+                    elapsedTimer?.cancel()
+                    generateStartTime = 0L
                     progressBar.progress = 100
                     tvPercent.text = "100%"
                     tvStatus.text = "✅ Video selesai: " + (path ?: "")
@@ -151,8 +155,15 @@ class TextToVideoActivity : AppCompatActivity() {
         progressContainer.visibility = View.VISIBLE
         progressBar.progress = pct
         tvPercent.text = "$pct%"
-        tvStatus.text = msg
-        if (FloatingProgressService.isRunning) FloatingProgressService.update(this, pct, msg)
+        
+        // Tambah elapsed timer
+        val elapsed = if (generateStartTime > 0) {
+            val sec = (System.currentTimeMillis() - generateStartTime) / 1000
+            " (${sec/60}m ${sec%60}s)"
+        } else ""
+        
+        tvStatus.text = "$msg$elapsed"
+        if (FloatingProgressService.isRunning) FloatingProgressService.update(this, pct, "$msg$elapsed")
     }
 
     private fun pickTxtFile() {
@@ -196,6 +207,7 @@ class TextToVideoActivity : AppCompatActivity() {
         btnDownloadNow.visibility = View.GONE
         lastVideoPath = null
 
+        generateStartTime = System.currentTimeMillis()
         GeneratorState.saveRunning(this, true)
         GeneratorState.saveProgress(this, 0, "Memulai...")
         FloatingProgressService.show(this, 0, "Memulai...")
