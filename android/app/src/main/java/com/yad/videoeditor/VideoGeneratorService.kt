@@ -132,7 +132,7 @@ class VideoGeneratorService : Service() {
     private fun startPolling(runId: Long, token: String) {
         pollingJob?.cancel()
         pollingJob = scope.launch {
-            val maxAttempts = 120   // 120 × 5s = 10 menit
+            val maxAttempts = Int.MAX_VALUE   // 120 × 5s = 10 menit
             var attempt = 0
 
             AutoLogSaver.log("VideoGeneratorService", "Polling start: runId=$runId")
