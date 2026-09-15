@@ -367,4 +367,12 @@ object FirebaseManager {
             .addOnSuccessListener { cb(true) }
             .addOnFailureListener { cb(false) }
     }
+
+    fun logout() {
+        try {
+            FirebaseAuth.getInstance().signOut()
+        } catch (e: Exception) {
+            // ignore
+        }
+    }
 }
