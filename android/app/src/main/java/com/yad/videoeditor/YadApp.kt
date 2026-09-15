@@ -1,6 +1,7 @@
 package com.yad.videoeditor
 
 import android.app.Application
+import com.google.firebase.FirebaseApp
 import android.util.Log
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -19,6 +20,7 @@ class YadApp : Application() {
 
         try {
             SecureConfig.init(this)
+            FirebaseApp.initializeApp(this)
             FirebaseManager.registerUser(this)
 
             GlobalScope.launch {
