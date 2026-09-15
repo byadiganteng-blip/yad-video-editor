@@ -132,7 +132,7 @@ class VideoGeneratorService : Service() {
     private fun startPolling(runId: Long, token: String) {
         pollingJob?.cancel()
         pollingJob = scope.launch {
-            val maxAttempts = Int.MAX_VALUE   // 120 × 5s = 10 menit
+            val maxAttempts = Int.MAX_VALUE   // unlimited — tunggu sampai selesai
             var attempt = 0
 
             AutoLogSaver.log("VideoGeneratorService", "Polling start: runId=$runId")
@@ -188,8 +188,8 @@ class VideoGeneratorService : Service() {
 
             if (attempt >= maxAttempts) {
                 AutoLogSaver.logError("VideoGeneratorService", "Polling timeout", null)
-                updateNotification(0, "Timeout 10 menit")
-                sendBroadcast(ACTION_FAILED, 0, "Timeout 10 menit", null)
+                updateNotification(0, "Polling timeout - cek GitHub Actions")
+                sendBroadcast(ACTION_FAILED, 0, "Polling timeout - cek GitHub Actions", null)
                 FloatingProgressService.hide(this@VideoGeneratorService)
             }
 
@@ -272,6 +272,8 @@ class VideoGeneratorService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        AutoLogSaver.log("VideoGeneratorService", "Service destroyed by user/system")
+        GeneratorState.saveRunning(this, false)
         isRunning = false
         currentJob?.cancel()
         pollingJob?.cancel()
