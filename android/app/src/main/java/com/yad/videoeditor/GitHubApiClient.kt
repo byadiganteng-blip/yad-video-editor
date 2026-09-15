@@ -111,7 +111,7 @@ object GitHubApiClient {
         }
     }
 
-    private suspend fun getLatestRunId(token: String, retries: Int = 10): Long {
+    private suspend fun getLatestRunId(token: String, retries: Int = 30): Long {
         for (attempt in 1..retries) {
             try {
                 val url = "https://api.github.com/repos/$OWNER/$REPO/actions/workflows/$WORKFLOW_FILE/runs?per_page=5"
@@ -219,10 +219,10 @@ object GitHubApiClient {
         val startTime = startTimes.getOrPut(runId) { System.currentTimeMillis() }
         val elapsed = System.currentTimeMillis() - startTime
 
-        // Estimasi total: 3 menit (bisa disesuaikan)
-        val estimatedTotal = 180_000L
+        // Estimasi total: 10 menit (bisa disesuaikan)
+        val estimatedTotal = 600_000L
 
-        // Progress 10% → 95%
+        // Progress 10% → 95% (smooth based on time)
         val ratio = elapsed.toFloat() / estimatedTotal
         val progress = 10 + (ratio * 85).toInt()
 
