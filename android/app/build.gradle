@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'com.google.gms.google-services'
 }
 
 android {
@@ -87,6 +88,10 @@ dependencies {
 
     // FFmpeg Kit AAR (local file)
     implementation fileTree(dir: 'libs', include: ['*.aar'])
+    
+    // ✅ WAJIB: FFmpeg Kit butuh dependency ini
+    implementation 'com.arthenica:smart-exception-java:0.2.1'
+    implementation 'com.arthenica:smart-exception-common:0.2.1'
 
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
