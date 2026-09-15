@@ -15,6 +15,22 @@ android {
         versionName "2.0.0"
     }
 
+    // FLAVOR: client & admin
+    flavorDimensions "app"
+    productFlavors {
+        client {
+            dimension "app"
+            applicationId "com.yad.videoeditor"
+            versionNameSuffix "-client"
+        }
+        admin {
+            dimension "app"
+            applicationId "com.yad.videoeditor.admin"
+            versionNameSuffix "-admin"
+        }
+    }
+
+
     // ✅ Signing config supaya bisa update dari versi lama
     signingConfigs {
         release {
