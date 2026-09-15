@@ -38,9 +38,9 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3.2.1
         with:
-          packages: 'platform-tools platforms;android-34 build-tools;34.0.0 ndk;25.1.8937393 cmake;3.22.1'
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0 cmake;3.22.1'
       - run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq autoconf automake libtool pkg-config cmake nasm yasm wget unzip git build-essential texinfo gperf python3 python-is-python3
@@ -87,7 +87,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3.2.1
       - run: |
           ls -lh android/app/libs/
           test -f android/app/libs/ffmpeg-kit.aar || (echo "::error::AAR tidak ada" && exit 1)
