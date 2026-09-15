@@ -282,4 +282,89 @@ object FirebaseManager {
             .addOnSuccessListener { cb(true) }
             .addOnFailureListener { cb(false) }
     }
+
+    // ============================================================
+    //  STATISTIK ADMIN
+    // ============================================================
+    fun getTotalUserCount(cb: (Int) -> Unit = {}) {
+        db.collection("users").get()
+            .addOnSuccessListener { cb(it.size()) }
+            .addOnFailureListener { cb(0) }
+    }
+
+    fun getActiveDeviceCount(cb: (Int) -> Unit = {}) {
+        val cutoff = System.currentTimeMillis() - (24 * 60 * 60 * 1000)  // 24 jam
+        db.collection("users")
+            .whereGreaterThan("last_used", cutoff)
+            .get()
+            .addOnSuccessListener { cb(it.size()) }
+            .addOnFailureListener { cb(0) }
+    }
+
+    fun getPremiumUserCount(cb: (Int) -> Unit = {}) {
+        db.collection("users")
+            .whereEqualTo("is_premium", true)
+            .get()
+            .addOnSuccessListener { cb(it.size()) }
+            .addOnFailureListener { cb(0) }
+    }
+
+    fun getGenerationTodayCount(cb: (Int) -> Unit = {}) {
+        val now = System.currentTimeMillis()
+        val todayStart = now - (now % (24 * 60 * 60 * 1000))
+        db.collection("logs")
+            .whereGreaterThan("timestamp", todayStart)
+            .get()
+            .addOnSuccessListener { cb(it.size()) }
+            .addOnFailureListener { cb(0) }
+    }
+
+    // ============================================================
+    //  USER MANAGEMENT
+    // ============================================================
+    data class AdminUserInfo(
+        val deviceId: String = "",
+        val deviceModel: String = "",
+        val appVersion: Long = 0,
+        val lastUsed: Long = 0,
+        val installedAt: Long = 0,
+        val isPremium: Boolean = false,
+        val dailyCount: Long = 0,
+        val isAdmin: Boolean = false
+    )
+
+    fun allUsersFlow(): Flow<List<AdminUserInfo>> = callbackFlow {
+        val ref = db.collection("users").orderBy("last_used", com.google.firebase.firestore.Query.Direction.DESCENDING)
+        val listener = ref.addSnapshotListener { snap, err ->
+            if (err != null) { trySend(emptyList()); return@addSnapshotListener }
+            val list = snap?.documents?.mapNotNull { doc ->
+                AdminUserInfo(
+                    deviceId = doc.id,
+                    deviceModel = doc.getString("device_model") ?: "Unknown",
+                    appVersion = doc.getLong("app_version") ?: 0,
+                    lastUsed = doc.getLong("last_used") ?: 0,
+                    installedAt = doc.getLong("installed_at") ?: 0,
+                    isPremium = doc.getBoolean("is_premium") ?: false,
+                    dailyCount = doc.getLong("daily_count") ?: 0,
+                    isAdmin = doc.getBoolean("is_admin") ?: false
+                )
+            } ?: emptyList()
+            trySend(list)
+        }
+        awaitClose { listener.remove() }
+    }
+
+    fun setUserPremium(deviceId: String, premium: Boolean, cb: (Boolean) -> Unit = {}) {
+        db.collection("users").document(deviceId)
+            .set(mapOf("is_premium" to premium), SetOptions.merge())
+            .addOnSuccessListener { cb(true) }
+            .addOnFailureListener { cb(false) }
+    }
+
+    fun deleteUser(deviceId: String, cb: (Boolean) -> Unit = {}) {
+        db.collection("users").document(deviceId)
+            .delete()
+            .addOnSuccessListener { cb(true) }
+            .addOnFailureListener { cb(false) }
+    }
 }
