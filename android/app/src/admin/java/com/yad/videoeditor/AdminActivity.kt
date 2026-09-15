@@ -43,9 +43,6 @@ class AdminActivity : AppCompatActivity() {
         binding.cardUserList.setOnClickListener {
             startActivity(Intent(this, AdminUserListActivity::class.java))
         }
-        binding.cardDeviceList.setOnClickListener {
-            startActivity(Intent(this, AdminUserListActivity::class.java))
-        }
         binding.cardLogs.setOnClickListener {
             startActivity(Intent(this, AdminLogsActivity::class.java))
         }
@@ -66,7 +63,6 @@ class AdminActivity : AppCompatActivity() {
 
         // === LOGOUT ===
         binding.btnLogout.setOnClickListener {
-            FirebaseManager.logout()
             startActivity(Intent(this, SplashActivity::class.java))
             finish()
         }
