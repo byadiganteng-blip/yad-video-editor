@@ -129,10 +129,10 @@ jobs:
       
       - uses: android-actions/setup-android@v3
         with:
-          cmdline-tools-version: 12266719
+          cmdline-tools-version: 11076708
           accept-android-sdk-licenses: true
           log-accepted-android-sdk-licenses: true
-          packages: tools platform-tools
+          packages: platform-tools
       
       - name: Verifikasi AAR ada
         run: |
@@ -192,10 +192,10 @@ jobs:
       
       - uses: android-actions/setup-android@v3
         with:
-          cmdline-tools-version: 12266719
+          cmdline-tools-version: 11076708
           accept-android-sdk-licenses: true
           log-accepted-android-sdk-licenses: true
-          packages: tools platform-tools
+          packages: platform-tools
       
       - name: Verifikasi AAR ada
         run: |
