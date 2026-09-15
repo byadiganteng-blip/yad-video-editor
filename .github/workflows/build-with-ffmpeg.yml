@@ -1,0 +1,58 @@
+name: Build APK with FFmpeg
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-client:
+    runs-on: ubuntu-latest
+    name: Build Client APK
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3.2.1
+
+      - name: Verify FFmpeg AAR
+        run: |
+          ls -lh android/app/libs/ || true
+          test -f android/app/libs/ffmpeg-kit.aar || echo "::warning::AAR tidak ada"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.2
+
+      - name: Make gradlew executable
+        working-directory: android
+        run: |
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 8.2 --distribution-type bin
+          fi
+          chmod +x gradlew
+
+      - name: Build Client Debug APK
+        working-directory: android
+        run: ./gradlew assembleClientDebug --no-daemon --stacktrace
+
+      - name: Upload Client APK
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: yad-video-editor-client-debug
+          path: android/app/build/outputs/apk/client/debug/*.apk
+          if-no-files-found: warn
+          retention-days: 7
