@@ -12,17 +12,6 @@ import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-/**
- * YadFcmService — terima FCM message dari admin.
- *
- * Behavior:
- *  - onNewToken: simpan token ke Firestore (untuk keperluan tracking)
- *  - onMessageReceived: tampilkan notifikasi di system tray
- *
- * Catatan: FCM juga kirim "notification" payload otomatis
- * kalau app di background — tapi kita tangani sendiri di sini
- * supaya bisa custom (judul, pesan, ikon, deep link).
- */
 class YadFcmService : FirebaseMessagingService() {
 
     companion object {
@@ -33,31 +22,34 @@ class YadFcmService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        AutoLogSaver.log(TAG, "FCM token received")
+        val prefix = if (token.length > 20) token.substring(0, 20) + "..." else token
+        Tracker.fcmEvent("token_received", mapOf("token_prefix" to prefix))
 
-        // Simpan token ke Firestore
         try {
             val uid = FirebaseManager.getCurrentUserUid()
             if (uid != null) {
-                kotlinx.coroutines.GlobalScope.launch {
+                GlobalScope.launch {
                     try {
-                        FirebaseManager.addFcmToken(uid, token)
+                        val ok = FirebaseManager.addFcmToken(uid, token)
+                        Tracker.fcmEvent("token_saved", mapOf(
+                            "uid" to uid, "success" to ok
+                        ))
                     } catch (e: Exception) {
-                        AutoLogSaver.logError(TAG, "save token failed", e)
+                        Tracker.error(TAG, "save_token_failed", "", e)
                     }
                 }
+            } else {
+                Tracker.warn(TAG, "no_uid_for_token", "user not logged in")
             }
         } catch (e: Exception) {
-            AutoLogSaver.logError(TAG, "onNewToken failed", e)
+            Tracker.error(TAG, "on_new_token_failed", "", e)
         }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        AutoLogSaver.log(TAG, "FCM message received")
 
         try {
-            // Ambil judul + pesan
             val title = message.notification?.title
                 ?: message.data["title"]
                 ?: "Pesan dari Admin"
@@ -65,7 +57,14 @@ class YadFcmService : FirebaseMessagingService() {
                 ?: message.data["body"]
                 ?: ""
 
-            // Klik notif → buka MainActivity
+            Tracker.fcmEvent("message_received", mapOf(
+                "title" to title,
+                "body_preview" to (if (body.length > 50) body.substring(0, 50) + "..." else body),
+                "from" to (message.from ?: "unknown"),
+                "has_notification" to (message.notification != null),
+                "data_keys" to message.data.keys.joinToString(",")
+            ))
+
             val intent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
@@ -74,10 +73,8 @@ class YadFcmService : FirebaseMessagingService() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            // Buat channel (Android 8+)
             ensureChannel()
 
-            // Bangun notifikasi
             val notification = NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(title)
                 .setContentText(body)
@@ -88,22 +85,23 @@ class YadFcmService : FirebaseMessagingService() {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .build()
 
-            // Tampilkan
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val notifId = (System.currentTimeMillis() % 100000).toInt()
             nm.notify(notifId, notification)
 
-            AutoLogSaver.log(TAG, "Notification shown: $title")
+            Tracker.fcmEvent("notification_shown", mapOf(
+                "notif_id" to notifId,
+                "title" to title
+            ))
         } catch (e: Exception) {
-            AutoLogSaver.logError(TAG, "onMessageReceived failed", e)
+            Tracker.error(TAG, "on_message_failed", "", e)
         }
     }
 
     private fun ensureChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
+                CHANNEL_ID, CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Notifikasi dari admin"
