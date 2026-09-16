@@ -33,14 +33,6 @@
             android:name=".SaweriaActivity"
             android:exported="false" />
 
-
-        <activity
-            android:name=".PanduanActivity"
-            android:exported="false" />
-        <activity
-            android:name=".PenggunaanActivity"
-            android:exported="false" />
-
         <!-- AdMob App ID (TEST) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
