@@ -10,6 +10,9 @@ class CreditActivity : AppCompatActivity() {
         try { setContentView(R.layout.activity_credit) }
         catch (e: Exception) { finish(); return }
 
+        // Tampil interstitial
+        try { StartAppHelper.showInterstitial(this) {} } catch (_: Exception) {}
+
         // Layout activity_credit.xml punya ID "tvCredit"
         val tvInfo = findViewById<TextView>(R.id.tvCredit)
         tvInfo.text = """
