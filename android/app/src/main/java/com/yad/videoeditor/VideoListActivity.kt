@@ -23,11 +23,11 @@ class VideoListActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        try { setContentView(R.layout.activity_video_list)
+        try { setContentView(R.layout.activity_video_list) }
+        catch (e: Exception) { finish(); return }
 
         // Tampil interstitial saat buka fitur
-        try { StartAppHelper.showInterstitial(this) {} } catch (_: Exception) {} }
-        catch (e: Exception) { finish(); return }
+        try { StartAppHelper.showInterstitial(this) {} } catch (_: Exception) {}
 
         container = findViewById(R.id.videoListContainer)
         tvCount = findViewById(R.id.tvVideoCount)
