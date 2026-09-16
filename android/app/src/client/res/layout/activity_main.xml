@@ -715,14 +715,5 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp" />
-
-        <!-- AdView AdMob dinonaktifkan — semua iklan pakai StartApp -->
-        <com.google.android.gms.ads.AdView
-            android:id="@+id/bannerAd"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:visibility="gone"
-            app:adSize="BANNER"
-            app:adUnitId="ca-app-pub-2515513620924097/4725211004" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
