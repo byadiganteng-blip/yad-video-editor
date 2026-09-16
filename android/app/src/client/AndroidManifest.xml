@@ -42,6 +42,11 @@
 
         <!-- MainActivity = LAUNCHER tunggal -->
         <activity
+            android:name=".LoginActivity"
+            android:exported="true"
+            android:theme="@style/Theme.YadVideoEditor" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.YadVideoEditor"
