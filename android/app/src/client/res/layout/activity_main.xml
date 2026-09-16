@@ -85,32 +85,59 @@
                     android:textColor="#E8D9FF"
                     android:textSize="13sp" />
 
-                <!-- Creator badge -->
+                <!-- User Info (Google) -->
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:background="@drawable/bg_creator_badge"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="6dp"
-                    android:paddingBottom="6dp">
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/ivUserPhoto"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_icon_badge"
+                        android:padding="4dp"
+                        android:scaleType="centerCrop"
+                        android:contentDescription="User photo" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvUserName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="User"
+                            android:textColor="#FFFFFF"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvUserEmail"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text=""
+                            android:textColor="#B0A0FF"
+                            android:textSize="11sp" />
+                    </LinearLayout>
 
                     <TextView
+                        android:id="@+id/btnLogout"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Created by"
-                        android:textColor="#FFFFFF"
-                        android:textSize="10sp"
-                        android:letterSpacing="0.06" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:text="Ysdev"
+                        android:background="@drawable/bg_creator_badge"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
+                        android:text="Logout"
                         android:textColor="#FFFFFF"
                         android:textSize="11sp"
                         android:textStyle="bold" />
@@ -689,12 +716,11 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp" />
 
+        <!-- AdView AdMob dinonaktifkan — semua iklan pakai StartApp -->
         <com.google.android.gms.ads.AdView
             android:id="@+id/bannerAd"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="8dp"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
             android:visibility="gone"
             app:adSize="BANNER"
             app:adUnitId="ca-app-pub-2515513620924097/4725211004" />
