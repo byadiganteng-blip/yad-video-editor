@@ -32,6 +32,81 @@ object FirebaseManager {
     }
 
     // ============================================================
+    //  GOOGLE SIGN-IN
+    // ============================================================
+    suspend fun loginWithGoogle(idToken: String): Boolean {
+        return try {
+            val credential = com.google.firebase.auth.GoogleAuthProvider
+                .getCredential(idToken, null)
+            val auth = FirebaseAuth.getInstance()
+            auth.signInWithCredential(credential).await()
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Google login failed: ${e.message}"); false
+        }
+    }
+
+    fun getCurrentUserUid(): String? {
+        return try { FirebaseAuth.getInstance().currentUser?.uid } catch (e: Exception) { null }
+    }
+
+    fun getCurrentUserEmail(): String? {
+        return try { FirebaseAuth.getInstance().currentUser?.email } catch (e: Exception) { null }
+    }
+
+    fun getCurrentUserName(): String? {
+        return try { FirebaseAuth.getInstance().currentUser?.displayName } catch (e: Exception) { null }
+    }
+
+    fun getCurrentUserPhoto(): String? {
+        return try { FirebaseAuth.getInstance().currentUser?.photoUrl?.toString() } catch (e: Exception) { null }
+    }
+
+    fun isLoggedIn(): Boolean {
+        return try { FirebaseAuth.getInstance().currentUser != null } catch (e: Exception) { false }
+    }
+
+    // ============================================================
+    //  USER PROFILE — Firestore Sync
+    // ============================================================
+    suspend fun saveUserToFirestore(profile: UserProfile): Boolean {
+        return try {
+            db.collection("users").document(profile.uid)
+                .set(profile.toMap(), SetOptions.merge()).await()
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "saveUser error: ${e.message}"); false
+        }
+    }
+
+    suspend fun loadUserFromFirestore(uid: String): UserProfile? {
+        return try {
+            val doc = db.collection("users").document(uid).get().await()
+            if (doc.exists()) {
+                val map = doc.data ?: emptyMap()
+                UserProfile.fromMap(uid, map)
+            } else null
+        } catch (e: Exception) {
+            Log.e(TAG, "loadUser error: ${e.message}"); null
+        }
+    }
+
+    suspend fun updateUserField(uid: String, field: String, value: Any): Boolean {
+        return try {
+            db.collection("users").document(uid)
+                .set(mapOf(field to value), SetOptions.merge()).await()
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "updateField error: ${e.message}"); false
+        }
+    }
+    
+    // Alias untuk kompatibilitas
+    fun logoutUser() {
+        logout()
+    }
+
+    // ============================================================
     //  SECRETS
     // ============================================================
     suspend fun fetchGithubToken(): String? {
