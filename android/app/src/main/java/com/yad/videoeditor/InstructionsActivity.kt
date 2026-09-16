@@ -15,6 +15,9 @@ class InstructionsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_instructions)
 
+        // Tampil interstitial
+        try { StartAppHelper.showInterstitial(this) {} } catch (_: Exception) {}
+
         // Isi text panduan
         val tvContent = findViewById<TextView>(R.id.tvInstructionsContent)
         tvContent.text = getInstructionsText()
