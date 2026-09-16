@@ -5,17 +5,14 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * SplashActivity — entry point yang menentukan:
  *  - Kalau sudah login → MainActivity
  *  - Kalau belum login → LoginActivity
  *
- * Juga fetch GitHub token dari Firestore untuk yang sudah login.
+ * User TIDAK perlu login ulang setiap kali buka aplikasi.
+ * Firebase Auth otomatis simpan sesi.
  */
 class SplashActivity : AppCompatActivity() {
 
@@ -26,40 +23,27 @@ class SplashActivity : AppCompatActivity() {
         try { setContentView(R.layout.activity_splash) }
         catch (e: Exception) {
             // Kalau layout tidak ada, langsung routing
-            route()
-            return
         }
 
-        // Delay minimal 1.5s untuk branding
+        // Delay minimal untuk branding
         Handler(Looper.getMainLooper()).postDelayed({
             route()
-        }, 1500)
+        }, 800)
     }
 
     private fun route() {
-        CoroutineScope(Dispatchers.Main).launch {
-            val loggedIn = withContext(Dispatchers.IO) {
-                FirebaseManager.isLoggedIn()
-            }
-
-            if (loggedIn) {
-                // Update last used
-                withContext(Dispatchers.IO) {
-                    val uid = FirebaseManager.getCurrentUserUid()
-                    if (uid != null) {
-                        FirebaseManager.updateUserField(uid, "lastUsed", System.currentTimeMillis())
-                        // Fetch GitHub token
-                        val token = FirebaseManager.fetchGithubToken()
-                        if (token != null && token.startsWith("ghp_")) {
-                            SecureConfig.setGithubToken(token)
-                        }
-                    }
-                }
-                startActivity(Intent(this@SplashActivity, MainActivity::class.java))
-            } else {
-                startActivity(Intent(this@SplashActivity, LoginActivity::class.java))
-            }
-            finish()
+        // Cek login status (sinkron, tidak perlu coroutine)
+        val loggedIn = try {
+            FirebaseManager.isLoggedIn()
+        } catch (e: Exception) {
+            false
         }
+
+        if (loggedIn) {
+            startActivity(Intent(this, MainActivity::class.java))
+        } else {
+            startActivity(Intent(this, LoginActivity::class.java))
+        }
+        finish()
     }
 }
