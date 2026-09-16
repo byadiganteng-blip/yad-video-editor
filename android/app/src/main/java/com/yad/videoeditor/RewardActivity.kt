@@ -18,7 +18,7 @@ class RewardActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         // Preload ad saat activity dibuka
-        StartAppRewardedHelper.preload(this)
+        // Preload dihapus: loadRewarded() dipanggil saat user klik reward
 
         updateUI()
 
