@@ -29,13 +29,48 @@ object StartAppRewardedHelper {
         rewardedAd?.loadAd(
             StartAppAd.AdMode.REWARDED_VIDEO,
             object : AdEventListener {
+
                 override fun onReceiveAd(ad: Ad) {
-                    Log.d(TAG, "✅ Rewarded ad loaded")
+                    Log.d(TAG, "Rewarded ad loaded")
+
+                    ad.setAdDisplayListener(object : AdDisplayListener {
+                        override fun adHidden(ad: Ad) {
+                            Log.d(TAG, "Ad hidden")
+                            if (rewardGiven) {
+                                Log.d(TAG, "Reward diberikan")
+                                onRewardCallback?.invoke()
+                            } else {
+                                Log.d(TAG, "User skip, tidak dapat reward")
+                                onFailedCallback?.invoke("Video tidak selesai. Tidak dapat reward.")
+                            }
+                            cleanup()
+                        }
+
+                        override fun adDisplayed(ad: Ad) {
+                            Log.d(TAG, "Ad displayed")
+                        }
+
+                        override fun adClicked(ad: Ad) {
+                            Log.d(TAG, "Ad clicked")
+                        }
+
+                        override fun adNotDisplayed(ad: Ad) {
+                            Log.d(TAG, "Ad not displayed")
+                        }
+                    })
+
+                    ad.setVideoListener(object : VideoListener {
+                        override fun onVideoCompleted() {
+                            Log.d(TAG, "Video completed")
+                            rewardGiven = true
+                        }
+                    })
+
                     onLoaded()
                 }
 
-                override fun onFailedToReceiveAd(ad: Ad) {
-                    Log.e(TAG, "❌ Rewarded ad failed to load")
+                override fun onFailedToReceiveAd(ad: Ad?) {
+                    Log.e(TAG, "Rewarded ad failed to load: " + (ad?.errorMessage ?: "unknown"))
                     onFailed("Iklan tidak tersedia. Coba lagi nanti.")
                 }
             }
@@ -54,49 +89,13 @@ object StartAppRewardedHelper {
         onFailedCallback = onFailed
 
         if (rewardedAd == null) {
-            Log.e(TAG, "❌ Ad belum di-load.")
+            Log.e(TAG, "Ad belum di-load.")
             onFailed("Iklan belum siap. Memuat ulang...")
             loadRewarded(activity)
             return
         }
 
-        rewardedAd?.setVideoListener(object : VideoListener {
-            override fun onVideoCompleted() {
-                Log.d(TAG, "✅ Video completed")
-                rewardGiven = true
-            }
-        })
-
-        rewardedAd?.setAdDisplayListener(object : AdDisplayListener {
-            override fun adHidden(ad: Ad) {
-                Log.d(TAG, "Ad hidden")
-                if (rewardGiven) {
-                    Log.d(TAG, "✅ Reward diberikan")
-                    onRewardCallback?.invoke()
-                } else {
-                    Log.d(TAG, "⚠️ User skip, tidak dapat reward")
-                    onFailedCallback?.invoke("Video tidak selesai. Tidak dapat reward.")
-                }
-                cleanup()
-            }
-
-            override fun adDisplayed(ad: Ad) {
-                Log.d(TAG, "Ad displayed")
-            }
-
-            override fun adClicked(ad: Ad) {
-                Log.d(TAG, "Ad clicked")
-            }
-
-            override fun adNotDisplayed(ad: Ad) {
-                Log.e(TAG, "❌ Ad not displayed")
-                onFailedCallback?.invoke("Iklan tidak bisa ditampilkan.")
-                cleanup()
-            }
-        })
-
-        Log.d(TAG, "Showing rewarded ad...")
-        rewardedAd?.showAd()
+        rewardedAd?.show()
     }
 
     private fun cleanup() {
@@ -104,18 +103,6 @@ object StartAppRewardedHelper {
         rewardGiven = false
         onRewardCallback = null
         onFailedCallback = null
-    }
-
-    fun preload(activity: Activity) {
-        Log.d(TAG, "Preloading rewarded ad...")
-        loadRewarded(
-            activity,
-            onLoaded = { Log.d(TAG, "Preload OK") },
-            onFailed = { msg -> Log.e(TAG, "Preload failed: $msg") }
-        )
-    }
-
-    fun reset() {
-        cleanup()
+        Log.d(TAG, "Cleanup selesai")
     }
 }
