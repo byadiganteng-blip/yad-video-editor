@@ -23,13 +23,6 @@
         android:theme="@style/Theme.YadVideoEditor"
         tools:replace="android:allowBackup,android:label,android:name">
 
-        <activity
-            android:name=".PanduanActivity"
-            android:exported="false" />
-        <activity
-            android:name=".PenggunaanActivity"
-            android:exported="false" />
-
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713"
