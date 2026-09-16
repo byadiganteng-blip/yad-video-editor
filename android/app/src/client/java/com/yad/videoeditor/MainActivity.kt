@@ -108,5 +108,13 @@ class MainActivity : AppCompatActivity() {
             try { startActivity(Intent(this, SaweriaActivity::class.java)) }
             catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
         }
+
+        // Reward → RewardActivity
+        findViewById<CardView>(R.id.cardReward)?.setOnClickListener {
+            try { startActivity(Intent(this, RewardActivity::class.java)) }
+            catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
+        }
+
+        
     }
 }
