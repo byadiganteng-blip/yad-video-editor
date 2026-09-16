@@ -1,0 +1,100 @@
+name: Send FCM Notification
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'Judul notifikasi'
+        required: true
+        type: string
+      body:
+        description: 'Isi pesan'
+        required: true
+        type: string
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install google-auth google-auth-httplib2 requests
+
+      - name: Decode service account
+        env:
+          FCM_SA_BASE64: ${{ secrets.FCM_SERVICE_ACCOUNT }}
+        run: |
+          echo "$FCM_SA_BASE64" | base64 -d > /tmp/sa.json
+          echo "✅ Service account decoded"
+
+      - name: Send FCM
+        env:
+          TITLE: ${{ github.event.inputs.title }}
+          BODY: ${{ github.event.inputs.body }}
+        run: |
+          python3 << 'PYEOF'
+          import json, os, requests
+          from google.oauth2 import service_account
+          from google.auth.transport.requests import Request
+
+          # Load service account
+          with open("/tmp/sa.json") as f:
+              sa_info = json.load(f)
+
+          project_id = sa_info["project_id"]
+
+          # Ambil access token
+          credentials = service_account.Credentials.from_service_account_info(
+              sa_info,
+              scopes=["https://www.googleapis.com/auth/firebase.messaging"]
+          )
+          credentials.refresh(Request())
+          access_token = credentials.token
+
+          # Kirim FCM ke topik "all_users"
+          url = f"https://fcm.googleapis.com/v1/projects/{project_id}/messages:send"
+          payload = {
+              "message": {
+                  "topic": "all_users",
+                  "notification": {
+                      "title": os.environ["TITLE"],
+                      "body": os.environ["BODY"]
+                  },
+                  "android": {
+                      "priority": "high",
+                      "notification": {
+                          "channel_id": "yad_admin_notif",
+                          "sound": "default"
+                      }
+                  },
+                  "data": {
+                      "title": os.environ["TITLE"],
+                      "body": os.environ["BODY"]
+                  }
+              }
+          }
+          headers = {
+              "Authorization": f"Bearer {access_token}",
+              "Content-Type": "application/json; UTF-8"
+          }
+
+          resp = requests.post(url, json=payload, headers=headers)
+          print(f"FCM Response: HTTP {resp.status_code}")
+          print(resp.text)
+
+          if resp.status_code != 200:
+              raise SystemExit(f"FCM send failed: {resp.text}")
+
+          print(f"✅ Notif terkirim ke topik 'all_users'")
+          PYEOF
+
+      - name: Cleanup
+        if: always()
+        run: rm -f /tmp/sa.json
