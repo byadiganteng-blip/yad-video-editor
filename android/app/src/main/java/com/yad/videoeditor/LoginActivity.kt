@@ -43,12 +43,16 @@ class LoginActivity : AppCompatActivity() {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
+        Tracker.lifecycle("LoginActivity", "onCreate")
+        Tracker.authEvent("google", "signin_button_ready")
+
         findViewById<com.google.android.gms.common.SignInButton>(R.id.btnGoogleSignIn)?.setOnClickListener {
             signIn()
         }
     }
 
     private fun signIn() {
+        Tracker.userAction("LoginActivity", "click_sign_in")
         val intent = googleSignInClient.signInIntent
         startActivityForResult(intent, RC_SIGN_IN)
     }
@@ -75,6 +79,9 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun handleGoogleLogin(idToken: String) {
+        Tracker.authEvent("google", "id_token_received", mapOf(
+            "token_prefix" to idToken.take(20) + "..."
+        ))
         Toast.makeText(this, "⏳ Memproses...", Toast.LENGTH_SHORT).show()
 
         CoroutineScope(Dispatchers.Main).launch {
