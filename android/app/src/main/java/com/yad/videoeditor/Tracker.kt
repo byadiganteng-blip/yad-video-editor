@@ -45,7 +45,8 @@ object Tracker {
     // ============================================================
     //  CORE — semua log lewat sini
     // ============================================================
-    private fun log(
+    @PublishedApi
+    internal fun log(
         category: String,
         source: String,
         action: String,
