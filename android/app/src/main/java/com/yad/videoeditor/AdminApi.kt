@@ -103,6 +103,37 @@ object AdminApi {
         }
     }
 
+    // ============================================================
+    //  TRIGGER KIRIM FCM (notifikasi admin)
+    // ============================================================
+    suspend fun triggerSendFcm(
+        title: String,
+        body: String
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = "https://api.github.com/repos/$OWNER/$REPO/" +
+                      "actions/workflows/send-fcm.yml/dispatches"
+            val json = """
+                {
+                  "ref": "$BRANCH",
+                  "inputs": {
+                    "title": ${JSONObject.quote(title)},
+                    "body": ${JSONObject.quote(body)}
+                  }
+                }
+            """.trimIndent()
+
+            val resp = client.newCall(req(url, "POST", json)).execute()
+            if (resp.code == 204) {
+                true to "Notif dikirim ke semua user"
+            } else {
+                false to "HTTP ${resp.code}"
+            }
+        } catch (e: Exception) {
+            false to "Error: ${e.message}"
+        }
+    }
+
     private suspend fun getLatestVideoRunId(): Long? = withContext(Dispatchers.IO) {
         try {
             val url = "https://api.github.com/repos/$OWNER/$REPO/" +
