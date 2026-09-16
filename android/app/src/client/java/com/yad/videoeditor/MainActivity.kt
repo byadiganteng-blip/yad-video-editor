@@ -6,13 +6,13 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
-import com.google.android.gms.ads.AdView
+import com.bumptech.glide.Glide
 
 class MainActivity : AppCompatActivity() {
 
@@ -30,15 +30,15 @@ class MainActivity : AppCompatActivity() {
             } catch (_: Exception) {}
         }, 1500)
 
-        AdMobHelper.init(this)
-        AdMobHelper.loadInterstitial(this)
-        AdMobHelper.loadRewarded(this)
-
+        // Init StartApp saja (AdMob dinonaktifkan)
         StartAppHelper.init(this)
 
+        // Banner StartApp
         setupBannerAd()
+
+        // Setup UI
         setupCards()
-        // setupUserInfo() — dihapus, butuh layout update (lihat catatan)
+        setupUserInfo()
     }
 
     override fun onRequestPermissionsResult(
@@ -48,7 +48,9 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PermissionHelper.REQ_CODE_STORAGE) {
-            val granted = grantResults.isNotEmpty() && grantResults.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED }
+            val granted = grantResults.isNotEmpty() && grantResults.all {
+                it == android.content.pm.PackageManager.PERMISSION_GRANTED
+            }
             if (!granted) {
                 Toast.makeText(this, "Izin diperlukan untuk menyimpan video",
                     Toast.LENGTH_LONG).show()
@@ -58,17 +60,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupBannerAd() {
         try {
-            val startAppContainer = findViewById<android.widget.FrameLayout>(R.id.startAppBannerContainer)
-            if (startAppContainer != null) {
-                StartAppHelper.loadBanner(this, startAppContainer)
-                AutoLogSaver.log("MainActivity", "StartApp banner loading (primary)")
-            }
-
-            val adView = findViewById<com.google.android.gms.ads.AdView>(R.id.bannerAd)
-            if (adView != null) {
-                adView.visibility = android.view.View.GONE
-                AdMobHelper.loadBanner(this, adView)
-                AutoLogSaver.log("MainActivity", "AdMob banner loading (fallback)")
+            val container = findViewById<android.widget.FrameLayout>(R.id.startAppBannerContainer)
+            if (container != null) {
+                StartAppHelper.loadBanner(this, container)
+                AutoLogSaver.log("MainActivity", "StartApp banner loading")
             }
         } catch (e: Exception) {
             AutoLogSaver.logError("MainActivity", "Banner error", e)
@@ -76,31 +71,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupCards() {
-        // Gate: Video Saya
+        // Video Saya — dengan iklan + gate
         findViewById<CardView>(R.id.cardVideoSaya)?.setOnClickListener {
-            openWithGate(GateHelper.FEATURE_VIDEO_LIST, "Video Saya") {
+            openWithAdAndGate(GateHelper.FEATURE_VIDEO_LIST, "Video Saya") {
                 try { startActivity(Intent(this, VideoListActivity::class.java)) }
                 catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
             }
         }
 
-        // Gate: Video Editor
+        // Video Editor — dengan iklan + gate
         findViewById<CardView>(R.id.cardVideoEditor)?.setOnClickListener {
-            openWithGate(GateHelper.FEATURE_VIDEO_EDITOR, "Video Editor") {
+            openWithAdAndGate(GateHelper.FEATURE_VIDEO_EDITOR, "Video Editor") {
                 try { startActivity(Intent(this, VideoEditorActivity::class.java)) }
                 catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
             }
         }
 
-        // Gate: AI Text to Video
+        // AI Text to Video — dengan iklan + gate
         findViewById<CardView>(R.id.cardAITextToVideo)?.setOnClickListener {
-            openWithGate(GateHelper.FEATURE_AI_TEXT_VIDEO, "AI Text to Video") {
+            openWithAdAndGate(GateHelper.FEATURE_AI_TEXT_VIDEO, "AI Text to Video") {
                 try { startActivity(Intent(this, TextToVideoActivity::class.java)) }
                 catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
             }
         }
 
-        // Bebas akses (tidak di-gate)
+        // Bebas akses (info saja)
         findViewById<CardView>(R.id.cardInstructions)?.setOnClickListener {
             try { startActivity(Intent(this, InstructionsActivity::class.java)) }
             catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
@@ -123,20 +118,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Buka fitur dengan gate. Kalau sudah ada akses → langsung buka.
-     * Kalau belum → tampil dialog "Tonton video dulu".
-     * Kalau user pilih tonton → load rewarded → kalau selesai → grant + buka.
-     * Kalau iklan gagal load → tetap buka (graceful).
-     * Kalau user cancel / skip → tetap di MainActivity.
+     * Buka fitur dengan:
+     *  1. Cek gate rewarded (30 menit)
+     *  2. Kalau belum ada akses → dialog
+     *  3. Kalau sudah → tampil interstitial StartApp → buka fitur
      */
-    private fun openWithGate(feature: String, label: String, action: () -> Unit) {
-        // Sudah ada akses? langsung buka
+    private fun openWithAdAndGate(feature: String, label: String, action: () -> Unit) {
+        // Sudah ada akses? tampil interstitial lalu buka
         if (GateHelper.hasAccess(this, feature)) {
-            action()
+            showInterstitialThen { action() }
             return
         }
 
-        // Tampilkan dialog
+        // Tampilkan dialog gate
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_gate, null)
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
@@ -150,7 +144,6 @@ class MainActivity : AppCompatActivity() {
 
         dialogView.findViewById<Button>(R.id.btnGateWatch).setOnClickListener {
             dialog.dismiss()
-            // Load rewarded dulu, baru show
             StartAppRewardedHelper.loadRewarded(
                 this,
                 onLoaded = {
@@ -158,19 +151,14 @@ class MainActivity : AppCompatActivity() {
                         StartAppRewardedHelper.showRewarded(
                             this,
                             onReward = {
-                                // User selesai nonton → grant akses
                                 runOnUiThread {
                                     GateHelper.grantAccess(this, feature)
-                                    Toast.makeText(
-                                        this,
-                                        "✅ Akses diberikan selama 30 menit",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    action()
+                                    Toast.makeText(this, "✅ Akses diberikan 30 menit",
+                                        Toast.LENGTH_SHORT).show()
+                                    showInterstitialThen { action() }
                                 }
                             },
                             onFailed = { msg ->
-                                // Iklan gagal tampil (skip / no fill) → BUKAN grant akses
                                 runOnUiThread {
                                     Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
                                 }
@@ -179,16 +167,12 @@ class MainActivity : AppCompatActivity() {
                     }
                 },
                 onFailed = { msg ->
-                    // Iklan gagal LOAD (network, no fill) → tetap kasih akses
                     runOnUiThread {
-                        AutoLogSaver.log("MainActivity", "Rewarded load failed: $msg — granting fallback")
-                        Toast.makeText(
-                            this,
-                            "Iklan tidak tersedia, akses tetap diberikan",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        AutoLogSaver.log("MainActivity", "Rewarded fail: $msg — fallback")
+                        Toast.makeText(this, "Iklan tidak tersedia, akses tetap diberikan",
+                            Toast.LENGTH_SHORT).show()
                         GateHelper.grantAccess(this, feature)
-                        action()
+                        showInterstitialThen { action() }
                     }
                 }
             )
@@ -199,5 +183,72 @@ class MainActivity : AppCompatActivity() {
         }
 
         dialog.show()
+    }
+
+    /**
+     * Tampil interstitial StartApp dulu, lalu jalankan action.
+     * Kalau cooldown atau gagal → langsung action.
+     */
+    private fun showInterstitialThen(action: () -> Unit) {
+        try {
+            StartAppHelper.showInterstitial(this) {
+                action()
+            }
+        } catch (e: Exception) {
+            action()
+        }
+    }
+
+    /**
+     * Setup user info di hero header.
+     */
+    private fun setupUserInfo() {
+        try {
+            val tvName = findViewById<TextView>(R.id.tvUserName)
+            val tvEmail = findViewById<TextView>(R.id.tvUserEmail)
+            val ivPhoto = findViewById<ImageView>(R.id.ivUserPhoto)
+            val btnLogout = findViewById<TextView>(R.id.btnLogout)
+
+            val name = FirebaseManager.getCurrentUserName() ?: "User"
+            val email = FirebaseManager.getCurrentUserEmail() ?: ""
+            val photo = FirebaseManager.getCurrentUserPhoto()
+
+            tvName?.text = name
+            tvEmail?.text = email
+
+            if (!photo.isNullOrEmpty() && ivPhoto != null) {
+                try {
+                    Glide.with(this)
+                        .load(photo)
+                        .circleCrop()
+                        .placeholder(android.R.drawable.sym_def_app_icon)
+                        .into(ivPhoto)
+                } catch (e: Exception) {
+                    ivPhoto.setImageResource(android.R.drawable.sym_def_app_icon)
+                }
+            } else {
+                ivPhoto?.setImageResource(android.R.drawable.sym_def_app_icon)
+            }
+
+            btnLogout?.setOnClickListener {
+                confirmLogout()
+            }
+        } catch (e: Exception) {
+            AutoLogSaver.logError("MainActivity", "setupUserInfo failed", e)
+        }
+    }
+
+    private fun confirmLogout() {
+        AlertDialog.Builder(this)
+            .setTitle("Logout")
+            .setMessage("Yakin mau keluar dari akun?")
+            .setPositiveButton("Ya") { _, _ ->
+                FirebaseManager.logoutUser()
+                Toast.makeText(this, "Logout berhasil", Toast.LENGTH_SHORT).show()
+                startActivity(Intent(this, LoginActivity::class.java))
+                finish()
+            }
+            .setNegativeButton("Batal", null)
+            .show()
     }
 }
