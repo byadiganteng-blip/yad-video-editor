@@ -100,6 +100,30 @@ object FirebaseManager {
             Log.e(TAG, "updateField error: ${e.message}"); false
         }
     }
+
+    // ============================================================
+    //  FCM TOKEN
+    // ============================================================
+    suspend fun addFcmToken(uid: String, token: String): Boolean {
+        return try {
+            val doc = db.collection("users").document(uid).get().await()
+            val current = (doc.get("fcmTokens") as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
+            val updated = (current + token).distinct()
+            db.collection("users").document(uid)
+                .set(mapOf("fcmTokens" to updated), SetOptions.merge()).await()
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "addFcmToken error: ${e.message}"); false
+        }
+    }
+
+    fun getCurrentFcmToken(cb: (String?) -> Unit) {
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().token
+                .addOnSuccessListener { t -> cb(t) }
+                .addOnFailureListener { cb(null) }
+        } catch (e: Exception) { cb(null) }
+    }
     
     // Alias untuk kompatibilitas
     fun logoutUser() {
