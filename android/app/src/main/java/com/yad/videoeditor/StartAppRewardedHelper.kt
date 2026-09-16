@@ -9,6 +9,17 @@ import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener
 import com.startapp.sdk.adsbase.adlisteners.AdEventListener
 import com.startapp.sdk.adsbase.adlisteners.VideoListener
 
+/**
+ * Helper StartApp Rewarded Video — versi kompatibel SDK 4.10.12
+ *
+ * Catatan API 4.10.12:
+ *  - StartAppAd.setVideoListener(VideoListener) → ADA
+ *  - StartAppAd.setAdDisplayListener(...) → TIDAK ADA
+ *  - Ad.setAdDisplayListener(...) → TIDAK ADA
+ *  - StartAppAd.showAd() → ADA (bukan show())
+ *
+ * Deteksi reward: pakai VideoListener.onVideoCompleted()
+ */
 object StartAppRewardedHelper {
 
     private const val TAG = "StartAppRewarded"
@@ -24,7 +35,19 @@ object StartAppRewardedHelper {
         onFailed: (String) -> Unit = {}
     ) {
         Log.d(TAG, "Loading rewarded ad...")
+        rewardGiven = false
         rewardedAd = StartAppAd(activity)
+
+        // Video listener harus di-set di StartAppAd (API 4.10.12)
+        rewardedAd?.setVideoListener(object : VideoListener {
+            override fun onVideoCompleted() {
+                Log.d(TAG, "Video completed → reward diberikan")
+                rewardGiven = true
+                // Beri reward SETELAH video selesai
+                onRewardCallback?.invoke()
+                cleanup()
+            }
+        })
 
         rewardedAd?.loadAd(
             StartAppAd.AdMode.REWARDED_VIDEO,
@@ -32,46 +55,14 @@ object StartAppRewardedHelper {
 
                 override fun onReceiveAd(ad: Ad) {
                     Log.d(TAG, "Rewarded ad loaded")
-
-                    ad.setAdDisplayListener(object : AdDisplayListener {
-                        override fun adHidden(ad: Ad) {
-                            Log.d(TAG, "Ad hidden")
-                            if (rewardGiven) {
-                                Log.d(TAG, "Reward diberikan")
-                                onRewardCallback?.invoke()
-                            } else {
-                                Log.d(TAG, "User skip, tidak dapat reward")
-                                onFailedCallback?.invoke("Video tidak selesai. Tidak dapat reward.")
-                            }
-                            cleanup()
-                        }
-
-                        override fun adDisplayed(ad: Ad) {
-                            Log.d(TAG, "Ad displayed")
-                        }
-
-                        override fun adClicked(ad: Ad) {
-                            Log.d(TAG, "Ad clicked")
-                        }
-
-                        override fun adNotDisplayed(ad: Ad) {
-                            Log.d(TAG, "Ad not displayed")
-                        }
-                    })
-
-                    ad.setVideoListener(object : VideoListener {
-                        override fun onVideoCompleted() {
-                            Log.d(TAG, "Video completed")
-                            rewardGiven = true
-                        }
-                    })
-
                     onLoaded()
                 }
 
                 override fun onFailedToReceiveAd(ad: Ad?) {
-                    Log.e(TAG, "Rewarded ad failed to load: " + (ad?.errorMessage ?: "unknown"))
+                    val msg = ad?.errorMessage ?: "unknown"
+                    Log.e(TAG, "Rewarded ad failed to load: $msg")
                     onFailed("Iklan tidak tersedia. Coba lagi nanti.")
+                    cleanup()
                 }
             }
         )
@@ -95,7 +86,8 @@ object StartAppRewardedHelper {
             return
         }
 
-        rewardedAd?.show()
+        // API 4.10.12: showAd(), bukan show()
+        rewardedAd?.showAd()
     }
 
     private fun cleanup() {
