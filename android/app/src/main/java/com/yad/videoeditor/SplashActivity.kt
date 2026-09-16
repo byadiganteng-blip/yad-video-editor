@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -12,8 +11,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Splash Screen — fetch token dari Firestore sebelum masuk menu.
- * User TIDAK perlu input token manual.
+ * SplashActivity — entry point yang menentukan:
+ *  - Kalau sudah login → MainActivity
+ *  - Kalau belum login → LoginActivity
+ *
+ * Juga fetch GitHub token dari Firestore untuk yang sudah login.
  */
 class SplashActivity : AppCompatActivity() {
 
@@ -21,54 +23,43 @@ class SplashActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         SecureConfig.init(this)
 
-        // Tampilkan splash minimal
         try { setContentView(R.layout.activity_splash) }
         catch (e: Exception) {
-            // Kalau layout tidak ada, langsung lanjut
-            proceedToMain()
+            // Kalau layout tidak ada, langsung routing
+            route()
             return
         }
 
-        // Fetch token dari Firestore
+        // Delay minimal 1.5s untuk branding
+        Handler(Looper.getMainLooper()).postDelayed({
+            route()
+        }, 1500)
+    }
+
+    private fun route() {
         CoroutineScope(Dispatchers.Main).launch {
-            val ok = withContext(Dispatchers.IO) {
-                fetchTokenFromFirestore()
+            val loggedIn = withContext(Dispatchers.IO) {
+                FirebaseManager.isLoggedIn()
             }
 
-            if (ok) {
-                Toast.makeText(this@SplashActivity,
-                    "✅ Token tersedia", Toast.LENGTH_SHORT).show()
-            } else {
-                // Fallback: cek token lokal
-                if (!SecureConfig.hasGithubToken()) {
-                    Toast.makeText(this@SplashActivity,
-                        "⚠️ Token belum tersedia. Hubungi admin.",
-                        Toast.LENGTH_LONG).show()
+            if (loggedIn) {
+                // Update last used
+                withContext(Dispatchers.IO) {
+                    val uid = FirebaseManager.getCurrentUserUid()
+                    if (uid != null) {
+                        FirebaseManager.updateUserField(uid, "lastUsed", System.currentTimeMillis())
+                        // Fetch GitHub token
+                        val token = FirebaseManager.fetchGithubToken()
+                        if (token != null && token.startsWith("ghp_")) {
+                            SecureConfig.setGithubToken(token)
+                        }
+                    }
                 }
+                startActivity(Intent(this@SplashActivity, MainActivity::class.java))
+            } else {
+                startActivity(Intent(this@SplashActivity, LoginActivity::class.java))
             }
-
-            // Lanjut ke menu
-            Handler(Looper.getMainLooper()).postDelayed({
-                proceedToMain()
-            }, 1500)
+            finish()
         }
-    }
-
-    private suspend fun fetchTokenFromFirestore(): Boolean {
-        return try {
-            val ok = FirebaseManager.loginAnonymous()
-            if (!ok) return false
-
-            val token = FirebaseManager.fetchGithubToken()
-            if (token != null && token.startsWith("ghp_")) {
-                SecureConfig.setGithubToken(token)
-                true
-            } else false
-        } catch (e: Exception) { false }
-    }
-
-    private fun proceedToMain() {
-        startActivity(Intent(this, MainActivity::class.java))
-        finish()
     }
 }
