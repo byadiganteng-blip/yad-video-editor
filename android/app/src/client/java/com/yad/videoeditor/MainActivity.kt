@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PermissionHelper.REQ_CODE_STORAGE) {
-            val granted = grantResults.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED }
+            val granted = grantResults.isNotEmpty() && grantResults.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED }
             if (!granted) {
                 Toast.makeText(this, "Izin diperlukan untuk menyimpan video",
                     Toast.LENGTH_LONG).show()
