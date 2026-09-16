@@ -17,6 +17,9 @@ class RewardActivity : AppCompatActivity() {
         supportActionBar?.title = "🎁 Reward"
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
+        // Tampil interstitial
+        try { StartAppHelper.showInterstitial(this) {} } catch (_: Exception) {}
+
         // Preload ad saat activity dibuka
         // Preload dihapus: loadRewarded() dipanggil saat user klik reward
 
