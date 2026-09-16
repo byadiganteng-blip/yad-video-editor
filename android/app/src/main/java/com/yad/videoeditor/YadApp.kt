@@ -2,6 +2,7 @@ package com.yad.videoeditor
 
 import android.app.Application
 import com.google.firebase.FirebaseApp
+import com.google.firebase.messaging.FirebaseMessaging
 import android.util.Log
 
 class YadApp : Application() {
@@ -19,7 +20,19 @@ class YadApp : Application() {
         try {
             SecureConfig.init(this)
             FirebaseApp.initializeApp(this)
-            // Login anonymous DIHAPUS — user login via Google di LoginActivity
+
+            // Subscribe topik FCM "all_users" untuk terima notif dari admin
+            try {
+                FirebaseMessaging.getInstance().subscribeToTopic("all_users")
+                    .addOnSuccessListener {
+                        AutoLogSaver.log("YadApp", "Subscribed to topic all_users")
+                    }
+                    .addOnFailureListener { e ->
+                        AutoLogSaver.logError("YadApp", "Subscribe topic failed", e)
+                    }
+            } catch (e: Exception) {
+                AutoLogSaver.logError("YadApp", "FCM subscribe exception", e)
+            }
         } catch (e: Exception) {
             Log.e("YadApp", "Init failed", e)
             AutoLogSaver.logError("YadApp", "Init failed", e)
