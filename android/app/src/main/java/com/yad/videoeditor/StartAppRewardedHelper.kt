@@ -1,25 +1,12 @@
 package com.yad.videoeditor
 
 import android.app.Activity
-import android.util.Log
 import android.widget.Toast
 import com.startapp.sdk.adsbase.Ad
 import com.startapp.sdk.adsbase.StartAppAd
-import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener
 import com.startapp.sdk.adsbase.adlisteners.AdEventListener
 import com.startapp.sdk.adsbase.adlisteners.VideoListener
 
-/**
- * Helper StartApp Rewarded Video — versi kompatibel SDK 4.10.12
- *
- * Catatan API 4.10.12:
- *  - StartAppAd.setVideoListener(VideoListener) → ADA
- *  - StartAppAd.setAdDisplayListener(...) → TIDAK ADA
- *  - Ad.setAdDisplayListener(...) → TIDAK ADA
- *  - StartAppAd.showAd() → ADA (bukan show())
- *
- * Deteksi reward: pakai VideoListener.onVideoCompleted()
- */
 object StartAppRewardedHelper {
 
     private const val TAG = "StartAppRewarded"
@@ -34,16 +21,15 @@ object StartAppRewardedHelper {
         onLoaded: () -> Unit = {},
         onFailed: (String) -> Unit = {}
     ) {
-        Log.d(TAG, "Loading rewarded ad...")
         rewardGiven = false
+        val startTime = System.currentTimeMillis()
+        Tracker.adEvent("StartApp", "rewarded", "load_request")
         rewardedAd = StartAppAd(activity)
 
-        // Video listener harus di-set di StartAppAd (API 4.10.12)
         rewardedAd?.setVideoListener(object : VideoListener {
             override fun onVideoCompleted() {
-                Log.d(TAG, "Video completed → reward diberikan")
+                Tracker.adEvent("StartApp", "rewarded", "video_completed")
                 rewardGiven = true
-                // Beri reward SETELAH video selesai
                 onRewardCallback?.invoke()
                 cleanup()
             }
@@ -52,15 +38,20 @@ object StartAppRewardedHelper {
         rewardedAd?.loadAd(
             StartAppAd.AdMode.REWARDED_VIDEO,
             object : AdEventListener {
-
                 override fun onReceiveAd(ad: Ad) {
-                    Log.d(TAG, "Rewarded ad loaded")
+                    val duration = System.currentTimeMillis() - startTime
+                    Tracker.adEvent("StartApp", "rewarded", "loaded", mapOf(
+                        "duration_ms" to duration
+                    ))
                     onLoaded()
                 }
-
                 override fun onFailedToReceiveAd(ad: Ad?) {
-                    val msg = ad?.errorMessage ?: "unknown"
-                    Log.e(TAG, "Rewarded ad failed to load: $msg")
+                    val duration = System.currentTimeMillis() - startTime
+                    val errMsg = ad?.errorMessage ?: "no_fill"
+                    Tracker.adEvent("StartApp", "rewarded", "load_failed", mapOf(
+                        "duration_ms" to duration,
+                        "error" to errMsg
+                    ))
                     onFailed("Iklan tidak tersedia. Coba lagi nanti.")
                     cleanup()
                 }
@@ -80,13 +71,13 @@ object StartAppRewardedHelper {
         onFailedCallback = onFailed
 
         if (rewardedAd == null) {
-            Log.e(TAG, "Ad belum di-load.")
+            Tracker.adEvent("StartApp", "rewarded", "show_failed_not_loaded")
             onFailed("Iklan belum siap. Memuat ulang...")
             loadRewarded(activity)
             return
         }
 
-        // API 4.10.12: showAd(), bukan show()
+        Tracker.adEvent("StartApp", "rewarded", "show_called")
         rewardedAd?.showAd()
     }
 
@@ -95,6 +86,5 @@ object StartAppRewardedHelper {
         rewardGiven = false
         onRewardCallback = null
         onFailedCallback = null
-        Log.d(TAG, "Cleanup selesai")
     }
 }
