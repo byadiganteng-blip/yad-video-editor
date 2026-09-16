@@ -35,14 +35,9 @@
             android:value="ca-app-pub-2515513620924097~6524543685"
             tools:replace="android:value" />
 
-        <!-- HAPUS SplashActivity dari client build -->
+        <!-- SplashActivity = LAUNCHER -->
         <activity
             android:name=".SplashActivity"
-            tools:node="remove" />
-
-        <!-- MainActivity = LAUNCHER tunggal -->
-        <activity
-            android:name=".LoginActivity"
             android:exported="true"
             android:theme="@style/Theme.YadVideoEditor">
             <intent-filter>
@@ -50,6 +45,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- MainActivity = LAUNCHER tunggal -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:theme="@style/Theme.YadVideoEditor" />
 
         <activity
             android:name=".MainActivity"
