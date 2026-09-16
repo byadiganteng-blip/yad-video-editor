@@ -141,6 +141,18 @@ object AutoLogSaver {
     }
 
     /**
+     * Tulis raw ke file (untuk Tracker — bisa text atau JSON)
+     */
+    fun logRaw(text: String) {
+        try {
+            val f = logFile ?: return
+            f.appendText(text + "\n")
+        } catch (e: Exception) {
+            Log.e(TAG, "logRaw failed: ${e.message}")
+        }
+    }
+
+    /**
      * Tulis langsung ke file
      */
     private fun writeRaw(text: String) {
