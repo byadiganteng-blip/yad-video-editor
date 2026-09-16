@@ -222,16 +222,33 @@ class TextToVideoActivity : AppCompatActivity() {
             ModeType.AI_MODEL -> "ai_model"
         }
 
-        triggerGithubWorkflow(
-            mode = modeStr,
-            styleSuffix = mode.styleSuffix,   // ← Kirim style
-            modelId = mode.id,
-            prompt = story,
-            voice = voice,
-            watermark = watermark,
-            showSubtitle = showSubtitle,
-            subtitleStyle = subtitleStyle
-        )
+        // Tampil interstitial dulu sebelum generate
+        try {
+            StartAppHelper.showInterstitial(this) {
+                triggerGithubWorkflow(
+                    mode = modeStr,
+                    styleSuffix = mode.styleSuffix,
+                    modelId = mode.id,
+                    prompt = story,
+                    voice = voice,
+                    watermark = watermark,
+                    showSubtitle = showSubtitle,
+                    subtitleStyle = subtitleStyle
+                )
+            }
+        } catch (e: Exception) {
+            // Fallback: langsung generate kalau interstitial error
+            triggerGithubWorkflow(
+                mode = modeStr,
+                styleSuffix = mode.styleSuffix,
+                modelId = mode.id,
+                prompt = story,
+                voice = voice,
+                watermark = watermark,
+                showSubtitle = showSubtitle,
+                subtitleStyle = subtitleStyle
+            )
+        }
     }
 
     private fun triggerGithubWorkflow(
