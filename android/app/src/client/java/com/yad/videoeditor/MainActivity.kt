@@ -1,8 +1,14 @@
 package com.yad.videoeditor
 
+import android.app.AlertDialog
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
@@ -51,18 +57,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupBannerAd() {
         try {
-            // 1. StartApp sebagai PRIMARY (banner + interstitial)
             val startAppContainer = findViewById<android.widget.FrameLayout>(R.id.startAppBannerContainer)
             if (startAppContainer != null) {
                 StartAppHelper.loadBanner(this, startAppContainer)
                 AutoLogSaver.log("MainActivity", "StartApp banner loading (primary)")
             }
-            
-            // 2. AdMob sebagai FALLBACK (kalau StartApp gagal)
-            // AdMob banner di-load paralel, tapi AdView tersembunyi dulu
+
             val adView = findViewById<com.google.android.gms.ads.AdView>(R.id.bannerAd)
             if (adView != null) {
-                // Sembunyikan dulu, nanti StartAppHelper yang show/hide
                 adView.visibility = android.view.View.GONE
                 AdMobHelper.loadBanner(this, adView)
                 AutoLogSaver.log("MainActivity", "AdMob banner loading (fallback)")
@@ -73,48 +75,128 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupCards() {
-        // Video Saya → VideoListActivity
+        // Gate: Video Saya
         findViewById<CardView>(R.id.cardVideoSaya)?.setOnClickListener {
-            try { startActivity(Intent(this, VideoListActivity::class.java)) }
-            catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
+            openWithGate(GateHelper.FEATURE_VIDEO_LIST, "Video Saya") {
+                try { startActivity(Intent(this, VideoListActivity::class.java)) }
+                catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
+            }
         }
 
-        // Video Editor → VideoEditorActivity
+        // Gate: Video Editor
         findViewById<CardView>(R.id.cardVideoEditor)?.setOnClickListener {
-            try { startActivity(Intent(this, VideoEditorActivity::class.java)) }
-            catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
+            openWithGate(GateHelper.FEATURE_VIDEO_EDITOR, "Video Editor") {
+                try { startActivity(Intent(this, VideoEditorActivity::class.java)) }
+                catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
+            }
         }
 
-        // AI Text to Video → TextToVideoActivity
+        // Gate: AI Text to Video
         findViewById<CardView>(R.id.cardAITextToVideo)?.setOnClickListener {
-            try { startActivity(Intent(this, TextToVideoActivity::class.java)) }
-            catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
+            openWithGate(GateHelper.FEATURE_AI_TEXT_VIDEO, "AI Text to Video") {
+                try { startActivity(Intent(this, TextToVideoActivity::class.java)) }
+                catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
+            }
         }
 
-        // Instructions / Panduan → InstructionsActivity
+        // Bebas akses (tidak di-gate)
         findViewById<CardView>(R.id.cardInstructions)?.setOnClickListener {
             try { startActivity(Intent(this, InstructionsActivity::class.java)) }
             catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
         }
 
-        // Credit → CreditActivity
         findViewById<CardView>(R.id.cardCredit)?.setOnClickListener {
             try { startActivity(Intent(this, CreditActivity::class.java)) }
             catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
         }
 
-        // Saweria → SaweriaActivity
         findViewById<CardView>(R.id.cardSaweria)?.setOnClickListener {
             try { startActivity(Intent(this, SaweriaActivity::class.java)) }
             catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
         }
 
-        // Reward → RewardActivity
         findViewById<CardView>(R.id.cardReward)?.setOnClickListener {
             try { startActivity(Intent(this, RewardActivity::class.java)) }
             catch (e: Exception) { Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show() }
         }
+    }
 
-        
+    /**
+     * Buka fitur dengan gate. Kalau sudah ada akses → langsung buka.
+     * Kalau belum → tampil dialog "Tonton video dulu".
+     * Kalau user pilih tonton → load rewarded → kalau selesai → grant + buka.
+     * Kalau iklan gagal load → tetap buka (graceful).
+     * Kalau user cancel / skip → tetap di MainActivity.
+     */
+    private fun openWithGate(feature: String, label: String, action: () -> Unit) {
+        // Sudah ada akses? langsung buka
+        if (GateHelper.hasAccess(this, feature)) {
+            action()
+            return
+        }
+
+        // Tampilkan dialog
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_gate, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        val tvMessage = dialogView.findViewById<TextView>(R.id.tvGateMessage)
+        tvMessage.text = "Tonton video singkat untuk membuka \"$label\" selama 30 menit."
+
+        dialogView.findViewById<Button>(R.id.btnGateWatch).setOnClickListener {
+            dialog.dismiss()
+            // Load rewarded dulu, baru show
+            StartAppRewardedHelper.loadRewarded(
+                this,
+                onLoaded = {
+                    runOnUiThread {
+                        StartAppRewardedHelper.showRewarded(
+                            this,
+                            onReward = {
+                                // User selesai nonton → grant akses
+                                runOnUiThread {
+                                    GateHelper.grantAccess(this, feature)
+                                    Toast.makeText(
+                                        this,
+                                        "✅ Akses diberikan selama 30 menit",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    action()
+                                }
+                            },
+                            onFailed = { msg ->
+                                // Iklan gagal tampil (skip / no fill) → BUKAN grant akses
+                                runOnUiThread {
+                                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        )
+                    }
+                },
+                onFailed = { msg ->
+                    // Iklan gagal LOAD (network, no fill) → tetap kasih akses
+                    runOnUiThread {
+                        AutoLogSaver.log("MainActivity", "Rewarded load failed: $msg — granting fallback")
+                        Toast.makeText(
+                            this,
+                            "Iklan tidak tersedia, akses tetap diberikan",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        GateHelper.grantAccess(this, feature)
+                        action()
+                    }
+                }
+            )
+        }
+
+        dialogView.findViewById<Button>(R.id.btnGateCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 }
