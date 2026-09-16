@@ -13,7 +13,20 @@
           "package_name": "com.yad.videoeditor"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "954465770137-2g9mk64jf1he88eik1fsn637gn0gmks0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yad.videoeditor",
+            "certificate_hash": "bd37c5ac97e88f0f1e0d8529afadcdabcb148033"
+          }
+        },
+        {
+          "client_id": "954465770137-h47b5sg69d4ar2q2ovavtuce18th06nd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBpEKuyMVvgep1C71MQXKq_sI4rH_kkOdo"
@@ -21,7 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "954465770137-h47b5sg69d4ar2q2ovavtuce18th06nd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     },
@@ -32,7 +50,20 @@
           "package_name": "com.yad.videoeditor.admin"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "954465770137-lhcl0pfplim326bphrcqj49p36e6g6gp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yad.videoeditor.admin",
+            "certificate_hash": "bd37c5ac97e88f0f1e0d8529afadcdabcb148033"
+          }
+        },
+        {
+          "client_id": "954465770137-h47b5sg69d4ar2q2ovavtuce18th06nd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBpEKuyMVvgep1C71MQXKq_sI4rH_kkOdo"
@@ -40,7 +71,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "954465770137-h47b5sg69d4ar2q2ovavtuce18th06nd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
