@@ -43,7 +43,7 @@ class LoginActivity : AppCompatActivity() {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        findViewById<android.widget.Button>(R.id.btnGoogleSignIn)?.setOnClickListener {
+        findViewById<com.google.android.gms.common.SignInButton>(R.id.btnGoogleSignIn)?.setOnClickListener {
             signIn()
         }
     }
