@@ -38,6 +38,7 @@ class MainActivity : AppCompatActivity() {
 
         setupBannerAd()
         setupCards()
+        setupUserInfo()
     }
 
     override fun onRequestPermissionsResult(
@@ -198,5 +199,28 @@ class MainActivity : AppCompatActivity() {
         }
 
         dialog.show()
+    }
+
+    private fun setupUserInfo() {
+        try {
+            val tvName = findViewById<android.widget.TextView>(R.id.tvUserName)
+            val tvEmail = findViewById<android.widget.TextView>(R.id.tvUserEmail)
+            val ivPhoto = findViewById<android.widget.ImageView>(R.id.ivUserPhoto)
+
+            val name = FirebaseManager.getCurrentUserName() ?: "User"
+            val email = FirebaseManager.getCurrentUserEmail() ?: ""
+            val photo = FirebaseManager.getCurrentUserPhoto()
+
+            tvName?.text = name
+            tvEmail?.text = email
+
+            if (!photo.isNullOrEmpty() && ivPhoto != null) {
+                // Load image async dengan library sederhana
+                // Untuk sekarang pakai placeholder emoji
+                ivPhoto.setImageResource(android.R.drawable.sym_def_app_icon)
+            }
+        } catch (e: Exception) {
+            AutoLogSaver.logError("MainActivity", "setupUserInfo failed", e)
+        }
     }
 }
