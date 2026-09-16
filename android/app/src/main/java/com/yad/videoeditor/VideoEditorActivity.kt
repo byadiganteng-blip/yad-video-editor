@@ -69,6 +69,9 @@ class VideoEditorActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_video_editor)
 
+        // Tampil interstitial saat buka fitur
+        try { StartAppHelper.showInterstitial(this) {} } catch (_: Exception) {}
+
         bindViews()
         setupPlayer()
         setupTimeline()
