@@ -70,5 +70,10 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+    
+        <activity
+            android:name=".RewardActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
     </application>
 </manifest>
