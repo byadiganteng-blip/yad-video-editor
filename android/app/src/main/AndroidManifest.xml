@@ -88,5 +88,19 @@
             android:name=".VideoGeneratorService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+        <!-- FCM Service -->
+        <service
+            android:name=".YadFcmService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- FCM default channel untuk notif -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="yad_admin_notif" />
+
     </application>
 </manifest>
