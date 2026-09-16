@@ -108,6 +108,7 @@ dependencies {
 
     // Ads
     implementation 'com.google.android.gms:play-services-ads:22.5.0'
+    implementation 'com.google.android.gms:play-services-auth:20.7.0'
     implementation 'com.startapp:inapp-sdk:4.10.12'
 
     // Coroutines
