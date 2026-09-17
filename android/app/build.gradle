@@ -96,6 +96,7 @@ dependencies {
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 
     // Media
     implementation 'androidx.media3:media3-exoplayer:1.2.0'

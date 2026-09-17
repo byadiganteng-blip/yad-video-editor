@@ -2,10 +2,13 @@ package com.yad.videoeditor
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
 
 object SecureConfig {
     private const val PREF = "yad_secure"
@@ -20,8 +23,22 @@ object SecureConfig {
         if (prefs == null) {
             synchronized(this) {
                 if (prefs == null) {
-                    prefs = context.applicationContext
-                        .getSharedPreferences(PREF, Context.MODE_PRIVATE)
+                    try {
+                        val masterKey = MasterKey.Builder(context)
+                            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                            .build()
+
+                        prefs = EncryptedSharedPreferences.create(
+                            context,
+                            PREF,
+                            masterKey,
+                            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                        )
+                    } catch (e: Exception) {
+                        prefs = context.applicationContext
+                            .getSharedPreferences(PREF, Context.MODE_PRIVATE)
+                    }
                     cachedToken = prefs?.getString("gh_token", "") ?: ""
                 }
             }
@@ -67,13 +84,12 @@ object SecureConfig {
     fun getGithubUser(): String = "byadiganteng-blip"
     fun getGithubRepo(): String = "yad-video-editor"
 
-    // ADMIN
     private const val KEY_ADMIN_EMAIL = "admin_email"
     private const val KEY_IS_ADMIN = "is_admin"
     private const val KEY_TAP_COUNT = "admin_tap_count"
 
     private const val ADMIN_EMAIL = "ynuraini686@gmail.com"
-    private const val ADMIN_PASS = "YADIGANTENG"
+    private const val ADMIN_PASS_HASH = "e398621ca9d6b0bca560abe48eb62a86a877c9477d7762bd71496a6f4d201a63"
 
     fun getAdminEmail(): String = p()?.getString(KEY_ADMIN_EMAIL, "") ?: ""
     fun setAdminEmail(email: String) {
@@ -87,9 +103,16 @@ object SecureConfig {
         p()?.edit()?.remove(KEY_ADMIN_EMAIL)?.remove(KEY_IS_ADMIN)?.apply()
     }
 
+    private fun sha256(input: String): String {
+        val bytes = MessageDigest.getInstance("SHA-256")
+            .digest(input.toByteArray(Charsets.UTF_8))
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
     fun verifyAdminCredentials(email: String, password: String): Boolean {
         val e = email.trim().lowercase()
-        val ok = e == ADMIN_EMAIL.lowercase() && password == ADMIN_PASS
+        val inputHash = sha256(password)
+        val ok = e == ADMIN_EMAIL.lowercase() && inputHash == ADMIN_PASS_HASH
         if (ok) { setAdminEmail(e); setIsAdmin(true) }
         return ok
     }
@@ -104,5 +127,4 @@ object SecureConfig {
     fun resetTapCount() { p()?.edit()?.putInt(KEY_TAP_COUNT, 0)?.apply() }
     fun getTapCount(): Int = p()?.getInt(KEY_TAP_COUNT, 0) ?: 0
     fun getAdminEmailConst(): String = ADMIN_EMAIL
-    fun getAdminPassConst(): String = ADMIN_PASS
 }
