@@ -80,7 +80,7 @@ jobs:
         run: python generate_video.py
       - name: Upload to Release
         if: success()
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: video-${{ github.run_id }}
           name: Video ${{ github.run_id }}
