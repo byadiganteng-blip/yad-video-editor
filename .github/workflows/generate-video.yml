@@ -475,7 +475,7 @@ jobs:
           retention-days: 3
       - name: Cleanup
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const runs = await github.rest.actions.listWorkflowRuns({
