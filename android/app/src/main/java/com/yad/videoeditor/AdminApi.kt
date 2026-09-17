@@ -47,7 +47,7 @@ object AdminApi {
     // ============================================================
     //  TRIGGER BUILD APK
     // ============================================================
-    suspend fun triggerBuild(workflow: String = "build-apk.yml", ref: String = BRANCH): Pair<Boolean, String> =
+    suspend fun triggerBuild(workflow: String = "build-release.yml", ref: String = BRANCH): Pair<Boolean, String> =
         withContext(Dispatchers.IO) {
             try {
                 val url = "https://api.github.com/repos/$OWNER/$REPO/actions/workflows/$workflow/dispatches"
@@ -212,7 +212,7 @@ object AdminApi {
     // ============================================================
     //  GET LATEST LOGS (untuk AdminActivity)
     // ============================================================
-    suspend fun getLatestLogs(workflow: String = "build-apk.yml"): String =
+    suspend fun getLatestLogs(workflow: String = "build-release.yml"): String =
         withContext(Dispatchers.IO) {
             try {
                 val url = "https://api.github.com/repos/$OWNER/$REPO/" +

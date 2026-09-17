@@ -13,15 +13,17 @@ build/
 local.properties
 keystore.properties
 
-# Keystore
+# Keystore (JANGAN commit)
 *.jks
 *.keystore
 yad-release.jks
+keystore.txt
 
 # Secrets
 google-services.json
 *.pem
 .env
+.env.*
 
 # IDE
 .idea/
@@ -38,9 +40,15 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+piper_models/
+scenes/
+output/
 
 # Node
 node_modules/
 
 # Colab
 /content/
+
+# OS
+Thumbs.db

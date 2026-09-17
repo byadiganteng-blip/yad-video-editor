@@ -148,6 +148,30 @@ class MainActivity : AppCompatActivity() {
                 catch (e: Exception) { Tracker.error("MainActivity", "open_reward_failed", "", e) }
             }
         }
+
+        findViewById<CardView>(R.id.cardFiles)?.setOnClickListener {
+            Tracker.userAction("MainActivity", "click", mapOf("card" to "files"))
+            showInterstitialThen("files") {
+                try { startActivity(Intent(this, FilesActivity::class.java)) }
+                catch (e: Exception) { Tracker.error("MainActivity", "open_files_failed", "", e) }
+            }
+        }
+
+        findViewById<CardView>(R.id.cardDownload)?.setOnClickListener {
+            Tracker.userAction("MainActivity", "click", mapOf("card" to "download"))
+            showInterstitialThen("download") {
+                try { startActivity(Intent(this, DownloadActivity::class.java)) }
+                catch (e: Exception) { Tracker.error("MainActivity", "open_download_failed", "", e) }
+            }
+        }
+
+        findViewById<CardView>(R.id.cardActions)?.setOnClickListener {
+            Tracker.userAction("MainActivity", "click", mapOf("card" to "actions"))
+            showInterstitialThen("actions") {
+                try { startActivity(Intent(this, ActionsActivity::class.java)) }
+                catch (e: Exception) { Tracker.error("MainActivity", "open_actions_failed", "", e) }
+            }
+        }
     }
 
     private fun openWithAdAndGate(feature: String, label: String, action: () -> Unit) {

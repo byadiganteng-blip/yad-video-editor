@@ -1,8 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="16dp"
-    android:layout_width="match_parent" android:layout_height="match_parent">
-    <TextView android:text="Statistics"
-        android:textSize="18sp" android:textStyle="bold"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@color/bg_light"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:text="Statistik"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/primary"
+        android:layout_marginBottom="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/tvStatistics"
+        android:text="Memuat statistik..."
+        android:textSize="14sp"
+        android:padding="16dp"
+        android:background="#FFFFFF"
+        android:lineSpacingExtra="6dp"
+        android:fontFamily="monospace"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 </LinearLayout>
