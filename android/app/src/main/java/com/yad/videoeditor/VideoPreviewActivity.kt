@@ -53,7 +53,7 @@ class VideoPreviewActivity : AppCompatActivity() {
         }
 
         val sizeMb = file.length() / (1024.0 * 1024.0)
-        tvInfo.text = "📁 ${file.name}\n📊 ${String.format("%.2f", sizeMb)} MB"
+        tvInfo.text = "📁 ${file.name}\n📊 ${String.format(java.util.Locale.US, "%.2f", sizeMb)} MB"
 
         videoView.setVideoPath(videoPath)
         videoView.setOnPreparedListener { mp ->

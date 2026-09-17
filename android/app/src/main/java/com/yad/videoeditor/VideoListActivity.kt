@@ -127,7 +127,7 @@ class VideoListActivity : AppCompatActivity() {
         // Info
         val sizeMb = file.length() / (1024.0 * 1024.0)
         val info = TextView(ctx).apply {
-            text = "${String.format("%.1f", sizeMb)} MB • " +
+            text = "${String.format(java.util.Locale.US, "%.1f", sizeMb)} MB • " +
                    sdf.format(Date(file.lastModified()))
             textSize = 12f
             setTextColor(0xFF666666.toInt())

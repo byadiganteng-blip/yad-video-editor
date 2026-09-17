@@ -1,0 +1,46 @@
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+release/
+.gradle/
+build/
+local.properties
+keystore.properties
+
+# Keystore
+*.jks
+*.keystore
+yad-release.jks
+
+# Secrets
+google-services.json
+*.pem
+.env
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# Colab
+/content/

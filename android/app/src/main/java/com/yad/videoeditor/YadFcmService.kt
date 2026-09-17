@@ -9,7 +9,9 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 class YadFcmService : FirebaseMessagingService() {
@@ -28,7 +30,7 @@ class YadFcmService : FirebaseMessagingService() {
         try {
             val uid = FirebaseManager.getCurrentUserUid()
             if (uid != null) {
-                GlobalScope.launch {
+                CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
                     try {
                         val ok = FirebaseManager.addFcmToken(uid, token)
                         Tracker.fcmEvent("token_saved", mapOf(

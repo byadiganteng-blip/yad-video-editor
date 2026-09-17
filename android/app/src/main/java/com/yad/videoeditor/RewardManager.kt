@@ -98,7 +98,7 @@ object RewardManager {
     // ============================================================
     fun syncToFirestore(context: Context) {
         val uid = FirebaseManager.getCurrentUserUid() ?: return
-        kotlinx.coroutines.GlobalScope.launch {
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
             try {
                 val profile = FirebaseManager.loadUserFromFirestore(uid)
                     ?: UserProfile(uid = uid)
@@ -119,7 +119,7 @@ object RewardManager {
 
     fun loadFromFirestore(context: Context) {
         val uid = FirebaseManager.getCurrentUserUid() ?: return
-        kotlinx.coroutines.GlobalScope.launch {
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
             try {
                 val profile = FirebaseManager.loadUserFromFirestore(uid) ?: return@launch
                 // Sync cloud → lokal

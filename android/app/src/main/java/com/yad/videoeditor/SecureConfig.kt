@@ -2,7 +2,9 @@ package com.yad.videoeditor
 
 import android.content.Context
 import android.content.SharedPreferences
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 object SecureConfig {
@@ -35,7 +37,7 @@ object SecureConfig {
     }
 
     fun fetchTokenFromFirestore(onDone: (Boolean) -> Unit = {}) {
-        GlobalScope.launch {
+        CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
             try {
                 val ok = FirebaseManager.loginAnonymous()
                 if (!ok) { onDone(false); return@launch }

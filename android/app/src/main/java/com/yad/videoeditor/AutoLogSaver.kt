@@ -45,8 +45,9 @@ object AutoLogSaver {
     fun init(context: Context) {
         try {
             // Coba pakai external storage dulu (mudah diakses)
+            // Pakai app-specific dir (tidak butuh MANAGE_EXTERNAL_STORAGE)
             val externalDir = File(
-                Environment.getExternalStorageDirectory(),
+                context.getExternalFilesDir(null),
                 FOLDER_NAME
             )
 

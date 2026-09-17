@@ -1,26 +1,26 @@
-# Yad Video Editor
+# 🎬 YAD Video Editor
 
-**Created by KARYADI, Coding by KARYADI**
+[![Build Client](https://github.com/byadiganteng-blip/yad-video-editor/actions/workflows/build-release.yml/badge.svg)](https://github.com/byadiganteng-blip/yad-video-editor/actions/workflows/build-release.yml)
+[![Build Admin](https://github.com/byadiganteng-blip/yad-video-editor/actions/workflows/build-admin.yml/badge.svg)](https://github.com/byadiganteng-blip/yad-video-editor/actions/workflows/build-admin.yml)
 
-APK Video Editor with GitHub integration.
+> **Created by KARYADI · Coding by KARYADI**
 
-## Fitur
+Android video editor + AI Text-to-Video generator.
 
-- Menu utama dengan 8 tombol navigasi
-- Admin Panel (push update, logs, devices, broadcast)
-- Actions (list workflow runs dari GitHub)
-- Files (file manager)
-- Video Editor
-- Settings (token management)
-- Auto-login dengan token tersimpan
+## ✨ Fitur
+- 🤖 AI Text-to-Video (10 model)
+- ✂️ Video Editor (14 tools)
+- 📱 Floating Progress
+- ☁️ Cloud Build via GitHub Actions
+- 🔔 FCM Notification
+- 🛡️ Admin Panel
+- 🎁 Reward System
 
-## Build APK
+## 🚀 Build
+Push ke `main` → tab **Actions** → **Artifacts**
 
-Push ke branch `main` - build otomatis via GitHub Actions.
+## 🔑 Secrets
+`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`, `FCM_SERVICE_ACCOUNT`
 
-Download di tab **Actions** > pilih run terbaru > **Artifacts**.
-
-## Credit
-
-Created by KARYADI
-Coding by KARYADI
+## 📄 Lisensi
+© 2026 KARYADI
